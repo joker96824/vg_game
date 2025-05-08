@@ -1,0 +1,41 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+out/
+
+# Vite
+.vite/
+
+# Electron
+*.log
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+
+# Test/coverage
+coverage/
+*.lcov
+
+# Cursor/AI工具
+.cursor/
+
+# 环境变量
+.env
+.env.*
+
+# 其他
+web/
