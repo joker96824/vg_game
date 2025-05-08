@@ -1,11 +1,20 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import App from './App'
+import CardBrowser from './pages/CardBrowser'
 import './styles/global.css'
 
-ReactDOM.render(
+const container = document.getElementById('root')!;
+const root = createRoot(container);
+
+root.render(
   <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-  document.getElementById('root')
-) 
+    <Router>
+      <Routes>
+        <Route path="/" element={<App />} />
+        <Route path="/cards" element={<CardBrowser />} />
+      </Routes>
+    </Router>
+  </React.StrictMode>
+)
