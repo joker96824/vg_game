@@ -51,7 +51,7 @@ const App: React.FC = () => {
               isActive={activeButton === '卡组'}
               onClick={() => {
                 handleClick('卡组');
-                setTimeout(() => navigate('/cards'), 300);
+                setTimeout(() => navigate('/deck'), 300);
               }}
               size="large"
             />

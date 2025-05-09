@@ -116,6 +116,10 @@ const customSelectStyles = {
     ...base,
     zIndex: 9999,
   }),
+  menuPortal: (base: any) => ({
+    ...base,
+    zIndex: 9999,
+  }),
 };
 
 const CardBrowser: React.FC = () => {
