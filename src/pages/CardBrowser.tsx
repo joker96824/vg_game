@@ -499,6 +499,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -510,6 +511,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -521,6 +523,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -532,6 +535,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -543,6 +547,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -554,6 +559,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -565,6 +571,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -576,6 +583,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
