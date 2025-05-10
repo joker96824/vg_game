@@ -1,32 +1,41 @@
-export interface Card {
-  id: string;
-  card_code: string;
-  card_link: string;
+export interface RarityInfo {
+  pack_name: string;
   card_number: string;
-  card_rarity?: string;
-  name_cn?: string;
-  name_jp?: string;
-  nation?: string;
-  clan?: string;
-  grade?: number;
-  skill?: string;
-  card_power?: number;
-  shield?: number;
-  critical?: number;
-  special_mark?: string;
-  card_type?: string;
-  trigger_type?: string;
-  ability?: string;
-  card_alias?: string;
-  card_group?: string;
-  ability_json?: any;
-  create_user_id?: string;
-  update_user_id?: string;
-  create_time?: string;
-  update_time?: string;
-  is_deleted?: boolean;
-  card_version?: number;
-  remark?: string;
+  release_info: string;
+  quote: string | null;
+  illustrator: string;
+  image_url: string;
+  id: string;
+  card_id: string;
+  create_time: string;
+  update_time: string;
+}
+
+export interface Card {
+  card_code: string;
+  name_cn: string;
+  name_en: string | null;
+  card_type: string;
+  trigger_type: string;
+  card_power: number;
+  grade: number;
+  race: string | null;
+  nation: string;
+  clan: string | null;
+  skill: string;
+  flavor_text: string | null;
+  image_url: string | null;
+  card_thumbnail_url: string | null;
+  card_updated_at: string | null;
+  id: string;
+  create_user_id: string;
+  update_user_id: string;
+  create_time: string;
+  update_time: string;
+  is_deleted: boolean;
+  card_version: number;
+  remark: string;
+  rarity_infos: RarityInfo[];
 }
 
 export interface CardRarity {
