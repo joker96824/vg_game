@@ -193,83 +193,74 @@ const triggerOptions = [
 ];
 
 const packOptions = [
-  { value: 'D-BT01 五大世纪之黎明', label: 'D-BT01 五大世纪之黎明' },
-  { value: 'D-BT02 与传说的邂逅', label: 'D-BT02 与传说的邂逅' },
-  { value: 'D-BT03 共进的双星', label: 'D-BT03 共进的双星' },
-  { value: 'D-BT04 觉醒的天轮', label: 'D-BT04 觉醒的天轮' },
-  { value: 'D-BT05 群雄凯旋', label: 'D-BT05 群雄凯旋' },
-  { value: 'D-BT06 凤龙焰舞', label: 'D-BT06 凤龙焰舞' },
-  { value: 'D-BT07 烈火翠岚', label: 'D-BT07 烈火翠岚' },
-  { value: 'D-BT08 女神再临', label: 'D-BT08 女神再临' },
-  { value: 'D-BT09 龙树侵攻', label: 'D-BT09 龙树侵攻' },
-  { value: 'D-BT10 假面龙奏', label: 'D-BT10 假面龙奏' },
-  { value: 'D-BT11 英雄激突', label: 'D-BT11 英雄激突' },
-  { value: 'D-BT12 夜天凶袭', label: 'D-BT12 夜天凶袭' },
-  { value: 'D-BT13 天轮飞翔', label: 'D-BT13 天轮飞翔' },
-  { value: 'D-LBT01 圣诗的旋律', label: 'D-LBT01 圣诗的旋律' },
-  { value: 'D-LBT02 圣律诗院 ～新学期开始了哦！～', label: 'D-LBT02 圣律诗院 ～新学期开始了哦！～' },
-  { value: 'D-LBT03 圣律诗院 ～夏天的回忆！～', label: 'D-LBT03 圣律诗院 ～夏天的回忆！～' },
-  { value: 'D-LBT04 圣律诗院 ～要捣乱了哟～', label: 'D-LBT04 圣律诗院 ～要捣乱了哟～' },
-  { value: 'D-LTD01 出航！圣律诗院！', label: 'D-LTD01 出航！圣律诗院！' },
-  { value: 'D-PR 推广卡D', label: 'D-PR 推广卡D' },
-  { value: 'D-SD01 近导游悠 -天轮圣龙-', label: 'D-SD01 近导游悠 -天轮圣龙-' },
-  { value: 'D-SD02 桃山团治 -暴虐之虎-', label: 'D-SD02 桃山团治 -暴虐之虎-' },
-  { value: 'D-SD03 江端透也 -顶峰天帝-', label: 'D-SD03 江端透也 -顶峰天帝-' },
-  { value: 'D-SD04 大仓惠 -树角兽王-', label: 'D-SD04 大仓惠 -树角兽王-' },
-  { value: 'D-SD05 濑户冬毬 -极光战姬-', label: 'D-SD05 濑户冬毬 -极光战姬-' },
-  { value: 'D-SD06 御药袋美玲 -封焰之巫女-', label: 'D-SD06 御药袋美玲 -封焰之巫女-' },
-  { value: 'D-SS01 节日典藏包2021', label: 'D-SS01 节日典藏包2021' },
-  { value: 'D-SS02 节日典藏包2022', label: 'D-SS02 节日典藏包2022' },
-  { value: 'D-SS03 超越卡组套装 -时刻喷射-', label: 'D-SS03 超越卡组套装 -时刻喷射-' },
-  { value: 'D-SS04 超越卡组套装 -救世主-', label: 'D-SS04 超越卡组套装 -救世主-' },
-  { value: 'D-SS05 节日补充包2023', label: 'D-SS05 节日补充包2023' },
-  { value: 'D-SS06 初始卡组套装 恩典格拉墨', label: 'D-SS06 初始卡组套装 恩典格拉墨' },
-  { value: 'D-SS07 初始卡组套装 传说法芙纳', label: 'D-SS07 初始卡组套装 传说法芙纳' },
-  { value: 'D-SS08 初始卡组套装 奥费主义', label: 'D-SS08 初始卡组套装 奥费主义' },
-  { value: 'D-SS09 超越卡组套装 -不知火-', label: 'D-SS09 超越卡组套装 -不知火-' },
-  { value: 'D-SS10 超越卡组套装 -卢亚德-', label: 'D-SS10 超越卡组套装 -卢亚德-' },
-  { value: 'D-SS11 三判补充包', label: 'D-SS11 三判补充包' },
-  { value: 'D-TB01 刀剑乱舞 -Online- 2021', label: 'D-TB01 刀剑乱舞 -Online- 2021' },
-  { value: 'D-TB02 怪物弹珠', label: 'D-TB02 怪物弹珠' },
-  { value: 'D-TB03 通灵王 Vol.1', label: 'D-TB03 通灵王 Vol.1' },
-  { value: 'D-TB04 通灵王 Vol.2', label: 'D-TB04 通灵王 Vol.2' },
-  { value: 'D-TB05 终末的女武神', label: 'D-TB05 终末的女武神' },
-  { value: 'D-TB06 怪物弹珠 Vol.2', label: 'D-TB06 怪物弹珠 Vol.2' },
-  { value: 'D-TB07 刀剑乱舞 -Online- 2023', label: 'D-TB07 刀剑乱舞 -Online- 2023' },
-  { value: 'D-TD01 羽根山丽 -绽放羁绊之花的乐团长-', label: 'D-TD01 羽根山丽 -绽放羁绊之花的乐团长-' },
-  { value: 'D-TD02 回间充 -四炎之魔宝龙-', label: 'D-TD02 回间充 -四炎之魔宝龙-' },
-  { value: 'D-TD03 狐芝来华 -破天执行-', label: 'D-TD03 狐芝来华 -破天执行-' },
-  { value: 'D-TTD01 刀剑乱舞 -Online- 2021', label: 'D-TTD01 刀剑乱舞 -Online- 2021' },
-  { value: 'D-TTD02 怪物弹珠 超·兽神祭', label: 'D-TTD02 怪物弹珠 超·兽神祭' },
-  { value: 'D-TTD03 怪物弹珠 激·兽神祭', label: 'D-TTD03 怪物弹珠 激·兽神祭' },
-  { value: 'D-TTD04 通灵王', label: 'D-TTD04 通灵王' },
-  { value: 'D-TTD05 终末的女武神', label: 'D-TTD05 终末的女武神' },
-  { value: 'DZ-BT01 命运大战', label: 'DZ-BT01 命运大战' },
-  { value: 'DZ-BT02 无幻双刻', label: 'DZ-BT02 无幻双刻' },
-  { value: 'DZ-BT03 次元超跃', label: 'DZ-BT03 次元超跃' },
-  { value: 'DZ-BT04 宿命决战', label: 'DZ-BT04 宿命决战' },
-  { value: 'DZ-BT05 天智觉命', label: 'DZ-BT05 天智觉命' },
-  { value: 'DZ-BT06 时空创龙', label: 'DZ-BT06 时空创龙' },
-  { value: 'DZ-BT07 月牙苍焰', label: 'DZ-BT07 月牙苍焰' },
-  { value: 'DZ-BT08 零骑转生', label: 'DZ-BT08 零骑转生' },
-  { value: 'DZ-LBT01 圣律诗院 ～星星闪烁！～', label: 'DZ-LBT01 圣律诗院 ～星星闪烁！～' },
-  { value: 'DZ-PS01 高阶标准赛卡组套装 宝石骑士', label: 'DZ-PS01 高阶标准赛卡组套装 宝石骑士' },
-  { value: 'DZ-PS02 高阶标准赛卡组套装 击退者', label: 'DZ-PS02 高阶标准赛卡组套装 击退者' },
-  { value: 'DZ-PS03 高阶标准赛卡组套装 火枪手', label: 'DZ-PS03 高阶标准赛卡组套装 火枪手' },
-  { value: 'DZ-SD01 快捷起始卡组 龙族帝国', label: 'DZ-SD01 快捷起始卡组 龙族帝国' },
-  { value: 'DZ-SD02 快捷起始卡组 暗邦', label: 'DZ-SD02 快捷起始卡组 暗邦' },
-  { value: 'DZ-SD03 快捷起始卡组 布兰特之门', label: 'DZ-SD03 快捷起始卡组 布兰特之门' },
-  { value: 'DZ-SD04 快捷起始卡组 王冠圣域', label: 'DZ-SD04 快捷起始卡组 王冠圣域' },
-  { value: 'DZ-SD05 快捷起始卡组 基元', label: 'DZ-SD05 快捷起始卡组 基元' },
-  { value: 'DZ-SD06 快捷起始卡组 圣律诗院', label: 'DZ-SD06 快捷起始卡组 圣律诗院' },
-  { value: 'DZ-SS01 节日补充包2024', label: 'DZ-SS01 节日补充包2024' },
-  { value: 'DZ-SS02 超越卡组套装 -哈利-', label: 'DZ-SS02 超越卡组套装 -哈利-' },
-  { value: 'DZ-SS03 超越卡组套装 -夜蔷-', label: 'DZ-SS03 超越卡组套装 -夜蔷-' },
-  { value: 'DZ-SS04 命运的大杉贝贝贝贝BLACK危险 CoroCoro 起始卡组包', label: 'DZ-SS04 命运的大杉贝贝贝贝BLACK危险 CoroCoro 起始卡组包' },
-  { value: 'DZ-SS07 绝胜起始卡组 以"力"决胜负 天导零', label: 'DZ-SS07 绝胜起始卡组 以"力"决胜负 天导零' },
-  { value: 'DZ-SS08 绝胜起始卡组 以"技"决胜负 央亭四季', label: 'DZ-SS08 绝胜起始卡组 以"技"决胜负 央亭四季' },
-  { value: 'DZ-SS09 大师卡组套装 羽根山丽', label: 'DZ-SS09 大师卡组套装 羽根山丽' },
-  { value: 'DZ-SS10 大师卡组套装 回间充', label: 'DZ-SS10 大师卡组套装 回间充' }
+  { value: 'CP', label: 'CP' },
+  { value: 'D-BT01', label: 'D-BT01' },
+  { value: 'D-BT02', label: 'D-BT02' },
+  { value: 'D-BT03', label: 'D-BT03' },
+  { value: 'D-BT04', label: 'D-BT04' },
+  { value: 'D-BT05', label: 'D-BT05' },
+  { value: 'D-BT06', label: 'D-BT06' },
+  { value: 'D-BT07', label: 'D-BT07' },
+  { value: 'D-BT08', label: 'D-BT08' },
+  { value: 'D-BT09', label: 'D-BT09' },
+  { value: 'D-BT10', label: 'D-BT10' },
+  { value: 'D-BT11', label: 'D-BT11' },
+  { value: 'D-BT12', label: 'D-BT12' },
+  { value: 'D-BT13', label: 'D-BT13' },
+  { value: 'D-LBT01', label: 'D-LBT01' },
+  { value: 'D-LBT02', label: 'D-LBT02' },
+  { value: 'D-LBT03', label: 'D-LBT03' },
+  { value: 'D-LBT04', label: 'D-LBT04' },
+  { value: 'D-LTD01', label: 'D-LTD01' },
+  { value: 'D-PR', label: 'D-PR' },
+  { value: 'D-SD06', label: 'D-SD06' },
+  { value: 'D-SS01', label: 'D-SS01' },
+  { value: 'D-SS02', label: 'D-SS02' },
+  { value: 'D-SS05', label: 'D-SS05' },
+  { value: 'D-SS06', label: 'D-SS06' },
+  { value: 'D-SS07', label: 'D-SS07' },
+  { value: 'D-SS08', label: 'D-SS08' },
+  { value: 'D-SS09', label: 'D-SS09' },
+  { value: 'D-SS10', label: 'D-SS10' },
+  { value: 'D-SS11', label: 'D-SS11' },
+  { value: 'D-TB01', label: 'D-TB01' },
+  { value: 'D-TB02', label: 'D-TB02' },
+  { value: 'D-TB03', label: 'D-TB03' },
+  { value: 'D-TB04', label: 'D-TB04' },
+  { value: 'D-TB05', label: 'D-TB05' },
+  { value: 'D-TB06', label: 'D-TB06' },
+  { value: 'D-TB07', label: 'D-TB07' },
+  { value: 'D-TD01', label: 'D-TD01' },
+  { value: 'D-TD02', label: 'D-TD02' },
+  { value: 'D-TD03', label: 'D-TD03' },
+  { value: 'D-TTD01', label: 'D-TTD01' },
+  { value: 'D-TTD02', label: 'D-TTD02' },
+  { value: 'D-TTD03', label: 'D-TTD03' },
+  { value: 'D-TTD04', label: 'D-TTD04' },
+  { value: 'D-TTD05', label: 'D-TTD05' },
+  { value: 'DZ-BT01', label: 'DZ-BT01' },
+  { value: 'DZ-BT02', label: 'DZ-BT02' },
+  { value: 'DZ-BT03', label: 'DZ-BT03' },
+  { value: 'DZ-BT04', label: 'DZ-BT04' },
+  { value: 'DZ-BT05', label: 'DZ-BT05' },
+  { value: 'DZ-BT06', label: 'DZ-BT06' },
+  { value: 'DZ-BT07', label: 'DZ-BT07' },
+  { value: 'DZ-BT08', label: 'DZ-BT08' },
+  { value: 'DZ-LBT01', label: 'DZ-LBT01' },
+  { value: 'DZ-SD01', label: 'DZ-SD01' },
+  { value: 'DZ-SD02', label: 'DZ-SD02' },
+  { value: 'DZ-SD03', label: 'DZ-SD03' },
+  { value: 'DZ-SD04', label: 'DZ-SD04' },
+  { value: 'DZ-SD05', label: 'DZ-SD05' },
+  { value: 'DZ-SD06', label: 'DZ-SD06' },
+  { value: 'DZ-SS01', label: 'DZ-SS01' },
+  { value: 'DZ-SS02', label: 'DZ-SS02' },
+  { value: 'DZ-SS03', label: 'DZ-SS03' },
+  { value: 'DZ-SS04', label: 'DZ-SS04' },
+  { value: 'DZ-SS07', label: 'DZ-SS07' },
+  { value: 'DZ-SS08', label: 'DZ-SS08' },
+  { value: 'DZ-SS09', label: 'DZ-SS09' },
+  { value: 'DZ-SS10', label: 'DZ-SS10' }
 ];
 
 // 自定义 Option 组件
@@ -394,7 +385,7 @@ const CardBrowser: React.FC = () => {
   const fetchCards = async (pageNum: number) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://118.25.45.131:8000/api/v1/cards`, {
+      const response = await axios.get(`http://localhost:8000/api/v1/cards`, {
         params: {
           page: pageNum,
           page_size: 20,
@@ -499,6 +490,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -510,6 +502,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -521,6 +514,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -532,6 +526,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -543,6 +538,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -554,6 +550,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -565,6 +562,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -576,6 +574,7 @@ const CardBrowser: React.FC = () => {
             classNamePrefix="select"
             styles={customSelectStyles}
             placeholder="请选择..."
+            isClearable
           />
         </div>
         <div className="flex flex-col w-48">
@@ -615,11 +614,16 @@ const CardBrowser: React.FC = () => {
             <div className="grid grid-cols-5 gap-4 py-4">
               {cards.map(card => (
                 <div key={card.id} className="w-36 h-52 border rounded-lg flex flex-col items-center justify-center text-gray-700 text-base bg-white shadow p-2">
-                  {card.rarity_infos?.[0]?.image_url ? (
+                  {card.rarity_infos?.[0]?.card_number ? (
                     <img 
-                      src={card.rarity_infos[0].image_url} 
+                      src={`http://118.25.45.131:3000/images/${card.rarity_infos[0].card_number}.jpg`}
                       alt={card.name_cn}
                       className="w-full h-full object-contain"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement?.classList.add('text-center');
+                      }}
                     />
                   ) : (
                     <div className="text-center">
