@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import type { Card } from '../types/card';
 import axios from 'axios';
@@ -362,6 +362,15 @@ const customSelectStyles = {
   }),
 };
 
+interface DeckCard {
+  card_rarity_id: string;
+}
+
+interface Deck {
+  deck_name: string;
+  deck_cards: DeckCard[];
+}
+
 const CardBrowser: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [nation, setNation] = useState<any>(null);
@@ -379,7 +388,10 @@ const CardBrowser: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [deck] = useState(Array(12).fill(0).map((_, i) => ({ id: i, name_cn: `卡组卡${i + 1}` })));
   const navigate = useNavigate();
+  const location = useLocation();
+  const deckData = location.state?.deck as Deck | undefined;
   const cardListRef = useRef<HTMLDivElement>(null);
+  const [cachedUrls] = useState<Set<string>>(new Set());
 
   // 获取卡牌数据
   const fetchCards = async (pageNum: number) => {
@@ -459,15 +471,47 @@ const CardBrowser: React.FC = () => {
     }
   };
 
+  // 图片缓存处理
+  const getCachedImage = async (imageUrl: string): Promise<string> => {
+    try {
+      // 尝试从缓存中获取图片
+      const cache = await caches.open('card-images');
+      const cachedResponse = await cache.match(imageUrl);
+      
+      if (cachedResponse) {
+        // 如果缓存中有图片，直接返回原始URL
+        return imageUrl;
+      }
+
+      // 如果缓存中没有，则获取并缓存
+      const response = await fetch(imageUrl);
+      await cache.put(imageUrl, response.clone());
+      return imageUrl;
+    } catch (error) {
+      console.error('图片缓存处理失败:', error);
+      return imageUrl; // 如果缓存失败，返回原始URL
+    }
+  };
+
+  // 在组件卸载时清理URL对象
+  useEffect(() => {
+    return () => {
+      // 清理所有创建的URL对象
+      cachedUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [cachedUrls]);
+
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
       {/* 顶部卡组名 */}
-      <div className="w-full h-12 flex items-center justify-center border-b text-lg font-bold text-center">卡组名预留</div>
+      <div className="w-full h-12 flex items-center justify-center border-b text-lg font-bold text-center">
+        {deckData?.deck_name || '卡组名预留'}
+      </div>
 
       {/* 返回按钮 */}
       <button
         className="absolute top-3 left-4 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm z-10"
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/deck')}
       >返回</button>
 
       {/* 筛选条件 */}
@@ -613,7 +657,7 @@ const CardBrowser: React.FC = () => {
           >
             <div className="grid grid-cols-5 gap-4 py-4">
               {cards.map(card => (
-                <div key={card.id} className="w-36 h-52 border rounded-lg flex flex-col items-center justify-center text-gray-700 text-base bg-white shadow p-2">
+                <div key={card.id} className="w-36 h-52 flex flex-col items-center justify-center text-gray-700 text-base bg-transparent">
                   {card.rarity_infos?.[0]?.card_number ? (
                     <img 
                       src={`http://118.25.45.131:3000/images/${card.rarity_infos[0].card_number}.jpg`}
@@ -623,6 +667,14 @@ const CardBrowser: React.FC = () => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         target.parentElement?.classList.add('text-center');
+                      }}
+                      onLoad={async (e) => {
+                        const target = e.target as HTMLImageElement;
+                        const imageUrl = target.src;
+                        const cachedUrl = await getCachedImage(imageUrl);
+                        if (cachedUrl !== imageUrl) {
+                          target.src = cachedUrl;
+                        }
                       }}
                     />
                   ) : (
@@ -645,9 +697,12 @@ const CardBrowser: React.FC = () => {
         {/* 右侧卡组展示 */}
         <div className="w-[30%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
           <div className="grid grid-cols-4 gap-2 w-full px-4">
-            {deck.map(card => (
-              <div key={card.id} className="w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow">
-                {card.name_cn}
+            {deckData?.deck_cards.map((card, index) => (
+              <div 
+                key={index} 
+                className="w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow"
+              >
+                {card.card_rarity_id}
               </div>
             ))}
           </div>

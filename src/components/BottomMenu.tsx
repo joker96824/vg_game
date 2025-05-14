@@ -6,8 +6,14 @@ import historyIcon from '../assets/history.svg'
 import infoIcon from '../assets/info.svg'
 import settingsIcon from '../assets/settings.svg'
 
-const menuItems = [
-  { icon: bagIcon, label: '背包', route: '/cards' },
+interface MenuItem {
+  icon: string;
+  label: string;
+  route?: string;
+}
+
+const menuItems: MenuItem[] = [
+  { icon: bagIcon, label: '背包' },
   { icon: friendIcon, label: '好友' },
   { icon: historyIcon, label: '对战记录' },
   { icon: infoIcon, label: '关于' },

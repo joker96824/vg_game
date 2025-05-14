@@ -1,16 +1,74 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import starIcon from '../assets/star.svg';
 import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
+import axios from 'axios';
+
+interface DeckCard {
+  card_rarity_id: string;
+}
+
+interface Deck {
+  deck_name: string;
+  deck_cards: DeckCard[];
+}
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
-  // 假设有13个卡组
-  const decks = Array(13).fill(0).map((_, i) => ({ id: i, name: `卡组${i + 1}` }));
-  // 假设当前卡组有12张卡
-  const cards = Array(12).fill(0).map((_, i) => ({ id: i, name: `卡牌${i + 1}` }));
-  const currentDeckName = "我的卡组1"; // 当前卡组名
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [isLoadingDecks, setIsLoadingDecks] = useState(true);
+  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newDeckName, setNewDeckName] = useState('');
+  const [newDeckDescription, setNewDeckDescription] = useState('');
+
+  // 获取卡组列表
+  const fetchDecks = async () => {
+    try {
+      setIsLoadingDecks(true);
+      const response = await axios.get('http://118.25.45.131:8000/api/v1/decks', {
+        params: {
+          user_id: '97e9924a-97b1-41d4-b152-fc45a74bbc17'
+        }
+      });
+      setDecks(response.data);
+      // 自动选择第一个卡组
+      if (response.data.length > 0) {
+        setSelectedDeck(response.data[0]);
+      }
+    } catch (error) {
+      console.error('获取卡组列表失败:', error);
+    } finally {
+      setIsLoadingDecks(false);
+    }
+  };
+
+  // 创建新卡组
+  const createNewDeck = async () => {
+    try {
+      const response = await axios.post('http://118.25.45.131:8000/api/v1/decks', {
+        deck_name: newDeckName,
+        deck_description: newDeckDescription,
+        user_id: '97e9924a-97b1-41d4-b152-fc45a74bbc17'
+      });
+      
+      // 刷新卡组列表
+      await fetchDecks();
+      
+      // 重置表单并关闭弹窗
+      setNewDeckName('');
+      setNewDeckDescription('');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('创建卡组失败:', error);
+      alert('创建卡组失败，请重试');
+    }
+  };
+
+  useEffect(() => {
+    fetchDecks();
+  }, []);
 
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
@@ -18,7 +76,7 @@ const Deck: React.FC = () => {
       <div className="w-full h-12 flex items-center justify-center border-b text-lg font-bold text-center relative">
         <button
           className="absolute left-4 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm z-10"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/')}
         >
           返回
         </button>
@@ -32,18 +90,30 @@ const Deck: React.FC = () => {
           <div className="w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent p-4">
             <div className="grid grid-cols-3 gap-4">
               {/* 第一个为添加卡组按钮 */}
-              <div className="w-36 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-3xl font-bold cursor-pointer hover:bg-gray-100">
+              <div 
+                className="w-36 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-3xl font-bold cursor-pointer hover:bg-gray-100"
+                onClick={() => setIsModalOpen(true)}
+              >
                 +
               </div>
               {/* 后续为卡组格子 */}
-              {decks.slice(0, 8).map(deck => (
-                <div 
-                  key={deck.id} 
-                  className="w-36 h-52 border rounded-lg flex items-center justify-center text-gray-700 text-base bg-white shadow"
-                >
-                  {deck.name}
-                </div>
-              ))}
+              {isLoadingDecks ? (
+                <div className="text-center text-gray-500">加载中...</div>
+              ) : (
+                decks.map((deck, index) => (
+                  <div 
+                    key={index}
+                    className={`w-36 h-52 border rounded-lg flex items-center justify-center text-gray-700 text-base bg-white shadow ${
+                      selectedDeck?.deck_name === deck.deck_name
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'hover:bg-gray-100'
+                    }`}
+                    onClick={() => setSelectedDeck(deck)}
+                  >
+                    {deck.deck_name}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -54,9 +124,18 @@ const Deck: React.FC = () => {
             <button className="p-1 hover:bg-gray-200 rounded">
               <img src={starIcon} alt="star" className="w-5 h-5" />
             </button>
-            <div className="font-medium text-center flex-1">{currentDeckName}</div>
+            <div className="font-medium text-center flex-1">{selectedDeck?.deck_name || '未选择卡组'}</div>
             <div className="flex gap-2">
-              <button className="p-1 hover:bg-gray-200 rounded">
+              <button
+                className="p-1 hover:bg-gray-200 rounded"
+                onClick={() => {
+                  if (selectedDeck) {
+                    navigate('/cards', { state: { deck: selectedDeck } });
+                  } else {
+                    alert('请先选择一个卡组');
+                  }
+                }}
+              >
                 <img src={editIcon} alt="edit" className="w-5 h-5" />
               </button>
               <button className="p-1 hover:bg-gray-200 rounded">
@@ -65,17 +144,62 @@ const Deck: React.FC = () => {
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2 w-full px-4">
-            {cards.map(card => (
+            {selectedDeck?.deck_cards.map((card, index) => (
               <div 
-                key={card.id} 
+                key={index} 
                 className="w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow"
               >
-                {card.name}
+                {card.card_rarity_id}
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      {/* 创建卡组弹窗 */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h2 className="text-xl font-bold mb-4">创建新卡组</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">卡组名称</label>
+                <input
+                  type="text"
+                  value={newDeckName}
+                  onChange={(e) => setNewDeckName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="请输入卡组名称"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">备注信息</label>
+                <textarea
+                  value={newDeckDescription}
+                  onChange={(e) => setNewDeckDescription(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="请输入备注信息"
+                  rows={3}
+                />
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={createNewDeck}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  创建
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
