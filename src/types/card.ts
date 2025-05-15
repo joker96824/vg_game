@@ -9,10 +9,12 @@ export interface RarityInfo {
   card_id: string;
   create_time: string;
   update_time: string;
+  quantity?: number;
 }
 
 export interface Card {
   card_code: string;
+  card_id: string;
   name_cn: string;
   name_en: string | null;
   card_type: string;
