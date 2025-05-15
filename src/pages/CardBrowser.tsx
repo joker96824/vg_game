@@ -45,6 +45,17 @@ const CardBrowser: React.FC = () => {
   const [localDeckCards, setLocalDeckCards] = useState(deckData?.deck_cards ? JSON.parse(JSON.stringify(deckData.deck_cards)) : []);
   const [showCards, setShowCards] = useState<ShowCard[]>([]);
   const [saving, setSaving] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [activeTab, setActiveTab] = useState<'ride' | 'deck' | 'trigger' | 'g' | 'token'>('deck');
+
+  // 导航标签配置
+  const tabs = [
+    { id: 'ride', label: '骑升' },
+    { id: 'deck', label: '卡组' },
+    { id: 'g', label: 'G区' },
+    { id: 'token', label: '衍生' }
+  ] as const;
 
   // 获取卡牌数据
   const fetchCards = async (pageNum: number) => {
@@ -171,6 +182,28 @@ const CardBrowser: React.FC = () => {
     }
   }, [modalType, deckData, isCardModalOpen]);
 
+  // 显示提示信息
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+  };
+
+  // 处理返回按钮点击
+  const handleBackClick = () => {
+    if (cardsData.length > 0) {
+      if (window.confirm('是否保存当前卡组？')) {
+        handleSaveDeck();
+      } else {
+        navigate('/deck');
+      }
+    } else {
+      navigate('/deck');
+    }
+  };
+
   // 处理左侧卡片数量变更
   const handleLeftCardQuantityChange = (val: number) => {
     if (modalType === 'left' && modalCardIndex !== null) {
@@ -214,13 +247,11 @@ const CardBrowser: React.FC = () => {
           );
           
           if (cardRarityIndex !== undefined && cardRarityIndex !== -1) {
-            // 计算当前卡片所有稀有度的数量总和
             const totalQuantity = next[existingCardIndex].rarity_infos?.reduce((sum, r) => sum + (r.quantity || 0), 0) || 0;
             const currentQuantity = next[existingCardIndex].rarity_infos?.[cardRarityIndex]?.quantity || 0;
             
-            // 如果新数量会导致总和超过4，则不允许更新
             if (totalQuantity - currentQuantity + val > 4) {
-              alert('一张卡的所有稀有度数量之和不能超过4');
+              showToastMessage('一张卡的所有稀有度数量之和不能超过4');
               return next;
             }
 
@@ -378,12 +409,6 @@ const CardBrowser: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = parseInt(e.target.value, 10);
-    if (isNaN(val) || val < 0) val = 0;
-    handleRightCardQuantityChange(val);
-  };
-
   // 获取左侧卡片在cardsData中的数量
   const getLeftCardQuantity = () => {
     if (modalType === 'left' && modalCardIndex !== null) {
@@ -402,36 +427,12 @@ const CardBrowser: React.FC = () => {
 
   const handleLeftCardMinus = () => {
     const cur = getLeftCardQuantity();
-    console.log('点击减号按钮时的cardsData:', {
-      currentQuantity: cur,
-      cards: cards,
-      cardsData: cardsData,
-      deckData: deckData
-    });
     if (cur > 0) handleLeftCardQuantityChange(cur - 1);
   };
 
   const handleLeftCardPlus = () => {
     const cur = getLeftCardQuantity();
-    console.log('点击加号按钮时的cardsData:', {
-      currentQuantity: cur,
-      cards: cards,
-      cardsData: cardsData,
-      deckData: deckData
-    });
     handleLeftCardQuantityChange(cur + 1);
-  };
-
-  const handleLeftCardInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = parseInt(e.target.value, 10);
-    if (isNaN(val) || val < 0) val = 0;
-    console.log('输入框改变时的cardsData:', {
-      inputValue: val,
-      cards: cards,
-      cardsData: cardsData,
-      deckData: deckData
-    });
-    handleLeftCardQuantityChange(val);
   };
 
   // 获取并整理卡片数据
@@ -596,8 +597,15 @@ const CardBrowser: React.FC = () => {
       {/* 返回按钮 */}
       <button
         className="absolute top-3 left-4 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm z-10"
-        onClick={() => navigate('/deck')}
+        onClick={handleBackClick}
       >返回</button>
+
+      {/* 提示弹窗 */}
+      {showToast && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white px-4 py-2 rounded-lg z-50 animate-fade-out">
+          {toastMessage}
+        </div>
+      )}
 
       {/* 筛选条件 */}
       <CardFilter
@@ -644,16 +652,33 @@ const CardBrowser: React.FC = () => {
         />
 
         {/* 右侧卡组展示 */}
-        <DeckView
-          showCards={showCards}
-          onCardClick={(idx) => {
-            setModalCardIndex(idx);
-            setModalType('right');
-            setIsCardModalOpen(true);
-            // 设置初始稀有度索引为第一个非0稀有度
-            setModalRarityIndex(getFirstNonZeroRarityIndex(showCards[idx]));
-          }}
-        />
+        <div className="w-[30%] flex flex-col border-l">
+          {/* 顶部导航栏 */}
+          <div className="flex border-b h-8">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`flex-1 py-1 text-center text-xs font-medium transition-colors
+                  ${activeTab === tab.id 
+                    ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <DeckView
+            showCards={showCards}
+            onCardClick={(idx) => {
+              setModalCardIndex(idx);
+              setModalType('right');
+              setIsCardModalOpen(true);
+              setModalRarityIndex(getFirstNonZeroRarityIndex(showCards[idx]));
+            }}
+          />
+        </div>
       </div>
 
       {/* 弹窗 */}
@@ -800,14 +825,9 @@ const CardBrowser: React.FC = () => {
                     <button className="w-10 h-10 flex items-center justify-center" onClick={handleLeftCardMinus}>
                       <img src={MinusIcon} alt="minus" className="w-8 h-8" />
                     </button>
-                    <input
-                      type="number"
-                      min={0}
-                      value={getLeftCardQuantity()}
-                      onChange={handleLeftCardInputChange}
-                      className="w-10 text-center border rounded mx-2"
-                      style={{fontSize:'1rem'}}
-                    />
+                    <div className="w-10 text-center mx-2">
+                      {getLeftCardQuantity()}
+                    </div>
                     <button className="w-10 h-10 flex items-center justify-center" onClick={handleLeftCardPlus}>
                       <img src={PlusIcon} alt="plus" className="w-8 h-8" />
                     </button>
@@ -819,14 +839,9 @@ const CardBrowser: React.FC = () => {
                     <button className="w-10 h-10 flex items-center justify-center" onClick={handleMinus}>
                       <img src={MinusIcon} alt="minus" className="w-8 h-8" />
                     </button>
-                    <input
-                      type="number"
-                      min={0}
-                      value={showCards[modalCardIndex].card_rarity[modalRarityIndex]?.quantity || 0}
-                      onChange={handleInputChange}
-                      className="w-10 text-center border rounded mx-2"
-                      style={{fontSize:'1rem'}}
-                    />
+                    <div className="w-10 text-center mx-2">
+                      {showCards[modalCardIndex].card_rarity[modalRarityIndex]?.quantity || 0}
+                    </div>
                     <button className="w-10 h-10 flex items-center justify-center" onClick={handlePlus}>
                       <img src={PlusIcon} alt="plus" className="w-8 h-8" />
                     </button>

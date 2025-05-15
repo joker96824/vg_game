@@ -13,7 +13,7 @@ const DeckView: React.FC<DeckViewProps> = ({
   onCardClick
 }) => {
   return (
-    <div className="w-[30%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
+    <div className="w-[100%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
       <div className="grid grid-cols-4 gap-2 w-full px-4">
         {showCards.map((card, idx) => {
           const firstNonZeroIndex = getFirstNonZeroRarityIndex(card);
