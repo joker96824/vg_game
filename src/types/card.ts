@@ -9,10 +9,12 @@ export interface RarityInfo {
   card_id: string;
   create_time: string;
   update_time: string;
+  quantity?: number;
 }
 
 export interface Card {
   card_code: string;
+  card_id: string;
   name_cn: string;
   name_en: string | null;
   card_type: string;
@@ -49,4 +51,39 @@ export interface CardRarity {
   image_url?: string;
   create_time?: string;
   update_time?: string;
+}
+
+export type ModalType = 'left' | 'right' | null;
+
+export interface DeckCard {
+  id: string;
+  card_id: string;
+  image: string;
+  quantity?: number;
+  create_time: string;
+  deck_id: string;
+  deck_zone: string;
+  is_deleted: boolean;
+  position: number;
+  remark: string;
+  update_time: string;
+}
+
+export interface Deck {
+  id: string;
+  deck_name: string;
+  deck_cards: DeckCard[];
+  deck_description?: string;
+  is_public?: boolean;
+  is_official?: boolean;
+  preset?: number;
+  deck_version?: number;
+  remark?: string;
+}
+
+export interface ShowCard extends Card {
+  card_rarity: Array<{
+    card_number: string;
+    quantity: number;
+  }>;
 } 
