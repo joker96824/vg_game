@@ -8,8 +8,17 @@ import { API_ENDPOINTS, IMAGE_BASE_URL } from '../constants/api';
 import CardFilter from '../components/CardFilter';
 import CardList from '../components/CardList';
 import DeckView from '../components/DeckView';
+import { useImageCache } from '../hooks/useImageCache';
+
+// 声明 Cache API 类型
+declare global {
+  interface Window {
+    caches?: CacheStorage;
+  }
+}
 
 const CardBrowser: React.FC = () => {
+  const { getCachedImage, handleImageLoad } = useImageCache();
   const [keyword, setKeyword] = useState('');
   const [nation, setNation] = useState<any>(null);
   const [clan, setClan] = useState<any>(null);
@@ -107,28 +116,6 @@ const CardBrowser: React.FC = () => {
       const nextPage = page + 1;
       setPage(nextPage);
       fetchCards(nextPage);
-    }
-  };
-
-  // 图片缓存处理
-  const getCachedImage = async (imageUrl: string): Promise<string> => {
-    try {
-      // 尝试从缓存中获取图片
-      const cache = await caches.open('card-images');
-      const cachedResponse = await cache.match(imageUrl);
-      
-      if (cachedResponse) {
-        // 如果缓存中有图片，直接返回原始URL
-        return imageUrl;
-      }
-
-      // 如果缓存中没有，则获取并缓存
-      const response = await fetch(imageUrl);
-      await cache.put(imageUrl, response.clone());
-      return imageUrl;
-    } catch (error) {
-      console.error('图片缓存处理失败:', error);
-      return imageUrl; // 如果缓存失败，返回原始URL
     }
   };
 
@@ -719,6 +706,12 @@ const CardBrowser: React.FC = () => {
                         alt={cards[modalCardIndex].name_cn}
                         className="w-full h-full object-contain"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
+                        onLoad={handleImageLoad}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.parentElement?.classList.add('text-center');
+                        }}
                       />
                       {/* 稀有度切换按钮 - 右 */}
                       {cards[modalCardIndex].rarity_infos.length > 1 && (
@@ -768,6 +761,12 @@ const CardBrowser: React.FC = () => {
                       alt={showCards[modalCardIndex].name_cn}
                       className="w-full h-full object-contain"
                       style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
+                      onLoad={handleImageLoad}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.parentElement?.classList.add('text-center');
+                      }}
                     />
                     {/* 稀有度切换按钮 - 右 */}
                     {showCards[modalCardIndex].card_rarity.length > 1 && (
