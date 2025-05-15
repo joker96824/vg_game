@@ -79,4 +79,11 @@ export interface Deck {
   preset?: number;
   deck_version?: number;
   remark?: string;
+}
+
+export interface ShowCard extends Card {
+  card_rarity: Array<{
+    card_number: string;
+    quantity: number;
+  }>;
 } 

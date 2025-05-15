@@ -4,9 +4,12 @@ import starIcon from '../assets/star.svg';
 import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
 import axios from 'axios';
+import { IMAGE_BASE_URL } from '../constants/api';
 
 interface DeckCard {
   card_rarity_id: string;
+  image: string;
+  quantity: number;
 }
 
 interface Deck {
@@ -120,10 +123,12 @@ const Deck: React.FC = () => {
 
         {/* 右侧卡牌区 - 占30%宽度 */}
         <div className="flex-[3_3_0%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
-          <div className="h-12 flex items-center justify-between px-4 border-b">
-            <button className="p-1 hover:bg-gray-200 rounded">
-              <img src={starIcon} alt="star" className="w-5 h-5" />
-            </button>
+          <div className="h-12 w-full flex items-center justify-between px-4 border-b">
+            <div className="flex items-center">
+              <button className="p-1 hover:bg-gray-200 rounded">
+                <img src={starIcon} alt="star" className="w-5 h-5" />
+              </button>
+            </div>
             <div className="font-medium text-center flex-1">{selectedDeck?.deck_name || '未选择卡组'}</div>
             <div className="flex gap-2">
               <button
@@ -143,13 +148,29 @@ const Deck: React.FC = () => {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-2 w-full px-4">
+          <div className="grid grid-cols-4 gap-2 w-full px-4 overflow-y-auto">
             {selectedDeck?.deck_cards.map((card, index) => (
               <div 
                 key={index} 
-                className="w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow"
+                className="relative w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow"
               >
-                {card.card_rarity_id}
+                <img
+                  src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                  alt={`Card ${card.card_rarity_id}`}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.parentElement?.classList.add('text-center');
+                    target.parentElement!.textContent = card.card_rarity_id;
+                  }}
+                />
+                {/* 白色半透明数量条 */}
+                <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-80 py-0.5">
+                  <div className="text-center text-xs font-bold">
+                    {card.quantity}
+                  </div>
+                </div>
               </div>
             ))}
           </div>

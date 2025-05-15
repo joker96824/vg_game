@@ -1,46 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import Select, { components } from 'react-select';
-import type { Card, ModalType, Deck } from '../types/card';
+import type { Card, Deck, ShowCard, DeckCard } from '../types/card';
 import axios from 'axios';
-import Slider from '@mui/material/Slider';
 import MinusIcon from '../assets/minus.svg';
 import PlusIcon from '../assets/plus.svg';
-import {
-  nationOptions,
-  clanOptions,
-  gradeOptions,
-  skillOptions,
-  shieldOptions,
-  typeOptions,
-  triggerOptions,
-  packOptions
-} from '../constants/cardOptions';
 import { API_ENDPOINTS, IMAGE_BASE_URL } from '../constants/api';
-import { getFirstNonZeroRarityIndex } from '../utils/cardUtils';
-import CardModal from '../components/CardModal';
-import { customSelectStyles } from '../styles/selectStyles';
-
-interface DeckCard {
-  id: string;
-  card_id: string;
-  image: string;
-  quantity?: number;
-  create_time: string;
-  deck_id: string;
-  deck_zone: string;
-  is_deleted: boolean;
-  position: number;
-  remark: string;
-  update_time: string;
-}
-
-interface ShowCard extends Card {
-  card_rarity: Array<{
-    card_number: string;
-    quantity: number;
-  }>;
-}
+import CardFilter from '../components/CardFilter';
+import CardList from '../components/CardList';
+import DeckView from '../components/DeckView';
 
 const CardBrowser: React.FC = () => {
   const [keyword, setKeyword] = useState('');
@@ -61,7 +28,6 @@ const CardBrowser: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const deckData = location.state?.deck as Deck | undefined;
-  const cardListRef = useRef<HTMLDivElement>(null);
   const [cachedUrls] = useState<Set<string>>(new Set());
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [modalCardIndex, setModalCardIndex] = useState<number | null>(null);
@@ -132,11 +98,6 @@ const CardBrowser: React.FC = () => {
   const handleSearch = () => {
     setPage(1);
     fetchCards(1);
-  };
-
-  // 处理力量值范围变化
-  const handleCardPowerChange = (event: Event, newValue: number | number[]) => {
-    setCardPowerRange(newValue as number[]);
   };
 
   // 无限滚动加载更多
@@ -214,23 +175,6 @@ const CardBrowser: React.FC = () => {
   // 切换稀有度图片
   const handleRarityDotClick = (idx: number) => {
     setModalRarityIndex(idx);
-  };
-
-  // 图片滑动切换
-  let touchStartX = 0;
-  let touchEndX = 0;
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX = e.touches[0].clientX;
-  };
-  const handleTouchEnd = (e: React.TouchEvent, rarityCount: number) => {
-    touchEndX = e.changedTouches[0].clientX;
-    if (touchEndX - touchStartX > 50) {
-      // 向右滑
-      setModalRarityIndex((prev) => (prev - 1 + rarityCount) % rarityCount);
-    } else if (touchStartX - touchEndX > 50) {
-      // 向左滑
-      setModalRarityIndex((prev) => (prev + 1) % rarityCount);
-    }
   };
 
   // 当modalType为right且modalCardIndex变化时，确保localDeckCards同步
@@ -669,235 +613,60 @@ const CardBrowser: React.FC = () => {
       >返回</button>
 
       {/* 筛选条件 */}
-      <div className="flex flex-wrap gap-x-2 gap-y-1 items-end px-8 py-2 text-xs bg-white z-10">
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">关键词</label>
-          <input
-            className="border border-gray-300 rounded px-1 py-0.5 text-xs h-6"
-            value={keyword}
-            onChange={e => setKeyword(e.target.value)}
-            placeholder="输入关键词"
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">国家</label>
-          <Select
-            options={nationOptions}
-            value={nation}
-            onChange={setNation}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">种族</label>
-          <Select
-            options={clanOptions}
-            value={clan}
-            onChange={setClan}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">等级</label>
-          <Select
-            options={gradeOptions}
-            value={grade}
-            onChange={setGrade}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">技能</label>
-          <Select
-            options={skillOptions}
-            value={skill}
-            onChange={setSkill}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">盾值</label>
-          <Select
-            options={shieldOptions}
-            value={shield}
-            onChange={setShield}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">种类</label>
-          <Select
-            options={typeOptions}
-            value={cardType}
-            onChange={setCardType}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">触发</label>
-          <Select
-            options={triggerOptions}
-            value={triggerType}
-            onChange={setTriggerType}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">卡包</label>
-          <Select
-            options={packOptions}
-            value={selectedPack}
-            onChange={setSelectedPack}
-            classNamePrefix="select"
-            styles={customSelectStyles}
-            placeholder="请选择..."
-            isClearable
-          />
-        </div>
-        <div className="flex flex-col w-48">
-          <label className="mb-0.5">力量值范围</label>
-          <div className="px-1">
-            <Slider
-              value={cardPowerRange}
-              onChange={handleCardPowerChange}
-              valueLabelDisplay="auto"
-              min={0}
-              max={20000}
-              step={1000}
-              size="small"
-              marks={false}
-            />
-          </div>
-        </div>
-        <button
-          className="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs h-6"
-          onClick={handleClear}
-        >清空</button>
-        <button
-          className="ml-1 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs h-6"
-          onClick={handleSearch}
-        >搜索</button>
-        <button
-          className="ml-1 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-xs h-6 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleSaveDeck}
-          disabled={saving}
-        >
-          {saving ? '保存中...' : '保存'}
-        </button>
-      </div>
+      <CardFilter
+        keyword={keyword}
+        setKeyword={setKeyword}
+        nation={nation}
+        setNation={setNation}
+        clan={clan}
+        setClan={setClan}
+        grade={grade}
+        setGrade={setGrade}
+        skill={skill}
+        setSkill={setSkill}
+        cardPowerRange={cardPowerRange}
+        setCardPowerRange={setCardPowerRange}
+        shield={shield}
+        setShield={setShield}
+        cardType={cardType}
+        setCardType={setCardType}
+        triggerType={triggerType}
+        setTriggerType={setTriggerType}
+        selectedPack={selectedPack}
+        setSelectedPack={setSelectedPack}
+        onClear={handleClear}
+        onSearch={handleSearch}
+        onSave={handleSaveDeck}
+        saving={saving}
+      />
 
       {/* 主体区域 */}
       <div className="flex flex-1 overflow-hidden">
         {/* 左侧卡牌列表 */}
-        <div className="w-[70%] h-full flex flex-col items-center justify-center">
-          <div
-            className="w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2"
-            ref={cardListRef}
-            onScroll={handleScroll}
-          >
-            <div className="grid grid-cols-5 gap-4 py-4">
-              {cards.map((card, idx) => (
-                <div key={card.id} className="w-36 h-52 flex flex-col items-center justify-center text-gray-700 text-base bg-transparent cursor-pointer"
-                  onClick={() => {
-                    setModalCardIndex(idx);
-                    setModalType('left');
-                    setIsCardModalOpen(true);
-                  }}
-                >
-                  {card.rarity_infos?.[0]?.card_number ? (
-                    <img 
-                      src={`${IMAGE_BASE_URL}/${card.rarity_infos[0].card_number}.jpg`}
-                      alt={card.name_cn}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.parentElement?.classList.add('text-center');
-                      }}
-                      onLoad={async (e) => {
-                        const target = e.target as HTMLImageElement;
-                        const imageUrl = target.src;
-                        const cachedUrl = await getCachedImage(imageUrl);
-                        if (cachedUrl !== imageUrl) {
-                          target.src = cachedUrl;
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <div className="font-bold">{card.name_cn}</div>
-                      <div className="text-xs mt-1">{card.card_type}</div>
-                      <div className="text-xs mt-1">{card.card_power}</div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {loading && (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              </div>
-            )}
-          </div>
-        </div>
+        <CardList
+          cards={cards}
+          loading={loading}
+          hasMore={hasMore}
+          onScroll={handleScroll}
+          onCardClick={(idx) => {
+            setModalCardIndex(idx);
+            setModalType('left');
+            setIsCardModalOpen(true);
+          }}
+          getCachedImage={getCachedImage}
+        />
+
         {/* 右侧卡组展示 */}
-        <div className="w-[30%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
-          <div className="grid grid-cols-4 gap-2 w-full px-4">
-            {showCards.map((card, idx) => {
-              const firstNonZeroIndex = getFirstNonZeroRarityIndex(card);
-              return (
-                <div 
-                  key={idx} 
-                  className="w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow cursor-pointer"
-                  onClick={() => {
-                    setModalCardIndex(idx);
-                    setModalType('right');
-                    setIsCardModalOpen(true);
-                    // 设置初始稀有度索引为第一个非0稀有度
-                    setModalRarityIndex(firstNonZeroIndex);
-                  }}
-                >
-                  {card.card_rarity[firstNonZeroIndex]?.card_number ? (
-                    <img 
-                      src={`${IMAGE_BASE_URL}/${card.card_rarity[firstNonZeroIndex].card_number}.jpg`}
-                      alt={card.name_cn}
-                      className="w-full h-full object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.parentElement?.classList.add('text-center');
-                        target.parentElement!.textContent = card.name_cn;
-                      }}
-                    />
-                  ) : (
-                    <div className="text-center">{card.name_cn}</div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <DeckView
+          showCards={showCards}
+          onCardClick={(idx) => {
+            setModalCardIndex(idx);
+            setModalType('right');
+            setIsCardModalOpen(true);
+            // 设置初始稀有度索引为第一个非0稀有度
+            setModalRarityIndex(getFirstNonZeroRarityIndex(showCards[idx]));
+          }}
+        />
       </div>
 
       {/* 弹窗 */}
@@ -929,14 +698,6 @@ const CardBrowser: React.FC = () => {
               <div
                 className="flex items-center justify-center relative select-none p-4"
                 style={{width:'420px',height:'540px'}}
-                onTouchStart={e => { handleTouchStart(e); }}
-                onTouchEnd={e => {
-                  let rarityCount = 1;
-                  if (modalType === 'left' && modalCardIndex !== null && cards[modalCardIndex]?.rarity_infos) {
-                    rarityCount = cards[modalCardIndex].rarity_infos.length;
-                  }
-                  handleTouchEnd(e, rarityCount);
-                }}
               >
                 {/* 展示卡片内容 */}
                 {modalType === 'left' && modalCardIndex !== null && cards[modalCardIndex] && (
