@@ -10,6 +10,7 @@ interface DeckCard {
   card_rarity_id: string;
   image: string;
   quantity: number;
+  deck_zone: string;
 }
 
 interface Deck {
@@ -25,6 +26,15 @@ const Deck: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckDescription, setNewDeckDescription] = useState('');
+  const [activeTab, setActiveTab] = useState<'ride' | 'main' | 'g' | 'token'>('main');
+
+  // 新增导航栏tab配置
+  const tabs = [
+    { id: 'ride', label: '骑升' },
+    { id: 'main', label: '主卡组' },
+    { id: 'g', label: 'G区' },
+    { id: 'token', label: '衍生' }
+  ] as const;
 
   // 获取卡组列表
   const fetchDecks = async () => {
@@ -67,6 +77,12 @@ const Deck: React.FC = () => {
       console.error('创建卡组失败:', error);
       alert('创建卡组失败，请重试');
     }
+  };
+
+  // 获取当前区域的卡片
+  const getCurrentZoneCards = (deck: Deck) => {
+    if (!deck.deck_cards) return [];
+    return deck.deck_cards.filter(card => card.deck_zone === activeTab);
   };
 
   useEffect(() => {
@@ -148,8 +164,26 @@ const Deck: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* 新增：导航栏 */}
+          <div className="flex border-b h-8 w-full">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`flex-1 py-1 text-center text-xs font-medium transition-colors
+                  ${activeTab === tab.id 
+                    ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 卡片展示区域 */}
           <div className="grid grid-cols-4 gap-2 w-full px-4 overflow-y-auto">
-            {selectedDeck?.deck_cards.map((card, index) => (
+            {selectedDeck && getCurrentZoneCards(selectedDeck).map((card, index) => (
               <div 
                 key={index} 
                 className="relative w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow"
