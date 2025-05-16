@@ -10,6 +10,8 @@ import DeckView from '../components/DeckView';
 import { useImageCache } from '../hooks/useImageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
 import { saveDeck } from '../services/deckService';
+import { validateDeck, validateCards } from '../utils/deckValidator';
+import warningIcon from '../assets/warning.svg';
 
 // 扩展 RarityInfo 类型
 interface ExtendedRarityInfo extends RarityInfo {
@@ -73,6 +75,7 @@ const CardBrowser: React.FC = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [displayDeckName, setDisplayDeckName] = useState('');
+  const [deckValidationErrors, setDeckValidationErrors] = useState<string[]>([]);
 
   // 导航标签配置
   const tabs = [
@@ -696,7 +699,6 @@ const CardBrowser: React.FC = () => {
 
       // 调用API获取卡片数据
       const newCardsData = await getCardsByIds(uniqueCardIds);
-      
       // 处理卡片数据，添加quantity属性
       const processedCards = newCardsData.map((card: Card): ExtendedCard => {
         // 找到所有相同card_id的deck_cards
@@ -871,35 +873,67 @@ const CardBrowser: React.FC = () => {
     }
   };
 
+  // 检查卡组合规性
+  const validateCurrentDeck = async () => {
+    try {
+      const validation = await validateCards(mainCards, rideCards, GCards, tokenCards);
+      setDeckValidationErrors(validation.errors);
+    } catch (error) {
+      console.error('检查卡组合规性失败:', error);
+      setDeckValidationErrors(['检查卡组合规性失败']);
+    }
+  };
+
+  // 当卡片数据变化时检查合规性
+  useEffect(() => {
+    if (deckData) {
+      validateCurrentDeck();
+    }
+  }, [mainCards, rideCards, GCards, tokenCards]);
+
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
-      {/* 顶部卡组名 */}
-      <div className="w-full h-12 flex items-center justify-center border-b text-lg font-bold text-center">
-        {isEditingName ? (
-          <input
-            type="text"
-            value={editingName}
-            onChange={(e) => setEditingName(e.target.value)}
-            onBlur={handleNameBlur}
-            onKeyDown={handleNameKeyDown}
-            className="w-full text-center border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent"
-            autoFocus
-          />
-        ) : (
-          <span 
-            className="cursor-pointer hover:text-blue-500"
-            onClick={handleNameClick}
-          >
-            {displayDeckName || '卡组名预留'}
-          </span>
-        )}
+      {/* 顶部栏 */}
+      <div className="w-full h-12 flex items-center justify-center border-b text-lg font-bold text-center relative">
+        <button
+          className="absolute left-4 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm z-10"
+          onClick={handleBackClick}
+        >
+          返回
+        </button>
+        <div className="flex items-center">
+          {isEditingName ? (
+            <input
+              type="text"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onBlur={handleNameBlur}
+              onKeyDown={handleNameKeyDown}
+              className="text-center border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent"
+              autoFocus
+            />
+          ) : (
+            <span 
+              className="cursor-pointer hover:text-blue-500"
+              onClick={handleNameClick}
+            >
+              {displayDeckName}
+            </span>
+          )}
+          {deckValidationErrors.length > 0 && (
+            <div className="relative group ml-2">
+              <img src={warningIcon} alt="warning" className="w-5 h-5" />
+              <div className="absolute left-0 top-full mt-1 w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm hidden group-hover:block z-50">
+                {deckValidationErrors.map((error, index) => (
+                  <div key={index} className="mb-1 last:mb-0">
+                    {error}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-      {/* 返回按钮 */}
-      <button
-        className="absolute top-3 left-4 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-sm z-10"
-        onClick={handleBackClick}
-      >返回</button>
 
       {/* 提示弹窗 */}
       {showToast && (

@@ -11,7 +11,8 @@ export const nationOptions = [
   { value: '通灵王', label: '通灵王' },
   { value: '终末的女武神', label: '终末的女武神' },
   { value: '怪物弹珠', label: '怪物弹珠' },
-  { value: 'BanG Dream', label: 'BanG Dream' }
+  { value: 'BanG Dream', label: 'BanG Dream' },
+  { value: '', label: '无' }
 ];
 
 export const clanOptions = [

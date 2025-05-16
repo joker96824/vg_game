@@ -59,14 +59,13 @@ export type ModalType = 'left' | 'right' | null;
 export interface DeckCard {
   id: string;
   card_id: string;
-  image: string;
-  quantity?: number;
-  create_time: string;
   deck_id: string;
   deck_zone: string;
-  is_deleted: boolean;
-  position: number;
-  remark: string;
+  quantity: number;
+  image: string;
+  grade?: number;
+  nation?: string;
+  create_time: string;
   update_time: string;
 }
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import starIcon from '../assets/star.svg';
 import starOutlineIcon from '../assets/star-outline.svg';
 import warningIcon from '../assets/warning.svg';
@@ -9,9 +9,11 @@ import { IMAGE_BASE_URL } from '../constants/api';
 import { getDecks, getDeckById, saveDeck, createDeck, deleteDeck, importDeck, updateDeckInfo, copyDeck } from '../services/deckService';
 import type { Deck, DeckCard } from '../types/card';
 import Toast from '../components/Toast';
+import { validateDeck } from '../utils/deckValidator';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [isLoadingDecks, setIsLoadingDecks] = useState(true);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
@@ -29,6 +31,7 @@ const Deck: React.FC = () => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editingName, setEditingName] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [deckValidationErrors, setDeckValidationErrors] = useState<string[]>([]);
 
   // 新增导航栏tab配置
   const tabs = [
@@ -42,12 +45,19 @@ const Deck: React.FC = () => {
   const fetchDecks = async () => {
     try {
       setIsLoadingDecks(true);
-      // TODO: 从用户状态或配置中获取实际的用户ID
-      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17'; // 临时使用固定值，后续需要从用户状态获取
+      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17';
       const data = await getDecks(userId);
       setDecks(data);
-      // 自动选择第一个卡组
-      if (data.length > 0) {
+      
+      // 从卡片页面返回时，自动选择编辑的卡组
+      if (location.state?.deck) {
+        const editedDeck = data.find(d => d.id === location.state.deck.id);
+        if (editedDeck) {
+          setSelectedDeck(editedDeck);
+        } else if (data.length > 0) {
+          setSelectedDeck(data[0]);
+        }
+      } else if (data.length > 0) {
         setSelectedDeck(data[0]);
       }
     } catch (error) {
@@ -269,6 +279,26 @@ const Deck: React.FC = () => {
     };
   }, []);
 
+  // 检查卡组合规性
+  const checkDeckValidity = async (deck: Deck) => {
+    try {
+      const validation = await validateDeck(deck);
+      setDeckValidationErrors(validation.errors);
+    } catch (error) {
+      console.error('检查卡组合规性失败:', error);
+      setDeckValidationErrors(['检查卡组合规性失败']);
+    }
+  };
+
+  // 当选择的卡组改变时，检查合规性
+  useEffect(() => {
+    if (selectedDeck) {
+      checkDeckValidity(selectedDeck);
+    } else {
+      setDeckValidationErrors([]);
+    }
+  }, [selectedDeck]);
+
   useEffect(() => {
     fetchDecks();
   }, []);
@@ -301,11 +331,11 @@ const Deck: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* 左侧卡组区 - 占70%宽度 */}
         <div className="flex-[7_7_0%] h-full flex flex-col items-center justify-center bg-white">
-          <div className="w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent p-4">
-            <div className="grid grid-cols-3 gap-4">
+          <div className="w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent p-8">
+            <div className="grid grid-cols-3 gap-6">
               {/* 第一个为添加卡组按钮 */}
               <div 
-                className="w-36 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-3xl font-bold cursor-pointer hover:bg-gray-100"
+                className="w-44 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-3xl font-bold cursor-pointer hover:bg-gray-100"
                 onClick={() => setIsModalOpen(true)}
               >
                 +
@@ -317,14 +347,14 @@ const Deck: React.FC = () => {
                 decks.map((deck, index) => (
                   <div 
                     key={index}
-                    className={`w-36 h-52 border rounded-lg flex items-center justify-center text-gray-700 text-base bg-white shadow ${
-                      selectedDeck?.deck_name === deck.deck_name
-                        ? 'bg-blue-100 text-blue-600'
+                    className={`w-44 h-52 border rounded-lg flex items-center justify-center text-gray-700 text-base bg-white shadow transition-all duration-200 ${
+                      selectedDeck?.id === deck.id
+                        ? 'ring-2 ring-blue-500 ring-offset-2 transform scale-105 bg-blue-50'
                         : 'hover:bg-gray-100'
                     }`}
                     onClick={() => setSelectedDeck(deck)}
                   >
-                    {deck.deck_name}
+                    <div className="font-medium">{deck.deck_name}</div>
                   </div>
                 ))
               )}
@@ -339,8 +369,17 @@ const Deck: React.FC = () => {
               <button className="p-1 hover:bg-gray-200 rounded" onClick={() => setIsStarred(!isStarred)}>
                 <img src={isStarred ? starIcon : starOutlineIcon} alt="star" className="w-5 h-5" />
               </button>
-              {deckInvalid && (
-                <img src={warningIcon} alt="warning" className="w-5 h-5 ml-2" />
+              {deckValidationErrors.length > 0 && (
+                <div className="relative group">
+                  <img src={warningIcon} alt="warning" className="w-5 h-5 ml-2" />
+                  <div className="absolute left-0 top-full mt-1 w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm hidden group-hover:block z-50">
+                    {deckValidationErrors.map((error, index) => (
+                      <div key={index} className="mb-1 last:mb-0">
+                        {error}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
             <div className="font-medium text-center flex-1">

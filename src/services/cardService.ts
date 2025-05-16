@@ -66,13 +66,15 @@ export const getCards = async (params: {
  */
 export const getCardsByIds = async (cardIds: string[]): Promise<Card[]> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.CARDS}/${cardIds.join(',')}`);
+    const uniqueIds = [...new Set(cardIds)];
+    const response = await fetch(`${API_ENDPOINTS.CARDS}/${uniqueIds.join(',')}`);
     if (!response.ok) {
-      throw new Error('获取卡牌详情失败');
+      throw new Error('获取卡片信息失败');
     }
+    
     return await response.json();
   } catch (error) {
-    console.error('获取卡牌详情时出错:', error);
+    console.error('批量获取卡片信息失败:', error);
     throw error;
   }
 }; 
