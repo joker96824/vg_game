@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import starIcon from '../assets/star.svg';
 import starOutlineIcon from '../assets/star-outline.svg';
@@ -6,8 +6,9 @@ import warningIcon from '../assets/warning.svg';
 import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
 import { IMAGE_BASE_URL } from '../constants/api';
-import { getDecks, getDeckById, saveDeck, createDeck } from '../services/deckService';
+import { getDecks, getDeckById, saveDeck, createDeck, deleteDeck, importDeck, updateDeckInfo, copyDeck } from '../services/deckService';
 import type { Deck, DeckCard } from '../types/card';
+import Toast from '../components/Toast';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,14 @@ const Deck: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'ride' | 'main' | 'g' | 'token'>('main');
   const [isStarred, setIsStarred] = useState(false);
   const [deckInvalid, setDeckInvalid] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importDeckId, setImportDeckId] = useState('');
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState('');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // 新增导航栏tab配置
   const tabs = [
@@ -48,6 +57,16 @@ const Deck: React.FC = () => {
     }
   };
 
+  // 显示提示消息
+  const showToast = (message: string) => {
+    setToastMessage(message);
+  };
+
+  // 处理提示关闭
+  const handleToastClose = () => {
+    setToastMessage(null);
+  };
+
   // 创建新卡组
   const createNewDeck = async () => {
     try {
@@ -66,9 +85,10 @@ const Deck: React.FC = () => {
       setNewDeckName('');
       setNewDeckDescription('');
       setIsModalOpen(false);
+      showToast('卡组创建成功');
     } catch (error) {
       console.error('创建卡组失败:', error);
-      alert('创建卡组失败，请重试');
+      showToast('创建失败，请重试');
     }
   };
 
@@ -78,12 +98,188 @@ const Deck: React.FC = () => {
     return deck.deck_cards.filter(card => card.deck_zone === activeTab);
   };
 
+  // 处理点击设置按钮
+  const handleSettingsClick = () => {
+    setIsSettingsOpen(!isSettingsOpen);
+  };
+
+  // 处理重命名
+  const handleRename = async () => {
+    if (!selectedDeck) return;
+    
+    try {
+      await saveDeck(selectedDeck.id, {
+        ...selectedDeck,
+        deck_name: newDeckName,
+        deck_version: selectedDeck.deck_version || 0
+      });
+      
+      // 刷新卡组列表
+      await fetchDecks();
+      
+      // 关闭弹窗
+      setIsRenameModalOpen(false);
+      setNewDeckName('');
+      showToast('重命名成功');
+    } catch (error) {
+      console.error('重命名卡组失败:', error);
+      showToast('重命名失败，请重试');
+    }
+  };
+
+  // 处理删除
+  const handleDelete = async () => {
+    if (!selectedDeck) return;
+    
+    if (window.confirm('确定要删除这个卡组吗？此操作不可恢复。')) {
+      try {
+        await deleteDeck(selectedDeck.id);
+        // 刷新卡组列表
+        await fetchDecks();
+        showToast('删除成功');
+      } catch (error) {
+        console.error('删除卡组失败:', error);
+        showToast('删除失败，请重试');
+      }
+    }
+  };
+
+  // 处理分享
+  const handleShare = async () => {
+    if (!selectedDeck) return;
+    
+    try {
+      await navigator.clipboard.writeText(selectedDeck.id);
+      showToast('卡组ID已复制到剪贴板');
+    } catch (error) {
+      console.error('复制失败:', error);
+      showToast('复制失败，请手动复制卡组ID');
+    }
+    setIsSettingsOpen(false);
+  };
+
+  // 处理导入
+  const handleImport = async () => {
+    if (!importDeckId.trim()) {
+      showToast('请输入要导入的卡组ID');
+      return;
+    }
+
+    try {
+      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17';
+      await copyDeck(importDeckId, userId);
+      
+      // 刷新卡组列表
+      await fetchDecks();
+      
+      // 关闭弹窗
+      setIsImportModalOpen(false);
+      setImportDeckId('');
+      showToast('导入成功');
+    } catch (error) {
+      console.error('导入卡组失败:', error);
+      showToast('导入失败，请检查卡组ID是否正确');
+    }
+  };
+
+  // 处理卡组名编辑
+  const handleNameEdit = async () => {
+    if (!selectedDeck || !editingName.trim()) return;
+    
+    try {
+      await updateDeckInfo(
+        selectedDeck.id,
+        editingName,
+        selectedDeck.deck_description
+      );
+      
+      // 刷新卡组列表
+      await fetchDecks();
+      
+      // 关闭编辑状态
+      setIsEditingName(false);
+      setEditingName('');
+      showToast('修改成功');
+    } catch (error) {
+      console.error('修改卡组名失败:', error);
+      showToast('修改失败，请重试');
+    }
+  };
+
+  // 处理卡组名点击
+  const handleNameClick = () => {
+    if (selectedDeck) {
+      setIsEditingName(true);
+      setEditingName(selectedDeck.deck_name);
+    }
+  };
+
+  // 处理卡组名输入框失焦
+  const handleNameBlur = () => {
+    if (editingName !== selectedDeck?.deck_name) {
+      handleNameEdit();
+    } else {
+      setIsEditingName(false);
+      setEditingName('');
+    }
+  };
+
+  // 处理卡组名输入框按键
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleNameEdit();
+    } else if (e.key === 'Escape') {
+      setIsEditingName(false);
+      setEditingName('');
+    }
+  };
+
+  // 处理复制卡组
+  const handleCopy = async () => {
+    if (!selectedDeck) return;
+    
+    try {
+      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17';
+      await copyDeck(selectedDeck.id, userId);
+      
+      // 刷新卡组列表
+      await fetchDecks();
+      
+      // 关闭设置菜单
+      setIsSettingsOpen(false);
+      
+      showToast('卡组复制成功');
+    } catch (error) {
+      console.error('复制卡组失败:', error);
+      showToast('复制失败，请重试');
+    }
+  };
+
+  // 点击外部关闭设置菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setIsSettingsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   useEffect(() => {
     fetchDecks();
   }, []);
 
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
+      {/* Toast 提示 */}
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={handleToastClose} />
+      )}
+
       {/* 顶部栏 */}
       <div className="w-full h-12 flex items-center justify-center border-b text-lg font-bold text-center relative">
         <button
@@ -93,6 +289,12 @@ const Deck: React.FC = () => {
           返回
         </button>
         <div>我的卡组</div>
+        <button
+          className="absolute right-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
+          onClick={() => setIsImportModalOpen(true)}
+        >
+          导入卡组
+        </button>
       </div>
 
       {/* 主体区域 */}
@@ -141,7 +343,26 @@ const Deck: React.FC = () => {
                 <img src={warningIcon} alt="warning" className="w-5 h-5 ml-2" />
               )}
             </div>
-            <div className="font-medium text-center flex-1">{selectedDeck?.deck_name || '未选择卡组'}</div>
+            <div className="font-medium text-center flex-1">
+              {isEditingName ? (
+                <input
+                  type="text"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={handleNameBlur}
+                  onKeyDown={handleNameKeyDown}
+                  className="w-full text-center border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent"
+                  autoFocus
+                />
+              ) : (
+                <span 
+                  className="cursor-pointer hover:text-blue-500"
+                  onClick={handleNameClick}
+                >
+                  {selectedDeck?.deck_name || '未选择卡组'}
+                </span>
+              )}
+            </div>
             <div className="flex gap-2">
               <button
                 className="p-1 hover:bg-gray-200 rounded"
@@ -155,9 +376,49 @@ const Deck: React.FC = () => {
               >
                 <img src={editIcon} alt="edit" className="w-5 h-5" />
               </button>
-              <button className="p-1 hover:bg-gray-200 rounded">
-                <img src={settingIcon} alt="setting" className="w-5 h-5" />
-              </button>
+              <div className="relative" ref={settingsRef}>
+                <button 
+                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={handleSettingsClick}
+                >
+                  <img src={settingIcon} alt="setting" className="w-5 h-5" />
+                </button>
+                {isSettingsOpen && (
+                  <div className="absolute right-0 mt-1 w-24 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                    <button
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-t-lg"
+                      onClick={() => {
+                        setIsRenameModalOpen(true);
+                        setNewDeckName(selectedDeck?.deck_name || '');
+                        setIsSettingsOpen(false);
+                      }}
+                    >
+                      重命名
+                    </button>
+                    <button
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                      onClick={handleShare}
+                    >
+                      分享
+                    </button>
+                    <button
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+                      onClick={handleCopy}
+                    >
+                      复制
+                    </button>
+                    <button
+                      className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 rounded-b-lg"
+                      onClick={() => {
+                        handleDelete();
+                        setIsSettingsOpen(false);
+                      }}
+                    >
+                      删除
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -245,6 +506,87 @@ const Deck: React.FC = () => {
                   className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                 >
                   创建
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 重命名弹窗 */}
+      {isRenameModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h2 className="text-xl font-bold mb-4">重命名卡组</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">卡组名称</label>
+                <input
+                  type="text"
+                  value={newDeckName}
+                  onChange={(e) => setNewDeckName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="请输入卡组名称"
+                />
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setIsRenameModalOpen(false);
+                    setNewDeckName('');
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleRename}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  确认
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 导入弹窗 */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h2 className="text-xl font-bold mb-4">导入卡组</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">卡组ID</label>
+                <input
+                  type="text"
+                  value={importDeckId}
+                  onChange={(e) => setImportDeckId(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleImport();
+                    }
+                  }}
+                  className="w-full px-3 py-2 border rounded-md"
+                  placeholder="请输入要导入的卡组ID"
+                />
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setIsImportModalOpen(false);
+                    setImportDeckId('');
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={handleImport}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  确认
                 </button>
               </div>
             </div>

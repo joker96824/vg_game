@@ -70,6 +70,9 @@ const CardBrowser: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [activeTab, setActiveTab] = useState<'ride' | 'main' | 'g' | 'token'>('main');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState('');
+  const [displayDeckName, setDisplayDeckName] = useState('');
 
   // 导航标签配置
   const tabs = [
@@ -763,7 +766,43 @@ const CardBrowser: React.FC = () => {
     fetchAndProcessCards();
   }, [deckData]);
 
-  // 保存卡组数据
+  // 当deckData变化时更新displayDeckName
+  useEffect(() => {
+    if (deckData) {
+      setDisplayDeckName(deckData.deck_name);
+    }
+  }, [deckData]);
+
+  // 处理卡组名点击
+  const handleNameClick = () => {
+    if (deckData) {
+      setIsEditingName(true);
+      setEditingName(displayDeckName);
+    }
+  };
+
+  // 处理卡组名输入框失焦
+  const handleNameBlur = () => {
+    if (editingName !== displayDeckName) {
+      setDisplayDeckName(editingName);
+    }
+    setIsEditingName(false);
+  };
+
+  // 处理卡组名输入框按键
+  const handleNameKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      if (editingName !== displayDeckName) {
+        setDisplayDeckName(editingName);
+      }
+      setIsEditingName(false);
+    } else if (e.key === 'Escape') {
+      setIsEditingName(false);
+      setEditingName(displayDeckName);
+    }
+  };
+
+  // 修改保存卡组函数
   const handleSaveDeck = async () => {
     if (!deckData?.id) {
       alert('卡组ID不存在');
@@ -791,38 +830,9 @@ const CardBrowser: React.FC = () => {
         })) || []
       );
 
-      // 添加调试信息
-      console.log('保存卡组时的数据:', {
-        deckData: {
-          id: deckData.id,
-          deck_name: deckData.deck_name,
-          deck_version: deckData.deck_version,
-          deck_cards_count: deckData.deck_cards?.length
-        },
-        cards: {
-          main: mainCards.length,
-          ride: rideCards.length,
-          g: GCards.length,
-          token: tokenCards.length
-        },
-        processedDeckCards: {
-          total: deckCards.length,
-          by_zone: deckCards.reduce((acc, card) => {
-            acc[card.deck_zone] = (acc[card.deck_zone] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>),
-          details: deckCards.map(card => ({
-            card_id: card.card_id,
-            image: card.image,
-            quantity: card.quantity,
-            deck_zone: card.deck_zone
-          }))
-        }
-      });
-
       // 准备请求数据
       const requestData = {
-        deck_name: deckData.deck_name,
+        deck_name: displayDeckName,
         deck_description: deckData.deck_description || '',
         is_public: deckData.is_public || false,
         is_official: deckData.is_official || false,
@@ -865,7 +875,24 @@ const CardBrowser: React.FC = () => {
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
       {/* 顶部卡组名 */}
       <div className="w-full h-12 flex items-center justify-center border-b text-lg font-bold text-center">
-        {deckData?.deck_name || '卡组名预留'}
+        {isEditingName ? (
+          <input
+            type="text"
+            value={editingName}
+            onChange={(e) => setEditingName(e.target.value)}
+            onBlur={handleNameBlur}
+            onKeyDown={handleNameKeyDown}
+            className="w-full text-center border-b border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent"
+            autoFocus
+          />
+        ) : (
+          <span 
+            className="cursor-pointer hover:text-blue-500"
+            onClick={handleNameClick}
+          >
+            {displayDeckName || '卡组名预留'}
+          </span>
+        )}
       </div>
 
       {/* 返回按钮 */}
