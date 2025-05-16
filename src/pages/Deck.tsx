@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import starIcon from '../assets/star.svg';
+import starOutlineIcon from '../assets/star-outline.svg';
+import warningIcon from '../assets/warning.svg';
 import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
 import axios from 'axios';
@@ -27,6 +29,8 @@ const Deck: React.FC = () => {
   const [newDeckName, setNewDeckName] = useState('');
   const [newDeckDescription, setNewDeckDescription] = useState('');
   const [activeTab, setActiveTab] = useState<'ride' | 'main' | 'g' | 'token'>('main');
+  const [isStarred, setIsStarred] = useState(false);
+  const [deckInvalid, setDeckInvalid] = useState(false);
 
   // 新增导航栏tab配置
   const tabs = [
@@ -141,9 +145,12 @@ const Deck: React.FC = () => {
         <div className="flex-[3_3_0%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
           <div className="h-12 w-full flex items-center justify-between px-4 border-b">
             <div className="flex items-center">
-              <button className="p-1 hover:bg-gray-200 rounded">
-                <img src={starIcon} alt="star" className="w-5 h-5" />
+              <button className="p-1 hover:bg-gray-200 rounded" onClick={() => setIsStarred(!isStarred)}>
+                <img src={isStarred ? starIcon : starOutlineIcon} alt="star" className="w-5 h-5" />
               </button>
+              {deckInvalid && (
+                <img src={warningIcon} alt="warning" className="w-5 h-5 ml-2" />
+              )}
             </div>
             <div className="font-medium text-center flex-1">{selectedDeck?.deck_name || '未选择卡组'}</div>
             <div className="flex gap-2">
