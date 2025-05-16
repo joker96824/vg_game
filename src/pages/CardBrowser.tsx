@@ -616,6 +616,57 @@ const CardBrowser: React.FC = () => {
 
   const handleLeftCardPlus = () => {
     const cur = getLeftCardQuantity();
+    // 新增：检查当前区域卡片数量限制
+    const getCurrentZoneTotalCards = () => {
+      switch (activeTab) {
+        case 'ride':
+          return rideCards.reduce((sum, card) => sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0), 0);
+        case 'main':
+          return mainCards.reduce((sum, card) => sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0), 0);
+        case 'g':
+          return GCards.reduce((sum, card) => sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0), 0);
+        default:
+          return 0;
+      }
+    };
+    const currentZoneTotal = getCurrentZoneTotalCards();
+    let zoneLimit = 0;
+    switch (activeTab) {
+      case 'ride':
+        zoneLimit = 4;
+        break;
+      case 'main':
+        zoneLimit = 50;
+        break;
+      case 'g':
+        zoneLimit = 16;
+        break;
+    }
+    if (currentZoneTotal + 1 > zoneLimit) {
+      let limitMessage = '';
+      switch (activeTab) {
+        case 'ride':
+          limitMessage = '骑升区最多只能添加4张卡牌';
+          break;
+        case 'main':
+          limitMessage = '主卡组最多只能添加50张卡牌';
+          break;
+        case 'g':
+          limitMessage = 'G区最多只能添加16张卡牌';
+          break;
+      }
+      showToastMessage(limitMessage);
+      return;
+    }
+    // 检查单张卡是否超过4张限制
+    const card = cards[modalCardIndex!];
+    const rarity = card.rarity_infos?.[modalRarityIndex];
+    if (!rarity) return;
+    const otherZonesQuantity = getCardTotalQuantity(rarity.card_id, rarity.card_number, activeTab);
+    if (otherZonesQuantity + cur + 1 > 4) {
+      showToastMessage('一张卡在卡组和骑升区的数量之和不能超过4');
+      return;
+    }
     handleLeftCardQuantityChange(cur + 1);
   };
 
