@@ -10,6 +10,7 @@ export interface RarityInfo {
   create_time: string;
   update_time: string;
   quantity?: number;
+  zone?: 'ride' | 'main' | 'G' | 'token';
 }
 
 export interface Card {
@@ -85,5 +86,6 @@ export interface ShowCard extends Card {
   card_rarity: Array<{
     card_number: string;
     quantity: number;
+    zone?: 'ride' | 'main' | 'G' | 'token';
   }>;
 } 
