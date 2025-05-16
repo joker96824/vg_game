@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import type { Card, Deck, ShowCard, DeckCard, RarityInfo } from '../types/card';
-import axios from 'axios';
 import MinusIcon from '../assets/minus.svg';
 import PlusIcon from '../assets/plus.svg';
-import { API_ENDPOINTS, IMAGE_BASE_URL } from '../constants/api';
+import { IMAGE_BASE_URL } from '../constants/api';
 import CardFilter from '../components/CardFilter';
 import CardList from '../components/CardList';
 import DeckView from '../components/DeckView';
 import { useImageCache } from '../hooks/useImageCache';
+import { getCards, getCardsByIds } from '../services/cardService';
+import { saveDeck } from '../services/deckService';
 
 // 扩展 RarityInfo 类型
 interface ExtendedRarityInfo extends RarityInfo {
@@ -82,31 +83,29 @@ const CardBrowser: React.FC = () => {
   const fetchCards = async (pageNum: number) => {
     try {
       setLoading(true);
-      const response = await axios.get(API_ENDPOINTS.CARDS, {
-        params: {
-          page: pageNum,
-          page_size: 20,
-          keyword,
-          nation: nation?.value,
-          clan: clan?.value,
-          grade: grade?.value,
-          skill: skill?.value,
-          card_power_min: cardPowerRange[0],
-          card_power_max: cardPowerRange[1],
-          shield: shield?.value,
-          card_type: cardType?.value,
-          trigger_type: triggerType?.value,
-          package: selectedPack?.value
-        }
+      const response = await getCards({
+        page: pageNum,
+        page_size: 20,
+        keyword,
+        nation: nation?.value,
+        clan: clan?.value,
+        grade: grade?.value,
+        skill: skill?.value,
+        card_power_min: cardPowerRange[0],
+        card_power_max: cardPowerRange[1],
+        shield: shield?.value,
+        card_type: cardType?.value,
+        trigger_type: triggerType?.value,
+        package: selectedPack?.value
       });
       
       if (pageNum === 1) {
-        setCards(response.data);
+        setCards(response);
       } else {
-        setCards(prev => [...prev, ...response.data]);
+        setCards(prev => [...prev, ...response]);
       }
       
-      setHasMore(response.data.length === 20);
+      setHasMore(response.length === 20);
     } catch (error) {
       console.error('获取卡牌数据失败:', error);
     } finally {
@@ -693,9 +692,7 @@ const CardBrowser: React.FC = () => {
       }
 
       // 调用API获取卡片数据
-      const response = await axios.get(`${API_ENDPOINTS.CARDS}/${uniqueCardIds.join(',')}`);
-      
-      const newCardsData = response.data;
+      const newCardsData = await getCardsByIds(uniqueCardIds);
       
       // 处理卡片数据，添加quantity属性
       const processedCards = newCardsData.map((card: Card): ExtendedCard => {
@@ -780,13 +777,17 @@ const CardBrowser: React.FC = () => {
       const allCards = [...mainCards, ...rideCards, ...GCards, ...tokenCards];
       const deckCards = allCards.flatMap(card => 
         card.rarity_infos?.filter(rarity => (rarity.quantity || 0) > 0).map((rarity, index) => ({
+          id: '', // 新建卡牌时不需要id
           card_id: card.id,
           image: rarity.card_number,
           quantity: rarity.quantity || 0,
           deck_zone: rarity.deck_zone || 'main',
           position: index,
           remark: '',
-          deck_id: deckData.id
+          deck_id: deckData.id,
+          create_time: new Date().toISOString(),
+          update_time: new Date().toISOString(),
+          is_deleted: false
         })) || []
       );
 
@@ -832,7 +833,7 @@ const CardBrowser: React.FC = () => {
       };
 
       // 调用保存接口
-      await axios.put(`${API_ENDPOINTS.DECKS}/${deckData.id}`, requestData);
+      await saveDeck(deckData.id, requestData);
       
       alert('保存成功');
       navigate('/deck');

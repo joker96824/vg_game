@@ -5,20 +5,9 @@ import starOutlineIcon from '../assets/star-outline.svg';
 import warningIcon from '../assets/warning.svg';
 import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
-import axios from 'axios';
 import { IMAGE_BASE_URL } from '../constants/api';
-
-interface DeckCard {
-  card_rarity_id: string;
-  image: string;
-  quantity: number;
-  deck_zone: string;
-}
-
-interface Deck {
-  deck_name: string;
-  deck_cards: DeckCard[];
-}
+import { getDecks, getDeckById, saveDeck, createDeck } from '../services/deckService';
+import type { Deck, DeckCard } from '../types/card';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
@@ -44,15 +33,13 @@ const Deck: React.FC = () => {
   const fetchDecks = async () => {
     try {
       setIsLoadingDecks(true);
-      const response = await axios.get('http://118.25.45.131:8000/api/v1/decks', {
-        params: {
-          user_id: '97e9924a-97b1-41d4-b152-fc45a74bbc17'
-        }
-      });
-      setDecks(response.data);
+      // TODO: 从用户状态或配置中获取实际的用户ID
+      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17'; // 临时使用固定值，后续需要从用户状态获取
+      const data = await getDecks(userId);
+      setDecks(data);
       // 自动选择第一个卡组
-      if (response.data.length > 0) {
-        setSelectedDeck(response.data[0]);
+      if (data.length > 0) {
+        setSelectedDeck(data[0]);
       }
     } catch (error) {
       console.error('获取卡组列表失败:', error);
@@ -64,11 +51,13 @@ const Deck: React.FC = () => {
   // 创建新卡组
   const createNewDeck = async () => {
     try {
-      const response = await axios.post('http://118.25.45.131:8000/api/v1/decks', {
+      const newDeck = {
         deck_name: newDeckName,
         deck_description: newDeckDescription,
         user_id: '97e9924a-97b1-41d4-b152-fc45a74bbc17'
-      });
+      };
+      
+      await createDeck(newDeck);
       
       // 刷新卡组列表
       await fetchDecks();
@@ -197,13 +186,13 @@ const Deck: React.FC = () => {
               >
                 <img
                   src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
-                  alt={`Card ${card.card_rarity_id}`}
+                  alt={`Card ${card.card_id}`}
                   className="w-full h-full object-contain"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
                     target.parentElement?.classList.add('text-center');
-                    target.parentElement!.textContent = card.card_rarity_id;
+                    target.parentElement!.textContent = card.card_id;
                   }}
                 />
                 {/* 白色半透明数量条 */}
