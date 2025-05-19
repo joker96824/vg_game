@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ShowCard } from '../types/card';
 import { IMAGE_BASE_URL } from '../constants/api';
-import { getFirstNonZeroRarityIndex } from '../utils/cardUtils';
+import { getFirstNonZeroRarityIndex } from '../utils/card/cardUtils';
 
 interface DeckViewProps {
   showCards: ShowCard[];

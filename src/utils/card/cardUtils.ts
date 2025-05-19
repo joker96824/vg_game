@@ -1,4 +1,4 @@
-import type { ShowCard } from '../types/card';
+import type { ShowCard } from '../../types/card';
 
 export const getFirstNonZeroRarityIndex = (card: ShowCard): number => {
   const index = card.card_rarity.findIndex(r => (r.quantity || 0) > 0);

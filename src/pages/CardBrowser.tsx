@@ -10,7 +10,7 @@ import DeckView from '../components/DeckView';
 import { useImageCache } from '../hooks/useImageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
 import { saveDeck } from '../services/deckService';
-import { validateDeck, validateCards } from '../utils/deckValidator';
+import { validateDeck, validateCards } from '../utils/deck/deckValidator';
 import warningIcon from '../assets/warning.svg';
 
 // 扩展 RarityInfo 类型

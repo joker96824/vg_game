@@ -1,6 +1,6 @@
-import { Deck, DeckCard, RarityInfo } from '../types/card';
-import { DECK_ZONES, CARD_LIMITS, DeckZone } from '../constants/deck';
-import { getCardsByIds } from '../services/cardService';
+import { Deck, DeckCard, RarityInfo } from '../../types/card';
+import { DECK_ZONES, CARD_LIMITS, DeckZone } from '../../constants/deck';
+import { getCardsByIds } from '../../services/cardService';
 
 // 扩展 RarityInfo 类型
 interface ExtendedRarityInfo extends RarityInfo {
