@@ -358,12 +358,7 @@ const CardBrowser: React.FC = () => {
             if (allZero) {
               next.splice(existingCardIndex, 1);
               // 更新modalCardIndex为前一张卡片
-              if (modalCardIndex > 0) {
-                setModalCardIndex(modalCardIndex - 1);
-                setModalRarityIndex(0);
-              } else {
-                setIsCardModalOpen(false);
-              }
+              setIsCardModalOpen(false);
             } else if (val === 0) {
               // 如果当前稀有度数量变为0，查找其他非0稀有度并切换
               const newRarityIndex = next[existingCardIndex].rarity_infos.findIndex(r => r.quantity > 0);
@@ -472,12 +467,16 @@ const CardBrowser: React.FC = () => {
             const allZero = next[existingCardIndex].rarity_infos.every(r => r.quantity === 0);
             if (allZero) {
               next.splice(existingCardIndex, 1);
-              // 更新modalCardIndex为前一张卡片
-              if (modalCardIndex > 0) {
-                setModalCardIndex(modalCardIndex - 1);
-                setModalRarityIndex(0);
-              } else {
+              // 检查当前区域是否还有卡片
+              if (next.length === 0) {
                 setIsCardModalOpen(false);
+              } else {
+                // 更新modalCardIndex为临近的一张卡片，优先前一张卡片
+                const nextIndex = Math.max(modalCardIndex - 1, 0)
+                setModalCardIndex(nextIndex)
+                const newCard = next[nextIndex];
+                const firstNonZeroRarityIndex = newCard.rarity_infos.findIndex(r => r.quantity > 0);
+                setModalRarityIndex(firstNonZeroRarityIndex !== -1 ? firstNonZeroRarityIndex : 0);
               }
             } else if (val === 0) {
               // 如果当前稀有度数量变为0，查找其他非0稀有度并切换
