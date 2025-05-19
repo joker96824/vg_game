@@ -77,9 +77,6 @@ export const validateDeck = async (deck: Deck): Promise<ValidationResult> => {
 
     // 4. 检查骑升区等级
     if (rideCards.length === 4) {
-      console.log(rideCards.map(card => cardMap.get(card.card_id)));
-      console.log(rideCards,cards)
-      console.log('rideCards', rideCards.map(card => cardMap.get(card.card_id)?.grade || 0));
       const grades = rideCards
         .map(card => cardMap.get(card.card_id)?.grade || 0)
         .sort((a, b) => a - b);
@@ -200,7 +197,7 @@ export const validateCards = async (
         .sort((a, b) => a - b);
       const expectedGrades = [0, 1, 2, 3];
       
-      if (!grades.every((grade, index) => grade === expectedGrades[index])) {
+      if (!grades.every((grade, index) => grade === expectedGrades[index] && grades.length === 4)) {
         errors.push('骑升轴必须包含等级为0、1、2、3的卡各一张');
       }
     }
