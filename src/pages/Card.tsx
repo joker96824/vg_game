@@ -10,8 +10,9 @@ import DeckView from '../components/DeckView';
 import { useImageCache } from '../hooks/useImageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
 import { saveDeck } from '../services/deckService';
-import { validateDeck, validateCards } from '../utils/deckValidator';
+import { validateDeck, validateCards } from '../utils/deck/deckValidator';
 import warningIcon from '../assets/warning.svg';
+import { initDeckCards } from '../utils/card/initUtils';
 
 // 扩展 RarityInfo 类型
 interface ExtendedRarityInfo extends RarityInfo {
@@ -248,20 +249,17 @@ const CardBrowser: React.FC = () => {
       total += rideQuantity;
     }
 
-    // 从GCards中获取数量（只在g区时计算）
-    if (excludeZone === 'g') {
-      const gCard = GCards.find(c => c.id === cardId);
-      if (gCard) {
-        const gQuantity = gCard.rarity_infos.reduce((sum, r) => sum + r.quantity, 0);
-        total += gQuantity;
-      }
+    // 从GCards中获取数量
+    const gCard = GCards.find(c => c.id === cardId);
+    if (gCard && excludeZone !== 'g') {
+      const gQuantity = gCard.rarity_infos.reduce((sum, r) => sum + r.quantity, 0);
+      total += gQuantity;
     }
 
     // token区不计算数量限制
 
     return total;
   };
-
 
   // 获取卡片在当前区域中所有稀有度的总数量
   const getCurrentZoneTotalQuantity = (card: ExtendedCard): number => {
@@ -356,17 +354,8 @@ const CardBrowser: React.FC = () => {
             const allZero = next[existingCardIndex].rarity_infos.every(r => r.quantity === 0);
             if (allZero) {
               next.splice(existingCardIndex, 1);
-              console.log('handleRightCardQuantityChange - 删除卡片:', {
-                zone,
-                remainingCards: next
-              });
               // 更新modalCardIndex为前一张卡片
-              if (modalCardIndex > 0) {
-                setModalCardIndex(modalCardIndex - 1);
-                setModalRarityIndex(0);
-              } else {
-                setIsCardModalOpen(false);
-              }
+              setIsCardModalOpen(false);
             } else if (val === 0) {
               // 如果当前稀有度数量变为0，查找其他非0稀有度并切换
               const newRarityIndex = next[existingCardIndex].rarity_infos.findIndex(r => r.quantity > 0);
@@ -406,13 +395,6 @@ const CardBrowser: React.FC = () => {
         }
       };
 
-      console.log('handleRightCardQuantityChange - 开始:', {
-        val,
-        modalCardIndex,
-        activeTab,
-        currentCards: getCurrentCards().cards
-      });
-
       const { cards: currentCards, setCards: setCurrentCards, zone } = getCurrentCards();
       const card = currentCards[modalCardIndex];
       if (!card) return;
@@ -446,11 +428,6 @@ const CardBrowser: React.FC = () => {
         };
         setCurrentCards(prev => {
           const newCards = [...prev, newCard];
-          console.log('handleRightCardQuantityChange - 添加新卡片:', {
-            zone,
-            newCard,
-            newCards
-          });
           return newCards;
         });
       } else {
@@ -476,14 +453,6 @@ const CardBrowser: React.FC = () => {
               return next;
             }
 
-            console.log('handleRightCardQuantityChange - 更新前:', {
-              zone,
-              card: next[existingCardIndex],
-              rarityIndex: cardRarityIndex,
-              currentQuantity: next[existingCardIndex].rarity_infos[cardRarityIndex].quantity,
-              newQuantity: val
-            });
-
             next[existingCardIndex] = {
               ...next[existingCardIndex],
               rarity_infos: next[existingCardIndex].rarity_infos.map((r, i) => 
@@ -491,27 +460,20 @@ const CardBrowser: React.FC = () => {
               )
             };
 
-            console.log('handleRightCardQuantityChange - 更新后:', {
-              zone,
-              card: next[existingCardIndex],
-              rarityIndex: cardRarityIndex,
-              newQuantity: next[existingCardIndex].rarity_infos[cardRarityIndex].quantity
-            });
-
             // 如果所有稀有度的数量都为0，则从当前区域中删除该卡片
             const allZero = next[existingCardIndex].rarity_infos.every(r => r.quantity === 0);
             if (allZero) {
               next.splice(existingCardIndex, 1);
-              console.log('handleRightCardQuantityChange - 删除卡片:', {
-                zone,
-                remainingCards: next
-              });
-              // 更新modalCardIndex为前一张卡片
-              if (modalCardIndex > 0) {
-                setModalCardIndex(modalCardIndex - 1);
-                setModalRarityIndex(0);
-              } else {
+              // 检查当前区域是否还有卡片
+              if (next.length === 0) {
                 setIsCardModalOpen(false);
+              } else {
+                // 更新modalCardIndex为临近的一张卡片，优先前一张卡片
+                const nextIndex = Math.max(modalCardIndex - 1, 0)
+                setModalCardIndex(nextIndex)
+                const newCard = next[nextIndex];
+                const firstNonZeroRarityIndex = newCard.rarity_infos.findIndex(r => r.quantity > 0);
+                setModalRarityIndex(firstNonZeroRarityIndex !== -1 ? firstNonZeroRarityIndex : 0);
               }
             } else if (val === 0) {
               // 如果当前稀有度数量变为0，查找其他非0稀有度并切换
@@ -621,6 +583,32 @@ const CardBrowser: React.FC = () => {
 
   const handleLeftCardPlus = () => {
     const cur = getLeftCardQuantity();
+    
+    // 1. token区不能手动更改卡片数量
+    if (activeTab === 'token') {
+      showToastMessage('衍生区不能手动添加卡片');
+      return;
+    }
+
+    // 2. G区只能添加G单位
+    if (activeTab === 'g') {
+      const card = cards[modalCardIndex!];
+      if (card.card_type !== 'G单位') {
+        showToastMessage('G区只能添加G单位');
+        return;
+      }
+    }
+
+    // 3. 骑升区和主卡组不能添加特定类型的卡片
+    if (activeTab === 'ride' || activeTab === 'main') {
+      const card = cards[modalCardIndex!];
+      const restrictedTypes = ['G单位', 'RIDE卡组纹章', '纹章', '标记', '衍生物单位', '衍生物设置指令', '能量'];
+      if (restrictedTypes.includes(card.card_type)) {
+        showToastMessage(`${card.card_type}不能添加到${activeTab === 'ride' ? '骑升区' : '主卡组'}`);
+        return;
+      }
+    }
+
     // 新增：检查当前区域卡片数量限制
     const getCurrentZoneTotalCards = () => {
       switch (activeTab) {
@@ -669,7 +657,7 @@ const CardBrowser: React.FC = () => {
     if (!rarity) return;
     const otherZonesQuantity = getCardTotalQuantity(rarity.card_id, rarity.card_number, activeTab);
     if (otherZonesQuantity + cur + 1 > 4) {
-      showToastMessage('一张卡在卡组和骑升区的数量之和不能超过4');
+      showToastMessage('同一张卡数量不能超过4张');
       return;
     }
     handleLeftCardQuantityChange(cur + 1);
@@ -686,64 +674,19 @@ const CardBrowser: React.FC = () => {
     }
     
     try {
-      // 获取所有唯一的card_id
-      const uniqueCardIds = [...new Set(deckData.deck_cards.map((dc: DeckCard) => dc.card_id))];
+      const processedCards = await initDeckCards(deckData);
       
-      if (uniqueCardIds.length === 0) {
-        setMainCards([]);
-        setRideCards([]);
-        setGCards([]);
-        setTokenCards([]);
-        return;
-      }
-
-      // 调用API获取卡片数据
-      const newCardsData = await getCardsByIds(uniqueCardIds);
-      // 处理卡片数据，添加quantity属性
-      const processedCards = newCardsData.map((card: Card): ExtendedCard => {
-        // 找到所有相同card_id的deck_cards
-        const deckCards = deckData.deck_cards.filter((dc: DeckCard) => dc.card_id === card.id);
-        
-        // 为每个rarity添加quantity
-        const processedRarities = (card.rarity_infos || []).map((rarity: RarityInfo): ExtendedRarityInfo => {
-          const deckCard = deckCards.find((dc: DeckCard) => dc.image === rarity.card_number);
-          return {
-            ...rarity,
-            quantity: deckCard?.quantity || 0,
-            deck_zone: deckCard?.deck_zone || 'main'
-          };
-        });
-
-        return {
-          ...card,
-          rarity_infos: processedRarities
-        };
-      });
-
-      // 根据区域筛选卡片
-      const mainCards = processedCards.filter((card: ExtendedCard) => 
-        card.rarity_infos.some((rarity: ExtendedRarityInfo) => rarity.deck_zone === 'main' && rarity.quantity > 0)
-      );
-      const rideCards = processedCards.filter((card: ExtendedCard) => 
-        card.rarity_infos.some((rarity: ExtendedRarityInfo) => rarity.deck_zone === 'ride' && rarity.quantity > 0)
-      );
-      const GCards = processedCards.filter((card: ExtendedCard) => 
-        card.rarity_infos.some((rarity: ExtendedRarityInfo) => rarity.deck_zone === 'g' && rarity.quantity > 0)
-      );
-      const tokenCards = processedCards.filter((card: ExtendedCard) => 
-        card.rarity_infos.some((rarity: ExtendedRarityInfo) => rarity.deck_zone === 'token' && rarity.quantity > 0)
-      );
-
-      setMainCards(mainCards);
-      setRideCards(rideCards);
-      setGCards(GCards);
-      setTokenCards(tokenCards);
+      // 设置各区域的卡片数据
+      setMainCards(processedCards.main);
+      setRideCards(processedCards.ride);
+      setGCards(processedCards.g);
+      setTokenCards(processedCards.token);
 
       console.log('初始化卡片数据:', {
-        main: mainCards.length,
-        ride: rideCards.length,
-        g: GCards.length,
-        token: tokenCards.length
+        main: processedCards.main.length,
+        ride: processedCards.ride.length,
+        g: processedCards.g.length,
+        token: processedCards.token.length
       });
     } catch (error) {
       console.error('获取卡片数据失败:', error);
@@ -886,7 +829,7 @@ const CardBrowser: React.FC = () => {
 
   // 当卡片数据变化时检查合规性
   useEffect(() => {
-    if (deckData) {
+    if (deckData && mainCards.length > 0 && rideCards.length > 0) {
       validateCurrentDeck();
     }
   }, [mainCards, rideCards, GCards, tokenCards]);

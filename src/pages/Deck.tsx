@@ -9,7 +9,7 @@ import { IMAGE_BASE_URL } from '../constants/api';
 import { getDecks, getDeckById, saveDeck, createDeck, deleteDeck, importDeck, updateDeckInfo, copyDeck } from '../services/deckService';
 import type { Deck, DeckCard } from '../types/card';
 import Toast from '../components/Toast';
-import { validateDeck } from '../utils/deckValidator';
+import { validateDeck } from '../utils/deck/deckValidator';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
@@ -22,7 +22,6 @@ const Deck: React.FC = () => {
   const [newDeckDescription, setNewDeckDescription] = useState('');
   const [activeTab, setActiveTab] = useState<'ride' | 'main' | 'g' | 'token'>('main');
   const [isStarred, setIsStarred] = useState(false);
-  const [deckInvalid, setDeckInvalid] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
