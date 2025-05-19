@@ -249,20 +249,17 @@ const CardBrowser: React.FC = () => {
       total += rideQuantity;
     }
 
-    // 从GCards中获取数量（只在g区时计算）
-    if (excludeZone === 'g') {
-      const gCard = GCards.find(c => c.id === cardId);
-      if (gCard) {
-        const gQuantity = gCard.rarity_infos.reduce((sum, r) => sum + r.quantity, 0);
-        total += gQuantity;
-      }
+    // 从GCards中获取数量
+    const gCard = GCards.find(c => c.id === cardId);
+    if (gCard && excludeZone !== 'g') {
+      const gQuantity = gCard.rarity_infos.reduce((sum, r) => sum + r.quantity, 0);
+      total += gQuantity;
     }
 
     // token区不计算数量限制
 
     return total;
   };
-
 
   // 获取卡片在当前区域中所有稀有度的总数量
   const getCurrentZoneTotalQuantity = (card: ExtendedCard): number => {
@@ -586,6 +583,32 @@ const CardBrowser: React.FC = () => {
 
   const handleLeftCardPlus = () => {
     const cur = getLeftCardQuantity();
+    
+    // 1. token区不能手动更改卡片数量
+    if (activeTab === 'token') {
+      showToastMessage('衍生区不能手动添加卡片');
+      return;
+    }
+
+    // 2. G区只能添加G单位
+    if (activeTab === 'g') {
+      const card = cards[modalCardIndex!];
+      if (card.card_type !== 'G单位') {
+        showToastMessage('G区只能添加G单位');
+        return;
+      }
+    }
+
+    // 3. 骑升区和主卡组不能添加特定类型的卡片
+    if (activeTab === 'ride' || activeTab === 'main') {
+      const card = cards[modalCardIndex!];
+      const restrictedTypes = ['G单位', 'RIDE卡组纹章', '纹章', '标记', '衍生物单位', '衍生物设置指令', '能量'];
+      if (restrictedTypes.includes(card.card_type)) {
+        showToastMessage(`${card.card_type}不能添加到${activeTab === 'ride' ? '骑升区' : '主卡组'}`);
+        return;
+      }
+    }
+
     // 新增：检查当前区域卡片数量限制
     const getCurrentZoneTotalCards = () => {
       switch (activeTab) {
@@ -634,7 +657,7 @@ const CardBrowser: React.FC = () => {
     if (!rarity) return;
     const otherZonesQuantity = getCardTotalQuantity(rarity.card_id, rarity.card_number, activeTab);
     if (otherZonesQuantity + cur + 1 > 4) {
-      showToastMessage('一张卡在卡组和骑升区的数量之和不能超过4');
+      showToastMessage('同一张卡数量不能超过4张');
       return;
     }
     handleLeftCardQuantityChange(cur + 1);
