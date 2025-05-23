@@ -4,6 +4,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import App from './App'
 import CardBrowser from './pages/Card'
 import Deck from './pages/Deck'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import InitAccount from './pages/InitAccount'
 import './styles/global.css'
 
 const container = document.getElementById('root')!;
@@ -16,6 +19,9 @@ root.render(
         <Route path="/" element={<App />} />
         <Route path="/cards" element={<CardBrowser />} />
         <Route path="/deck" element={<Deck />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/init-account" element={<InitAccount />} />
       </Routes>
     </Router>
   </React.StrictMode>
