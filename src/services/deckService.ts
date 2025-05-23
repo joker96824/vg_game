@@ -1,4 +1,4 @@
-import { Deck, DeckCard } from '../types/card';
+import { Deck, DeckCard } from '../types/deck';
 import { API_ENDPOINTS } from '../constants/api';
 
 /**
