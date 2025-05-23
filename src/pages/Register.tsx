@@ -1,63 +1,73 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { register, getCaptcha, verifyCaptcha, sendSmsCode } from '../services/authService';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
-  const [captcha, setCaptcha] = useState('');
+  const [mobile, setMobile] = useState('');
   const [smsCode, setSmsCode] = useState('');
-  const [captchaImage, setCaptchaImage] = useState('');
+  const [captcha, setCaptcha] = useState('');
+  const [captchaImage, setCaptchaImage] = useState<string>('');
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
 
-  // 刷新验证码
-  const refreshCaptcha = () => {
-    // TODO: 调用获取验证码接口
-    setCaptchaImage('验证码图片URL');
+  // 获取验证码
+  const fetchCaptcha = async () => {
+    try {
+      const { blob, sessionId: newSessionId } = await getCaptcha();
+      const url = URL.createObjectURL(blob);
+      setCaptchaImage(url);
+    } catch (error) {
+      console.error('获取验证码失败:', error);
+    }
   };
 
-  // 获取短信验证码
-  const handleGetSmsCode = async () => {
-    if (countdown > 0) return;
-    
+  // 发送短信验证码
+  const handleSendSms = async () => {
+    if (!mobile || !captcha) {
+      setError('请先输入手机号和图形验证码');
+      return;
+    }
+
     try {
-      // TODO: 调用发送短信验证码接口
-      // const response = await sendSmsCode(phone, captcha);
-      // if (response.success) {
-      setCountdown(60);
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      // } else {
-      //   setError('获取验证码失败，请重试');
-      //   refreshCaptcha();
-      // }
+      const response = await sendSmsCode(mobile, captcha);
+      if (response.success) {
+        setCountdown(60);
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        setError(response.message);
+        fetchCaptcha();
+      }
     } catch (error) {
-      setError('获取验证码失败，请重试');
-      refreshCaptcha();
+      setError('发送验证码失败，请重试');
+      fetchCaptcha();
     }
   };
 
   // 处理注册
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
     try {
-      // TODO: 调用注册接口
-      // const response = await register(phone, smsCode);
-      // if (response.success) {
-      //   navigate('/init-account');
-      // } else {
-      //   setError('注册失败，请重试');
-      //   refreshCaptcha();
-      // }
+      const response = await register(mobile, smsCode);
+      if (response.success) {
+        navigate('/init-account', { state: { mobile } });
+      } else {
+        setError(response.message);
+        fetchCaptcha();
+      }
     } catch (error) {
       setError('注册失败，请重试');
-      refreshCaptcha();
+      fetchCaptcha();
     }
   };
 
@@ -71,19 +81,19 @@ const Register: React.FC = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="space-y-6">
+          <form className="space-y-6" onSubmit={handleRegister}>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700">
                 手机号
               </label>
               <div className="mt-1">
                 <input
-                  id="phone"
-                  name="phone"
+                  id="mobile"
+                  name="mobile"
                   type="tel"
                   required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
@@ -91,7 +101,7 @@ const Register: React.FC = () => {
 
             <div>
               <label htmlFor="captcha" className="block text-sm font-medium text-gray-700">
-                图片验证码
+                图形验证码
               </label>
               <div className="mt-1 flex">
                 <input
@@ -103,13 +113,12 @@ const Register: React.FC = () => {
                   onChange={(e) => setCaptcha(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
-                <button
-                  type="button"
-                  onClick={refreshCaptcha}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  刷新
-                </button>
+                <img
+                  src={captchaImage}
+                  alt="验证码"
+                  className="h-10 cursor-pointer"
+                  onClick={fetchCaptcha}
+                />
               </div>
             </div>
 
@@ -129,11 +138,9 @@ const Register: React.FC = () => {
                 />
                 <button
                   type="button"
-                  onClick={handleGetSmsCode}
+                  onClick={handleSendSms}
                   disabled={countdown > 0}
-                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white ${
-                    countdown > 0 ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
-                  } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
                 >
                   {countdown > 0 ? `${countdown}秒后重试` : '获取验证码'}
                 </button>
@@ -148,14 +155,13 @@ const Register: React.FC = () => {
 
             <div>
               <button
-                type="button"
-                onClick={handleRegister}
+                type="submit"
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 注册
               </button>
             </div>
-          </div>
+          </form>
 
           <div className="mt-6">
             <div className="relative">
@@ -171,11 +177,10 @@ const Register: React.FC = () => {
 
             <div className="mt-6">
               <button
-                type="button"
                 onClick={() => navigate('/login')}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                返回登录
+                登录
               </button>
             </div>
           </div>

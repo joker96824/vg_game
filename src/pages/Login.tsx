@@ -1,35 +1,71 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { login, getCaptcha, clearLoginErrors } from '../services/authService';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const [phone, setPhone] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [captcha, setCaptcha] = useState('');
-  const [showCaptcha, setShowCaptcha] = useState(false);
-  const [captchaImage, setCaptchaImage] = useState('');
+  const [captchaImage, setCaptchaImage] = useState<string>('');
   const [error, setError] = useState('');
+  const [showCaptcha, setShowCaptcha] = useState(false);
 
-  // 刷新验证码
-  const refreshCaptcha = () => {
-    // TODO: 调用获取验证码接口
-    setCaptchaImage('验证码图片URL');
+  // 获取验证码
+  const fetchCaptcha = async () => {
+    try {
+      const { blob } = await getCaptcha();
+      const url = URL.createObjectURL(blob);
+      setCaptchaImage(url);
+    } catch (error) {
+      console.error('获取验证码失败:', error);
+    }
   };
 
   // 处理登录
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
     try {
-      // TODO: 调用登录接口
-      // const response = await login(phone, password);
-      // if (response.success) {
-      //   navigate('/');
-      // } else {
-      //   setShowCaptcha(true);
-      //   refreshCaptcha();
-      //   setError('密码错误，请输入验证码');
-      // }
+      const response = await login(mobile, password, showCaptcha ? captcha : undefined);
+      if (response.success) {
+        // 保存 token 和用户信息
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        navigate('/');
+      } else {
+        setError(response.message);
+        setShowCaptcha(true);
+        fetchCaptcha();
+      }
+    } catch (error: any) {
+      if (error.status === 422 || error.status === 400) {
+        const errorData = await error.response?.json();
+        setError(errorData?.message || '用户名或密码错误');
+        setShowCaptcha(true);
+        fetchCaptcha();
+      } else {
+        setError('登录失败，请重试');
+        setShowCaptcha(true);
+        fetchCaptcha();
+      }
+    }
+  };
+
+  // 处理验证码刷新
+  const handleRefreshCaptcha = () => {
+    fetchCaptcha();
+  };
+
+  // 清除登录错误
+  const handleClearErrors = async () => {
+    try {
+      await clearLoginErrors(mobile);
+      setShowCaptcha(false);
+      setCaptcha('');
     } catch (error) {
-      setError('登录失败，请重试');
+      console.error('清除登录错误失败:', error);
     }
   };
 
@@ -37,25 +73,25 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          登录账号
+          登录
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <div className="space-y-6">
+          <form className="space-y-6" onSubmit={handleLogin}>
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700">
                 手机号
               </label>
               <div className="mt-1">
                 <input
-                  id="phone"
-                  name="phone"
+                  id="mobile"
+                  name="mobile"
                   type="tel"
                   required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
@@ -93,13 +129,12 @@ const Login: React.FC = () => {
                     onChange={(e) => setCaptcha(e.target.value)}
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-l-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
-                  <button
-                    type="button"
-                    onClick={refreshCaptcha}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    刷新
-                  </button>
+                  <img
+                    src={captchaImage}
+                    alt="验证码"
+                    className="h-10 cursor-pointer"
+                    onClick={handleRefreshCaptcha}
+                  />
                 </div>
               </div>
             )}
@@ -112,14 +147,13 @@ const Login: React.FC = () => {
 
             <div>
               <button
-                type="button"
-                onClick={handleLogin}
+                type="submit"
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 登录
               </button>
             </div>
-          </div>
+          </form>
 
           <div className="mt-6">
             <div className="relative">
@@ -135,11 +169,10 @@ const Login: React.FC = () => {
 
             <div className="mt-6">
               <button
-                type="button"
                 onClick={() => navigate('/register')}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                注册新账号
+                注册
               </button>
             </div>
           </div>

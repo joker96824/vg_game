@@ -1,4 +1,5 @@
-import type { Card, Deck, DeckCard, RarityInfo } from '../../types/card';
+import type { Card, RarityInfo } from '../../types/card';
+import type { Deck, DeckCard, } from '../../types/deck';
 import { getCardsByIds } from '../../services/cardService';
 
 // 扩展 RarityInfo 类型
