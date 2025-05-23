@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { register, getCaptcha, verifyCaptcha, sendSmsCode } from '../services/authService';
 
@@ -14,13 +14,18 @@ const Register: React.FC = () => {
   // 获取验证码
   const fetchCaptcha = async () => {
     try {
-      const { blob, sessionId: newSessionId } = await getCaptcha();
+      const { blob } = await getCaptcha();
       const url = URL.createObjectURL(blob);
       setCaptchaImage(url);
     } catch (error) {
       console.error('获取验证码失败:', error);
     }
   };
+
+  // 页面加载时获取验证码
+  useEffect(() => {
+    fetchCaptcha();
+  }, []);
 
   // 发送短信验证码
   const handleSendSms = async () => {
