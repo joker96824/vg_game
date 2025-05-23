@@ -2,25 +2,6 @@ import { ShowCard, Card } from '../types/card';
 import { API_ENDPOINTS } from '../constants/api';
 
 /**
- * 搜索卡牌
- * @param searchTerm 搜索关键词
- * @returns 搜索结果
- */
-export const searchCards = async (searchTerm: string): Promise<ShowCard[]> => {
-  try {
-    const response = await fetch(`${API_ENDPOINTS.CARDS}/search?term=${encodeURIComponent(searchTerm)}`);
-    if (!response.ok) {
-      throw new Error('搜索请求失败');
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('搜索卡牌时出错:', error);
-    throw error;
-  }
-};
-
-/**
  * 获取卡牌列表
  * @param params 查询参数
  * @returns 卡牌列表

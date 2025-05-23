@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import type { Card, Deck, ShowCard, DeckCard, RarityInfo } from '../types/card';
+import type { Card, ShowCard, RarityInfo } from '../types/card';
+import type { Deck, DeckCard } from '../types/deck';
 import MinusIcon from '../assets/minus.svg';
 import PlusIcon from '../assets/plus.svg';
 import { IMAGE_BASE_URL } from '../constants/api';

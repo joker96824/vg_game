@@ -7,7 +7,7 @@ import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
 import { IMAGE_BASE_URL } from '../constants/api';
 import { getDecks, getDeckById, saveDeck, createDeck, deleteDeck, importDeck, updateDeckInfo, copyDeck } from '../services/deckService';
-import type { Deck, DeckCard } from '../types/card';
+import type { Deck, DeckCard } from '../types/deck';
 import Toast from '../components/Toast';
 import { validateDeck } from '../utils/deck/deckValidator';
 
