@@ -6,6 +6,30 @@ const TOKEN_REFRESH_THRESHOLD = 20 * 60 * 1000; // 20分钟，转换为毫秒
 const INITIAL_TOKEN_EXPIRY = 4 * 60 * 60 * 1000; // 4小时，转换为毫秒
 const REFRESH_TOKEN_EXPIRY = 40 * 60 * 1000; // 40分钟，转换为毫秒
 
+// 请求拦截器
+const requestInterceptor = (config: RequestInit): RequestInit => {
+  const token = getToken();
+  if (token) {
+    return {
+      ...config,
+      headers: {
+        ...config.headers,
+        'Authorization': `Bearer ${token}`,
+      }
+    };
+  }
+  return config;
+};
+
+// 响应拦截器
+const responseInterceptor = async (response: Response): Promise<Response> => {
+  if (response.status === 401) {
+    removeToken();
+    throw new Error('登录已过期，请重新登录');
+  }
+  return response;
+};
+
 // 获取存储的 token
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 
@@ -273,21 +297,14 @@ export const createAuthenticatedRequest = async (url: string, options: RequestIn
     });
   }
 
-  // 添加认证头
-  const headers = {
-    ...options.headers,
-    'Authorization': `Bearer ${token}`,
-  };
+  // 应用请求拦截器
+  const interceptedOptions = requestInterceptor(options);
 
-  const response = await fetch(url, { ...options, headers });
+  // 发送请求
+  const response = await fetch(url, interceptedOptions);
   
-  // 处理 401 错误
-  if (response.status === 401) {
-    removeToken();
-    throw new Error('登录已过期，请重新登录');
-  }
-
-  return response;
+  // 应用响应拦截器
+  return responseInterceptor(response);
 };
 
 // 添加测试用的 token 生成函数
