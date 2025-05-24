@@ -1,7 +1,51 @@
 import { API_ENDPOINTS } from '../constants/api';
 
+// Token 相关常量
+const TOKEN_KEY = 'token';
+const TOKEN_REFRESH_THRESHOLD = 20 * 60 * 1000; // 20分钟，转换为毫秒
+const INITIAL_TOKEN_EXPIRY = 4 * 60 * 60 * 1000; // 4小时，转换为毫秒
+const REFRESH_TOKEN_EXPIRY = 40 * 60 * 1000; // 40分钟，转换为毫秒
+
 // 获取存储的 token
-const getToken = () => localStorage.getItem('token');
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+
+// 设置 token
+export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token);
+
+// 移除 token
+export const removeToken = () => localStorage.removeItem(TOKEN_KEY);
+
+// 检查 token 是否已过期
+export const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expirationTime = payload.exp * 1000; // 转换为毫秒
+    return Date.now() >= expirationTime;
+  } catch {
+    return true;
+  }
+};
+
+// 获取 token 剩余时间（毫秒）
+export const getTokenTimeLeft = (token: string): number => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expirationTime = payload.exp * 1000; // 转换为毫秒
+    return Math.max(0, expirationTime - Date.now());
+  } catch {
+    return 0;
+  }
+};
+
+// 检查 token 是否需要刷新
+export const shouldRefreshToken = (token: string): boolean => {
+  try {
+    const timeLeft = getTokenTimeLeft(token);
+    return timeLeft < TOKEN_REFRESH_THRESHOLD;
+  } catch {
+    return false;
+  }
+};
 
 // 获取图形验证码
 export const getCaptcha = async (): Promise<{ blob: Blob; sessionId: string }> => {
@@ -59,6 +103,23 @@ export const register = async (mobile: string, smsCode: string) => {
   return data;
 };
 
+// 打印 token 信息
+const logTokenInfo = (token: string, action: string) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expirationTime = payload.exp * 1000; // 转换为毫秒
+    const timeLeft = Math.max(0, expirationTime - Date.now());
+    console.log(`[${action}] Token 信息:`, {
+      token: token.substring(0, 20) + '...', // 只显示前20位
+      过期时间: new Date(expirationTime).toLocaleString(),
+      剩余时间: `${Math.floor(timeLeft / 1000)}秒`,
+      payload
+    });
+  } catch (error) {
+    console.error(`[${action}] Token 解析失败:`, error);
+  }
+};
+
 // 用户登录
 export const login = async (mobile: string, password: string, captcha?: string) => {
   const response = await fetch(`${API_ENDPOINTS.AUTH}/login`, {
@@ -67,7 +128,12 @@ export const login = async (mobile: string, password: string, captcha?: string) 
       'Content-Type': 'application/json',
     },
     credentials: 'include',
-    body: JSON.stringify({ mobile, password, captcha }),
+    body: JSON.stringify({ 
+      mobile, 
+      password, 
+      captcha,
+      expires_in: Math.floor(INITIAL_TOKEN_EXPIRY / 1000) // 转换为秒
+    }),
   });
 
   if (!response.ok) {
@@ -81,6 +147,7 @@ export const login = async (mobile: string, password: string, captcha?: string) 
   if (data.success) {
     localStorage.setItem('token', data.data.token);
     localStorage.setItem('user', JSON.stringify(data.data.user));
+    logTokenInfo(data.data.token, '登录');
   }
   return data;
 };
@@ -107,16 +174,10 @@ export const logout = async () => {
 
 // 修改密码
 export const resetPassword = async (mobile: string, oldPassword: string, newPassword: string) => {
-  const token = getToken();
-  if (!token) {
-    throw new Error('未登录');
-  }
-
-  const response = await fetch(`${API_ENDPOINTS.AUTH}/reset-password`, {
+  const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/reset-password`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify({
       mobile,
@@ -130,7 +191,6 @@ export const resetPassword = async (mobile: string, oldPassword: string, newPass
     throw new Error(data.message || '修改密码失败');
   }
   
-  // 检查返回的数据结构
   if (!data.success) {
     throw new Error(data.message || '修改密码失败');
   }
@@ -164,14 +224,80 @@ export const checkSession = async (token: string) => {
 };
 
 // 刷新令牌
-export const refreshToken = async (token: string) => {
-  const response = await fetch(`${API_ENDPOINTS.AUTH}/refresh-token`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify({ token }),
-  });
-  return response.json();
+export const refreshToken = async (): Promise<string | null> => {
+  const token = getToken();
+  if (!token) return null;
+
+  try {
+    const response = await fetch(`${API_ENDPOINTS.AUTH}/refresh-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+
+    const data = await response.json();
+    if (data.success && data.data?.token) {
+      setToken(data.data.token);
+      logTokenInfo(data.data.token, '刷新Token');
+      return data.data.token;
+    }
+    return null;
+  } catch (error) {
+    console.error('刷新 token 失败:', error);
+    return null;
+  }
+};
+
+// 创建带认证的请求
+export const createAuthenticatedRequest = async (url: string, options: RequestInit = {}) => {
+  let token = getToken();
+  
+  // 如果没有 token，直接返回未认证错误
+  if (!token) {
+    throw new Error('未登录');
+  }
+
+  // 首先检查 token 是否已过期
+  if (isTokenExpired(token)) {
+    removeToken();
+    throw new Error('登录已过期，请重新登录');
+  }
+
+  // 如果 token 未过期，检查是否需要刷新
+  if (shouldRefreshToken(token)) {
+    // 尝试刷新 token，但不影响当前请求
+    refreshToken().catch(error => {
+      console.error('刷新 token 失败:', error);
+    });
+  }
+
+  // 添加认证头
+  const headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${token}`,
+  };
+
+  const response = await fetch(url, { ...options, headers });
+  
+  // 处理 401 错误
+  if (response.status === 401) {
+    removeToken();
+    throw new Error('登录已过期，请重新登录');
+  }
+
+  return response;
+};
+
+// 添加测试用的 token 生成函数
+export const generateTestToken = (expiresIn: number = 30) => {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = btoa(JSON.stringify({
+    exp: Math.floor(Date.now() / 1000) + expiresIn,
+    iat: Math.floor(Date.now() / 1000),
+    sub: 'test-user'
+  }));
+  const signature = 'test-signature';
+  return `${header}.${payload}.${signature}`;
 }; 

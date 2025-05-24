@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { login, getCaptcha, clearLoginErrors } from '../services/authService';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
   const [captcha, setCaptcha] = useState('');
@@ -33,7 +34,9 @@ const Login: React.FC = () => {
         // 保存 token 和用户信息
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
-        navigate('/');
+        // 获取来源页面，如果没有则跳转到主页
+        const from = (location.state as any)?.from?.pathname || '/';
+        navigate(from, { replace: true });
       } else {
         setError(response.message);
         setShowCaptcha(true);
