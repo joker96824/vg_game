@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { login, getCaptcha, clearLoginErrors } from '../services/authService';
+import { login, getCaptcha, clearLoginErrors, logout, getToken } from '../services/authService';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -69,6 +69,21 @@ const Login: React.FC = () => {
       setCaptcha('');
     } catch (error) {
       console.error('清除登录错误失败:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/login');
+    } catch (error) {
+      console.error('退出登录失败:', error);
+      // 即使API调用失败，也清除本地存储并跳转到登录页
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      navigate('/login');
     }
   };
 

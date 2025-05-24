@@ -177,23 +177,22 @@ export const login = async (mobile: string, password: string, captcha?: string) 
 };
 
 // 用户登出
-export const logout = async () => {
-  const token = getToken();
-  if (!token) {
-    return;
-  }
+export const logout = async (): Promise<void> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
-  const response = await fetch(`${API_ENDPOINTS.AUTH}/logout`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-  
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
-  return response.json();
+    if (!response.ok) {
+      throw new Error('退出登录失败');
+    }
+  } catch (error) {
+    console.error('退出登录失败:', error);
+    throw error;
+  }
 };
 
 // 修改密码
@@ -351,4 +350,4 @@ export const updateAvatar = async (avatarUrl: string) => {
     throw new Error(data.message || '修改头像失败');
   }
   return data;
-}; 
+};
