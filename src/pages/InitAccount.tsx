@@ -106,7 +106,6 @@ const InitAccount: React.FC = () => {
                   onClick={() => setShowNewPassword(!showNewPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
                 >
-                  {showNewPassword ? "隐藏" : "显示"}
                 </button>
               </div>
             </div>
@@ -130,7 +129,6 @@ const InitAccount: React.FC = () => {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5"
                 >
-                  {showConfirmPassword ? "隐藏" : "显示"}
                 </button>
               </div>
             </div>

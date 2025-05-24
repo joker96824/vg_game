@@ -1,52 +1,138 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import bagIcon from '../assets/bag.svg'
 import friendIcon from '../assets/friend.svg'
 import historyIcon from '../assets/history.svg'
+import adminIcon from '../assets/admin.svg'
 import infoIcon from '../assets/info.svg'
 import settingsIcon from '../assets/settings.svg'
+import SettingsMenu from './SettingsMenu'
 
 interface MenuItem {
-  icon: string;
   label: string;
   route?: string;
+  icon: string;
+  onClick?: () => void;
+  requiredRole?: string;
 }
-
-const menuItems: MenuItem[] = [
-  { icon: bagIcon, label: '背包' },
-  { icon: friendIcon, label: '好友' },
-  { icon: historyIcon, label: '对战记录' },
-  { icon: infoIcon, label: '关于' },
-  { icon: settingsIcon, label: '设置' },
-]
 
 const BottomMenu: React.FC = () => {
   const navigate = useNavigate();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
+  // 模拟用户权限，实际应该从用户状态或API获取
+  const userRole = 'admin'; // 可以是 'admin', 'user', 'guest' 等
+
+  const menuItems: MenuItem[] = [
+    { 
+      label: '背包',
+      icon: bagIcon
+    },
+    { 
+      label: '好友',
+      icon: friendIcon
+    },
+    { 
+      label: '对战记录',
+      icon: historyIcon
+    },
+    { 
+      label: '管理员',
+      icon: adminIcon,
+      onClick: () => setIsAdminOpen(true),
+      requiredRole: 'admin'
+    },
+    // { 
+    //   label: '关于',
+    //   icon: infoIcon
+    // },
+    { 
+      label: '设置',
+      icon: settingsIcon,
+      onClick: () => setIsSettingsOpen(true)
+    }
+  ]
+
+  // 过滤菜单项，根据用户权限显示
+  const filteredMenuItems = menuItems.filter(item => 
+    !item.requiredRole || item.requiredRole === userRole
+  );
+
   return (
-    <footer className="fixed bottom-0 left-0 right-0 h-24 flex items-center px-8 border-t border-gray-200 bg-white">
-      <span className="text-xs text-gray-400">版本号</span>
-      <div className="flex flex-1 justify-end">
-        <div className="flex space-x-6">
-          {menuItems.map(({ icon, label, route }) => (
-            <div
-              key={label}
-              className="relative w-16 h-16 group"
-              onClick={() => route && navigate(route)}
-              style={{ cursor: route ? 'pointer' : 'default' }}
+    <>
+      <footer className="fixed bottom-0 left-0 right-0 h-24 flex items-center px-8 border-t border-gray-200 bg-white">
+        <span className="text-xs text-gray-400">版本号</span>
+        <div className="flex flex-1 justify-end">
+          <div className="flex space-x-6">
+            {filteredMenuItems.map(({ icon, label, route, onClick }) => (
+              <button
+                key={label}
+                className="group relative w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all duration-100 ease-in-out"
+                onClick={() => {
+                  if (route) {
+                    navigate(route);
+                  } else if (onClick) {
+                    onClick();
+                  }
+                }}
+                style={{ cursor: route || onClick ? 'pointer' : 'default' }}
+              >
+                <img src={icon} alt={label} className="w-6 h-6" />
+                <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+                  <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                    {label}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </footer>
+
+      {/* 设置菜单 */}
+      <SettingsMenu
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* 管理员菜单 */}
+      {isAdminOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 w-96 max-w-[90vw] relative">
+            <button
+              onClick={() => setIsAdminOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
-              <div className="w-16 h-16 rounded-full border border-gray-300 flex items-center justify-center hover:border-gray-400 hover:bg-gray-50 active:scale-85 active:bg-gray-200 cursor-pointer transition-all duration-100 ease-in-out hover:shadow-md active:shadow-inner select-none transform-gpu">
-                <img src={icon} alt={label} className="w-10 h-10 transition-transform duration-100 group-hover:scale-110 group-active:scale-85" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-2xl font-game mb-6">管理员面板</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="font-game">用户管理</span>
+                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  进入
+                </button>
               </div>
-              <div className="absolute bottom-0 right-0 transform translate-x-1/4 translate-y-1/4 pointer-events-none">
-                <span className="font-game text-sm whitespace-nowrap text-gray-700 group-hover:text-gray-900 transition-colors">
-                  {label}
-                </span>
+              <div className="flex items-center justify-between">
+                <span className="font-game">系统设置</span>
+                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  进入
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-game">数据统计</span>
+                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                  进入
+                </button>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      </div>
-    </footer>
+      )}
+    </>
   )
 }
 

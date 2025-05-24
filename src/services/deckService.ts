@@ -9,7 +9,6 @@ import { API_ENDPOINTS } from '../constants/api';
 export const getDecks = async (userId: string): Promise<Deck[]> => {
   try {
     const url = `${API_ENDPOINTS.DECKS}?user_id=${encodeURIComponent(userId)}`;
-    console.log('正在请求卡组列表:', url);
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error('获取卡组列表失败');
@@ -170,19 +169,18 @@ export const updateDeckInfo = async (
   deckDescription?: string
 ): Promise<void> => {
   try {
-    const params = new URLSearchParams({
-      deck_name: deckName
-    });
-    
-    if (deckDescription) {
-      params.append('deck_description', deckDescription);
-    }
+    const body = {
+      deck_name: deckName,
+      deck_description: deckDescription
+    };
 
-    const response = await fetch(`${API_ENDPOINTS.DECKS}/${deckId}/info?${params.toString()}`, {
+    const response = await fetch(`${API_ENDPOINTS.DECKS}/${deckId}/info`, {
       method: 'PATCH',
       headers: {
-        'accept': 'application/json'
-      }
+        'accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
     });
 
     if (!response.ok) {
