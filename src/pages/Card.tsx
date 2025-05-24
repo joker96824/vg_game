@@ -682,13 +682,7 @@ const CardBrowser: React.FC = () => {
       setRideCards(processedCards.ride);
       setGCards(processedCards.g);
       setTokenCards(processedCards.token);
-
-      console.log('初始化卡片数据:', {
-        main: processedCards.main.length,
-        ride: processedCards.ride.length,
-        g: processedCards.g.length,
-        token: processedCards.token.length
-      });
+      
     } catch (error) {
       console.error('获取卡片数据失败:', error);
       setMainCards([]);

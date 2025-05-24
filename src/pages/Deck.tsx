@@ -193,12 +193,12 @@ const Deck: React.FC = () => {
 
   // 处理卡组名编辑
   const handleNameEdit = async () => {
-    if (!selectedDeck || !editingName.trim()) return;
+    if (!selectedDeck) return;
     
     try {
       await updateDeckInfo(
         selectedDeck.id,
-        editingName,
+        editingName || selectedDeck.deck_name,
         selectedDeck.deck_description
       );
       
@@ -364,13 +364,15 @@ const Deck: React.FC = () => {
         {/* 右侧卡牌区 - 占30%宽度 */}
         <div className="flex-[3_3_0%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
           <div className="h-12 w-full flex items-center justify-between px-4 border-b">
-            <div className="flex items-center">
+            <div className="flex items-center w-16">
               <button className="p-1 hover:bg-gray-200 rounded" onClick={() => setIsStarred(!isStarred)}>
                 <img src={isStarred ? starIcon : starOutlineIcon} alt="star" className="w-5 h-5" />
               </button>
-              {deckValidationErrors.length > 0 && (
-                <div className="relative group">
-                  <img src={warningIcon} alt="warning" className="w-5 h-5 ml-2" />
+              <div className="relative group ml-2">
+                {deckValidationErrors.length > 0 && (
+                  <img src={warningIcon} alt="warning" className="w-5 h-5" />
+                )}
+                {deckValidationErrors.length > 0 && (
                   <div className="absolute left-0 top-full mt-1 w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm hidden group-hover:block z-50">
                     {deckValidationErrors.map((error, index) => (
                       <div key={index} className="mb-1 last:mb-0">
@@ -378,8 +380,8 @@ const Deck: React.FC = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
             <div className="font-medium text-center flex-1">
               {isEditingName ? (
@@ -401,7 +403,7 @@ const Deck: React.FC = () => {
                 </span>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-16 justify-end">
               <button
                 className="p-1 hover:bg-gray-200 rounded"
                 onClick={() => {

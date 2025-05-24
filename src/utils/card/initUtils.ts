@@ -85,13 +85,6 @@ export const initDeckCards = async (deckData: Deck): Promise<ProcessedCards> => 
     const gCardIds = getUniqueCardIdsByZone(deckData.deck_cards, 'g');
     const tokenCardIds = getUniqueCardIdsByZone(deckData.deck_cards, 'token');
 
-    console.log('各区域的卡片ID:', {
-      main: mainCardIds,
-      ride: rideCardIds,
-      g: gCardIds,
-      token: tokenCardIds
-    });
-
     // 获取各区域的卡片数据
     const [mainCardsData, rideCardsData, gCardsData, tokenCardsData] = await Promise.all([
       mainCardIds.length > 0 ? getCardsByIds(mainCardIds) : Promise.resolve([]),
@@ -100,61 +93,11 @@ export const initDeckCards = async (deckData: Deck): Promise<ProcessedCards> => 
       tokenCardIds.length > 0 ? getCardsByIds(tokenCardIds) : Promise.resolve([])
     ]);
 
-    console.log('API返回的各区域卡片数据:', {
-      main: mainCardsData,
-      ride: rideCardsData,
-      g: gCardsData,
-      token: tokenCardsData
-    });
-
     // 处理各区域的卡片数据
     const processedMainCards = processCardsByZone(mainCardsData, deckData.deck_cards, 'main');
     const processedRideCards = processCardsByZone(rideCardsData, deckData.deck_cards, 'ride');
     const processedGCards = processCardsByZone(gCardsData, deckData.deck_cards, 'g');
     const processedTokenCards = processCardsByZone(tokenCardsData, deckData.deck_cards, 'token');
-
-    console.log('处理后的各区域卡片数据:', {
-      main: processedMainCards,
-      ride: processedRideCards,
-      g: processedGCards,
-      token: processedTokenCards
-    });
-
-    // 添加调试日志，记录 validateCards 函数的参数
-    console.log('validateCards 函数参数:', {
-      mainCards: processedMainCards.map(card => ({
-        id: card.id,
-        rarity_infos: card.rarity_infos.map(r => ({
-          card_number: r.card_number,
-          quantity: r.quantity,
-          deck_zone: r.deck_zone
-        }))
-      })),
-      rideCards: processedRideCards.map(card => ({
-        id: card.id,
-        rarity_infos: card.rarity_infos.map(r => ({
-          card_number: r.card_number,
-          quantity: r.quantity,
-          deck_zone: r.deck_zone
-        }))
-      })),
-      GCards: processedGCards.map(card => ({
-        id: card.id,
-        rarity_infos: card.rarity_infos.map(r => ({
-          card_number: r.card_number,
-          quantity: r.quantity,
-          deck_zone: r.deck_zone
-        }))
-      })),
-      tokenCards: processedTokenCards.map(card => ({
-        id: card.id,
-        rarity_infos: card.rarity_infos.map(r => ({
-          card_number: r.card_number,
-          quantity: r.quantity,
-          deck_zone: r.deck_zone
-        }))
-      }))
-    });
 
     return {
       main: processedMainCards,

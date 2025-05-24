@@ -317,4 +317,38 @@ export const generateTestToken = (expiresIn: number = 30) => {
   }));
   const signature = 'test-signature';
   return `${header}.${payload}.${signature}`;
+};
+
+// 修改昵称
+export const updateNickname = async (nickname: string) => {
+  const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/update-nickname`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ nickname }),
+  });
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || '修改昵称失败');
+  }
+  return data;
+};
+
+// 修改头像
+export const updateAvatar = async (avatarUrl: string) => {
+  const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/update-avatar`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ avatar_url: avatarUrl }),
+  });
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || '修改头像失败');
+  }
+  return data;
 }; 
