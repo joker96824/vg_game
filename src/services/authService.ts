@@ -189,8 +189,15 @@ export const logout = async (): Promise<void> => {
     if (!response.ok) {
       throw new Error('退出登录失败');
     }
+
+    // 删除本地存储的token和用户信息
+    removeToken();
+    localStorage.removeItem('user');
   } catch (error) {
     console.error('退出登录失败:', error);
+    // 即使API调用失败，也清除本地存储
+    removeToken();
+    localStorage.removeItem('user');
     throw error;
   }
 };
@@ -257,7 +264,8 @@ export const refreshToken = async (): Promise<string | null> => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-      }
+      },
+      body: JSON.stringify({ token })
     });
 
     const data = await response.json();

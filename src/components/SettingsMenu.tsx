@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logout, updateNickname, updateAvatar } from '../services/authService';
+import { logout, updateNickname, updateAvatar, resetPassword } from '../services/authService';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -17,6 +17,13 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
   const [nickname, setNickname] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 修改密码状态
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
 
   // 从 localStorage 获取用户信息
   useEffect(() => {
@@ -60,6 +67,41 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
       setError(error.message || '修改昵称失败');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 处理密码修改
+  const handleUpdatePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError('请填写所有密码字段');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('两次输入的新密码不一致');
+      return;
+    }
+
+    setIsPasswordLoading(true);
+    setPasswordError('');
+
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        throw new Error('未找到用户信息');
+      }
+      const user = JSON.parse(userStr);
+      
+      await resetPassword(user.mobile, oldPassword, newPassword);
+      setShowPassword(false);
+      // 清空密码字段
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      setPasswordError(error.message || '修改密码失败');
+    } finally {
+      setIsPasswordLoading(false);
     }
   };
 
@@ -148,35 +190,58 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
                 <label className="block text-sm font-medium text-gray-700">原密码</label>
                 <input
                   type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="请输入原密码"
+                  disabled={isPasswordLoading}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">新密码</label>
                 <input
                   type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="请输入新密码"
+                  disabled={isPasswordLoading}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">确认新密码</label>
                 <input
                   type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   placeholder="请再次输入新密码"
+                  disabled={isPasswordLoading}
                 />
               </div>
+              {passwordError && (
+                <div className="text-red-500 text-sm">{passwordError}</div>
+              )}
               <div className="flex justify-end space-x-2">
                 <button
-                  className="px-4 py-2 border rounded hover:bg-gray-100"
-                  onClick={() => setShowPassword(false)}
+                  className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
+                  onClick={() => {
+                    setShowPassword(false);
+                    setOldPassword('');
+                    setNewPassword('');
+                    setConfirmPassword('');
+                    setPasswordError('');
+                  }}
+                  disabled={isPasswordLoading}
                 >
                   取消
                 </button>
-                <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                  确认修改
+                <button 
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                  onClick={handleUpdatePassword}
+                  disabled={isPasswordLoading}
+                >
+                  {isPasswordLoading ? '修改中...' : '确认修改'}
                 </button>
               </div>
             </div>
