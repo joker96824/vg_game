@@ -1,15 +1,14 @@
 import { Deck, DeckCard } from '../types/deck';
 import { API_ENDPOINTS } from '../constants/api';
+import { createAuthenticatedRequest } from '../utils/request';
 
 /**
  * 获取卡组列表
- * @param userId 用户ID
  * @returns 卡组列表
  */
-export const getDecks = async (userId: string): Promise<Deck[]> => {
+export const getDecks = async (): Promise<Deck[]> => {
   try {
-    const url = `${API_ENDPOINTS.DECKS}?user_id=${encodeURIComponent(userId)}`;
-    const response = await fetch(url);
+    const response = await createAuthenticatedRequest(API_ENDPOINTS.DECKS);
     if (!response.ok) {
       throw new Error('获取卡组列表失败');
     }
@@ -28,10 +27,9 @@ export const getDecks = async (userId: string): Promise<Deck[]> => {
 export const createDeck = async (deckData: {
   deck_name: string;
   deck_description?: string;
-  user_id: string;
 }): Promise<Deck> => {
   try {
-    const response = await fetch(API_ENDPOINTS.DECKS, {
+    const response = await createAuthenticatedRequest(API_ENDPOINTS.DECKS, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,7 +54,7 @@ export const createDeck = async (deckData: {
  */
 export const getDeckById = async (deckId: string): Promise<Deck> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.DECKS}/${deckId}`);
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}`);
     if (!response.ok) {
       throw new Error('获取卡组详情失败');
     }
@@ -83,7 +81,7 @@ export const saveDeck = async (deckId: string, deckData: {
   deck_cards: DeckCard[];
 }): Promise<void> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.DECKS}/${deckId}`, {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -103,10 +101,9 @@ export const saveDeck = async (deckId: string, deckData: {
 /**
  * 导入卡组
  * @param deckId 要导入的卡组ID
- * @param userId 当前用户ID
  * @returns 新创建的卡组
  */
-export const importDeck = async (deckId: string, userId: string): Promise<Deck> => {
+export const importDeck = async (deckId: string): Promise<Deck> => {
   try {
     // 1. 获取要导入的卡组信息
     const sourceDeck = await getDeckById(deckId);
@@ -114,8 +111,7 @@ export const importDeck = async (deckId: string, userId: string): Promise<Deck> 
     // 2. 创建新卡组
     const newDeck = await createDeck({
       deck_name: `${sourceDeck.deck_name} (导入)`,
-      deck_description: `从卡组 ${sourceDeck.deck_name} 导入\n${sourceDeck.deck_description || ''}`,
-      user_id: userId
+      deck_description: `从卡组 ${sourceDeck.deck_name} 导入\n${sourceDeck.deck_description || ''}`
     });
     
     // 3. 更新新卡组，复制卡片数据
@@ -141,7 +137,7 @@ export const importDeck = async (deckId: string, userId: string): Promise<Deck> 
 // 删除卡组
 export const deleteDeck = async (deckId: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.DECKS}/${deckId}`, {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}`, {
       method: 'DELETE',
       headers: {
         'accept': 'application/json'
@@ -174,7 +170,7 @@ export const updateDeckInfo = async (
       deck_description: deckDescription
     };
 
-    const response = await fetch(`${API_ENDPOINTS.DECKS}/${deckId}/info`, {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}/info`, {
       method: 'PATCH',
       headers: {
         'accept': 'application/json',
@@ -195,12 +191,11 @@ export const updateDeckInfo = async (
 /**
  * 复制卡组
  * @param deckId 要复制的卡组ID
- * @param userId 当前用户ID
  * @returns 新创建的卡组
  */
-export const copyDeck = async (deckId: string, userId: string): Promise<Deck> => {
+export const copyDeck = async (deckId: string): Promise<Deck> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.DECKS}/${deckId}/copy?user_id=${encodeURIComponent(userId)}`, {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}/copy`, {
       method: 'POST',
       headers: {
         'accept': 'application/json'
