@@ -65,8 +65,5 @@ export const createAuthenticatedRequest = async (url: string, options: RequestIn
     ...options.headers,
   };
 
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+  return response
 }; 
