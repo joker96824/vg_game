@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logout, updateNickname, updateAvatar, resetPassword } from '../services/authService';
+import { logout, updateNickname, updateAvatar, resetPassword, resetPasswordByEmail } from '../services/authService';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -92,7 +92,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
       }
       const user = JSON.parse(userStr);
       
-      await resetPassword(user.mobile, oldPassword, newPassword);
+      await resetPasswordByEmail(user.email, oldPassword, newPassword);
       setShowPassword(false);
       // 清空密码字段
       setOldPassword('');

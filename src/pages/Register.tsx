@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { register, getCaptcha, verifyCaptcha, sendSmsCode } from '../services/authService';
+import { register, getCaptcha, verifyCaptcha, sendSmsCode, sendEmailCode, registerByEmail } from '../services/authService';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
   const [smsCode, setSmsCode] = useState('');
+  const [emailCode, setEmailCode] = useState('');
   const [captcha, setCaptcha] = useState('');
   const [captchaImage, setCaptchaImage] = useState<string>('');
   const [error, setError] = useState('');
@@ -28,14 +30,14 @@ const Register: React.FC = () => {
   }, []);
 
   // 发送短信验证码
-  const handleSendSms = async () => {
-    if (!mobile || !captcha) {
-      setError('请先输入手机号和图形验证码');
+  const handleSendEmail = async () => {
+    if (!email || !captcha) {
+      setError('请先输入邮箱号和图形验证码');
       return;
     }
 
     try {
-      const response = await sendSmsCode(mobile, captcha);
+      const response = await sendEmailCode(email, captcha, 'register');
       if (response.success) {
         setCountdown(60);
         const timer = setInterval(() => {
@@ -63,9 +65,10 @@ const Register: React.FC = () => {
     setError('');
 
     try {
-      const response = await register(mobile, smsCode);
+      const response = await registerByEmail(email, emailCode);
       if (response.success) {
-        navigate('/init-account', { state: { mobile } });
+        const nickname = response.data.user.nickname;
+        navigate('/init-account', { state: { nickname, email } });
       } else {
         setError(response.message);
         fetchCaptcha();
@@ -88,17 +91,17 @@ const Register: React.FC = () => {
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleRegister}>
             <div>
-              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700">
-                手机号
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                邮箱
               </label>
               <div className="mt-1">
                 <input
-                  id="mobile"
-                  name="mobile"
+                  id="email"
+                  name="email"
                   type="tel"
                   required
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
@@ -128,22 +131,22 @@ const Register: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="smsCode" className="block text-sm font-medium text-gray-700">
-                短信验证码
+              <label htmlFor="emailCode" className="block text-sm font-medium text-gray-700">
+                邮箱验证码
               </label>
               <div className="mt-1 flex">
                 <input
-                  id="smsCode"
-                  name="smsCode"
+                  id="emailCode"
+                  name="emailCode"
                   type="text"
                   required
-                  value={smsCode}
-                  onChange={(e) => setSmsCode(e.target.value)}
+                  value={emailCode}
+                  onChange={(e) => setEmailCode(e.target.value)}
                   className="appearance-none block w-[70%] px-3 py-2 border border-gray-300 rounded-l-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
                 <button
                   type="button"
-                  onClick={handleSendSms}
+                  onClick={handleSendEmail}
                   disabled={countdown > 0}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-r-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:text-gray-400 disabled:bg-gray-50 disabled:cursor-not-allowed"
                 >

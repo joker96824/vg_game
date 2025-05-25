@@ -102,7 +102,7 @@ export const sendSmsCode = async (mobile: string, captcha: string, scene: string
   const response = await fetch(`${API_ENDPOINTS.AUTH}/send-sms`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
+    'Content-Type': 'application/json',
     },
     credentials: 'include',
     body: JSON.stringify({ mobile, captcha, scene }),
@@ -125,6 +125,130 @@ export const register = async (mobile: string, smsCode: string) => {
     localStorage.setItem('user', JSON.stringify(data.data.user));
   }
   return data;
+};
+
+// 发送邮箱验证码
+export const sendEmailCode = async (email: string, captcha: string, scene: 'register' | 'change_email') => {
+  const response = await fetch(`${API_ENDPOINTS.AUTH}/send-email`, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ email, captcha, scene }),
+  });
+  return response.json();
+};
+
+// 邮箱注册
+export const registerByEmail = async (email: string, emailCode: string) => {
+  const response = await fetch(`${API_ENDPOINTS.AUTH}/register-by-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, email_code: emailCode }),
+  });
+  const data = await response.json();
+  if (data.success) {
+    localStorage.setItem('token', data.data.token);
+    localStorage.setItem('user', JSON.stringify(data.data.user));
+  }
+  return data;
+};
+
+// 邮箱登录
+export const loginByEmail = async (email: string, password: string, captcha?: string) => {
+  const response = await fetch(`${API_ENDPOINTS.AUTH}/login-by-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ email, password, captcha }),
+  });
+
+  if (!response.ok) {
+    const error: any = new Error('登录失败');
+    error.status = response.status;
+    error.response = response;
+    throw error;
+  }
+
+  const data = await response.json();
+  if (data.success) {
+    localStorage.setItem('token', data.data.token);
+    localStorage.setItem('user', JSON.stringify(data.data.user));
+    logTokenInfo(data.data.token, '登录');
+  }
+  return data;
+
+};
+
+// 通过邮箱修改密码
+export const resetPasswordByEmail = async (email: string, oldPassword: string, newPassword: string) => {
+  const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/reset-password-by-email`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, old_password: oldPassword, new_password: newPassword }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || '修改密码失败');
+  }
+
+  if (!data.success) {
+    throw new Error(data.message || '修改密码失败');
+  }
+  return data;
+};
+
+// 强制重置密码
+export const forceResetPasswordByEmail = async (email: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.AUTH}/force-reset-password-by-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || '重置密码失败');
+    }
+  } catch (error) {
+    console.error('重置密码失败:', error);
+    throw error;
+  }
+};
+
+// 修改邮箱
+export const updateEmail = async (newEmail: string, emailCode: string, captcha: string): Promise<void> => {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.AUTH}/update-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${getToken()}`,
+      },
+      body: JSON.stringify({ new_email: newEmail, email_code: emailCode, captcha }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || '修改邮箱失败');
+    }
+  } catch (error) {
+    console.error('修改邮箱失败:', error);
+    throw error;
+  }
 };
 
 // 打印 token 信息
