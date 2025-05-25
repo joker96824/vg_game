@@ -1,5 +1,6 @@
 import { ShowCard, Card } from '../types/card';
 import { API_ENDPOINTS } from '../constants/api';
+import { createAuthenticatedRequest } from '../utils/request';
 
 /**
  * 获取卡牌列表
@@ -29,7 +30,7 @@ export const getCards = async (params: {
       }
     });
 
-    const response = await fetch(`${API_ENDPOINTS.CARDS}?${queryParams.toString()}`);
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}?${queryParams.toString()}`);
     if (!response.ok) {
       throw new Error('获取卡牌列表失败');
     }
@@ -48,7 +49,7 @@ export const getCards = async (params: {
 export const getCardsByIds = async (cardIds: string[]): Promise<Card[]> => {
   try {
     const uniqueIds = [...new Set(cardIds)];
-    const response = await fetch(`${API_ENDPOINTS.CARDS}/${uniqueIds.join(',')}`);
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${uniqueIds.join(',')}`);
     if (!response.ok) {
       throw new Error('获取卡片信息失败');
     }
@@ -56,6 +57,196 @@ export const getCardsByIds = async (cardIds: string[]): Promise<Card[]> => {
     return await response.json();
   } catch (error) {
     console.error('批量获取卡片信息失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片列表
+ * @param params 查询参数
+ * @returns 卡片列表
+ */
+export const getCardsList = async (params: {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  clan?: string;
+  type?: string;
+  grade?: number;
+  power?: number;
+  shield?: number;
+  trigger?: string;
+  effect?: string;
+  flavor?: string;
+  illustrator?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}): Promise<{ cards: Card[]; total: number }> => {
+  try {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        queryParams.append(key, value.toString());
+      }
+    });
+
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}?${queryParams.toString()}`);
+    if (!response.ok) {
+      throw new Error('获取卡片列表失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取卡片列表失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片详情
+ * @param cardId 卡片ID
+ * @returns 卡片详情
+ */
+export const getCardById = async (cardId: string): Promise<Card> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}`);
+    if (!response.ok) {
+      throw new Error('获取卡片详情失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取卡片详情失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片图片
+ * @param cardId 卡片ID
+ * @returns 卡片图片的Blob
+ */
+export const getCardImage = async (cardId: string): Promise<Blob> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/image`);
+    if (!response.ok) {
+      throw new Error('获取卡片图片失败');
+    }
+    return await response.blob();
+  } catch (error) {
+    console.error('获取卡片图片失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片图片URL
+ * @param cardId 卡片ID
+ * @returns 卡片图片URL
+ */
+export const getCardImageUrl = (cardId: string): string => {
+  return `${API_ENDPOINTS.CARDS}/${cardId}/image`;
+};
+
+/**
+ * 获取卡片统计信息
+ * @returns 卡片统计信息
+ */
+export const getCardStats = async (): Promise<{
+  total: number;
+  byClan: Record<string, number>;
+  byType: Record<string, number>;
+  byGrade: Record<number, number>;
+  byTrigger: Record<string, number>;
+}> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/stats`);
+    if (!response.ok) {
+      throw new Error('获取卡片统计信息失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取卡片统计信息失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片搜索建议
+ * @param keyword 关键词
+ * @returns 搜索建议列表
+ */
+export const getCardSuggestions = async (keyword: string): Promise<string[]> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/suggestions?keyword=${encodeURIComponent(keyword)}`);
+    if (!response.ok) {
+      throw new Error('获取卡片搜索建议失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取卡片搜索建议失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片版本历史
+ * @param cardId 卡片ID
+ * @returns 版本历史列表
+ */
+export const getCardVersionHistory = async (cardId: string): Promise<{
+  version: number;
+  changes: string;
+  updated_at: string;
+}[]> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/history`);
+    if (!response.ok) {
+      throw new Error('获取卡片版本历史失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取卡片版本历史失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片相关卡片
+ * @param cardId 卡片ID
+ * @returns 相关卡片列表
+ */
+export const getRelatedCards = async (cardId: string): Promise<Card[]> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/related`);
+    if (!response.ok) {
+      throw new Error('获取相关卡片失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取相关卡片失败:', error);
+    throw error;
+  }
+};
+
+/**
+ * 获取卡片使用统计
+ * @param cardId 卡片ID
+ * @returns 使用统计信息
+ */
+export const getCardUsageStats = async (cardId: string): Promise<{
+  total_decks: number;
+  popularity: number;
+  win_rate: number;
+  by_clan: Record<string, number>;
+  by_grade: Record<number, number>;
+}> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/usage`);
+    if (!response.ok) {
+      throw new Error('获取卡片使用统计失败');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('获取卡片使用统计失败:', error);
     throw error;
   }
 }; 

@@ -9,6 +9,7 @@ const requestInterceptor = (config: RequestInit): RequestInit => {
       headers: {
         ...config.headers,
         'Authorization': `Bearer ${token}`,
+        'accept': 'application/json',
       }
     };
   }
@@ -30,7 +31,10 @@ const responseInterceptor = async (response: Response): Promise<Response> => {
  * @param options 请求选项
  * @returns Promise<Response>
  */
-export const createAuthenticatedRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
+export const createAuthenticatedRequest = async (
+  url: string,
+  options: RequestInit = {}
+): Promise<Response> => {
   let token = getToken();
   
   // 如果没有 token，直接返回未认证错误
@@ -59,11 +63,5 @@ export const createAuthenticatedRequest = async (url: string, options: RequestIn
   const response = await fetch(url, interceptedOptions);
   
   // 应用响应拦截器
-  const headers = {
-    'Authorization': `Bearer ${token}`,
-    'accept': 'application/json',
-    ...options.headers,
-  };
-
-  return response
+  return responseInterceptor(response);
 }; 
