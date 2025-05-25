@@ -44,13 +44,12 @@ const Deck: React.FC = () => {
   const fetchDecks = async () => {
     try {
       setIsLoadingDecks(true);
-      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17';
-      const data = await getDecks(userId);
+      const data = await getDecks();
       setDecks(data);
       
       // 从卡片页面返回时，自动选择编辑的卡组
       if (location.state?.deck) {
-        const editedDeck = data.find(d => d.id === location.state.deck.id);
+        const editedDeck = data.find((d: Deck) => d.id === location.state.deck.id);
         if (editedDeck) {
           setSelectedDeck(editedDeck);
         } else if (data.length > 0) {
@@ -61,6 +60,7 @@ const Deck: React.FC = () => {
       }
     } catch (error) {
       console.error('获取卡组列表失败:', error);
+      showToast('获取卡组列表失败');
     } finally {
       setIsLoadingDecks(false);
     }
@@ -81,8 +81,7 @@ const Deck: React.FC = () => {
     try {
       const newDeck = {
         deck_name: newDeckName,
-        deck_description: newDeckDescription,
-        user_id: '97e9924a-97b1-41d4-b152-fc45a74bbc17'
+        deck_description: newDeckDescription
       };
       
       await createDeck(newDeck);
@@ -175,8 +174,7 @@ const Deck: React.FC = () => {
     }
 
     try {
-      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17';
-      await copyDeck(importDeckId, userId);
+      await copyDeck(importDeckId);
       
       // 刷新卡组列表
       await fetchDecks();
@@ -248,8 +246,7 @@ const Deck: React.FC = () => {
     if (!selectedDeck) return;
     
     try {
-      const userId = '97e9924a-97b1-41d4-b152-fc45a74bbc17';
-      await copyDeck(selectedDeck.id, userId);
+      await copyDeck(selectedDeck.id);
       
       // 刷新卡组列表
       await fetchDecks();

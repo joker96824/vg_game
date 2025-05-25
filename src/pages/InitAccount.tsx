@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { resetPassword } from '../services/authService';
+import { resetPassword, resetPasswordByEmail } from '../services/authService';
 
 const InitAccount: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const mobile = location.state?.mobile || '';
-  const [nickname, setNickname] = useState(`用户${mobile.slice(-4)}`);
+  const email = location.state?.email || '';
+  const [nickname, setNickname] = useState(location.state?.nickname || '');
   const [oldPassword, setOldPassword] = useState('SealJump');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -27,7 +27,7 @@ const InitAccount: React.FC = () => {
     }
 
     try {
-      const response = await resetPassword(mobile, oldPassword, newPassword);
+      const response = await resetPasswordByEmail(email, oldPassword, newPassword);
       if (response.success) {
         navigate('/');
       } else {

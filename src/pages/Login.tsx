@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { login, getCaptcha, clearLoginErrors, logout, getToken } from '../services/authService';
+import { login, loginByEmail, getCaptcha, clearLoginErrors, logout, getToken } from '../services/authService';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [captcha, setCaptcha] = useState('');
   const [captchaImage, setCaptchaImage] = useState<string>('');
@@ -29,7 +30,7 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      const response = await login(mobile, password, showCaptcha ? captcha : undefined);
+      const response = await loginByEmail(email, password, showCaptcha ? captcha : undefined);
       if (response.success) {
         // 保存 token 和用户信息
         localStorage.setItem('token', response.data.token);
@@ -64,26 +65,11 @@ const Login: React.FC = () => {
   // 清除登录错误
   const handleClearErrors = async () => {
     try {
-      await clearLoginErrors(mobile);
+      await clearLoginErrors(email);
       setShowCaptcha(false);
       setCaptcha('');
     } catch (error) {
       console.error('清除登录错误失败:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      navigate('/login');
-    } catch (error) {
-      console.error('退出登录失败:', error);
-      // 即使API调用失败，也清除本地存储并跳转到登录页
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      navigate('/login');
     }
   };
 
@@ -99,17 +85,17 @@ const Login: React.FC = () => {
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleLogin}>
             <div>
-              <label htmlFor="mobile" className="block text-sm font-medium text-gray-700">
-                手机号
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                邮箱
               </label>
               <div className="mt-1">
                 <input
-                  id="mobile"
-                  name="mobile"
+                  id="email"
+                  name="email"
                   type="tel"
                   required
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>
