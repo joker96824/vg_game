@@ -10,7 +10,7 @@ export const useImageCache = () => {
   const getCachedImage = async (imageUrl: string): Promise<string> => {
     try {
       if (!isCacheAPISupported()) {
-        console.warn('浏览器不支持 Cache API，将使用浏览器默认缓存机制');
+        // console.warn('浏览器不支持 Cache API，将使用浏览器默认缓存机制');
         return imageUrl;
       }
 

@@ -35,6 +35,8 @@ const Login: React.FC = () => {
         // 保存 token 和用户信息
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        // 清除登录错误
+        await handleClearErrors();
         // 获取来源页面，如果没有则跳转到主页
         const from = (location.state as any)?.from?.pathname || '/';
         navigate(from, { replace: true });

@@ -53,7 +53,6 @@ export const getCaptcha = async (): Promise<{ blob: Blob; sessionId: string }> =
   const response = await fetch(`${API_ENDPOINTS.AUTH}/captcha`, {
     credentials: 'include',
   });
-  console.log('Captcha response cookies:', document.cookie);
   return {
     blob: await response.blob(),
     sessionId: document.cookie.split(';').find(c => c.trim().startsWith('session_id='))?.split('=')[1] || ''
@@ -75,7 +74,6 @@ export const verifyCaptcha = async (captcha: string): Promise<{ success: boolean
 
 // 发送短信验证码
 export const sendSmsCode = async (mobile: string, captcha: string, scene: string = 'register') => {
-  console.log('Send SMS request cookies:', document.cookie);
   const response = await fetch(`${API_ENDPOINTS.AUTH}/send-sms`, {
     method: 'POST',
     headers: {
@@ -231,12 +229,6 @@ const logTokenInfo = (token: string, action: string) => {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const expirationTime = payload.exp * 1000; // 转换为毫秒
     const timeLeft = Math.max(0, expirationTime - Date.now());
-    console.log(`[${action}] Token 信息:`, {
-      token: token.substring(0, 20) + '...', // 只显示前20位
-      过期时间: new Date(expirationTime).toLocaleString(),
-      剩余时间: `${Math.floor(timeLeft / 1000)}秒`,
-      payload
-    });
   } catch (error) {
     console.error(`[${action}] Token 解析失败:`, error);
   }
