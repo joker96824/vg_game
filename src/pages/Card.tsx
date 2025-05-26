@@ -8,7 +8,7 @@ import { IMAGE_BASE_URL } from '../constants/api';
 import CardFilter from '../components/CardFilter';
 import CardList from '../components/CardList';
 import DeckView from '../components/DeckView';
-import { useImageCache } from '../hooks/useImageCache';
+import { imageCache } from '../utils/image/imageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
 import { saveDeck } from '../services/deckService';
 import { validateDeck, validateCards } from '../utils/deck/deckValidator';
@@ -42,7 +42,6 @@ declare global {
 }
 
 const CardBrowser: React.FC = () => {
-  const { getCachedImage, handleImageLoad } = useImageCache();
   const [keyword, setKeyword] = useState('');
   const [nation, setNation] = useState<any>(null);
   const [clan, setClan] = useState<any>(null);
@@ -923,7 +922,7 @@ const CardBrowser: React.FC = () => {
             setModalType('left');
             setIsCardModalOpen(true);
           }}
-          getCachedImage={getCachedImage}
+          getCachedImage={imageCache.getCachedImage}
         />
 
         {/* 右侧卡组展示 */}
@@ -1006,7 +1005,10 @@ const CardBrowser: React.FC = () => {
                         alt={cards[modalCardIndex].name_cn}
                         className="w-full h-full object-contain"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
-                        onLoad={handleImageLoad}
+                        onLoad={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          imageCache.handleImageLoad(target.src);
+                        }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
@@ -1061,7 +1063,10 @@ const CardBrowser: React.FC = () => {
                       alt={getCurrentZoneCards()[modalCardIndex].name_cn}
                       className="w-full h-full object-contain"
                       style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
-                      onLoad={handleImageLoad}
+                      onLoad={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        imageCache.handleImageLoad(target.src);
+                      }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
