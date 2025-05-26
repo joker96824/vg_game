@@ -92,7 +92,7 @@ const Login: React.FC = () => {
                 <input
                   id="email"
                   name="email"
-                  type="tel"
+                  type="text"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

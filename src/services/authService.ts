@@ -7,30 +7,6 @@ const TOKEN_REFRESH_THRESHOLD = 20 * 60 * 1000; // 20分钟，转换为毫秒
 const INITIAL_TOKEN_EXPIRY = 4 * 60 * 60 * 1000; // 4小时，转换为毫秒
 const REFRESH_TOKEN_EXPIRY = 40 * 60 * 1000; // 40分钟，转换为毫秒
 
-// 请求拦截器
-const requestInterceptor = (config: RequestInit): RequestInit => {
-  const token = getToken();
-  if (token) {
-    return {
-      ...config,
-      headers: {
-        ...config.headers,
-        'Authorization': `Bearer ${token}`,
-      }
-    };
-  }
-  return config;
-};
-
-// 响应拦截器
-const responseInterceptor = async (response: Response): Promise<Response> => {
-  if (response.status === 401) {
-    removeToken();
-    throw new Error('登录已过期，请重新登录');
-  }
-  return response;
-};
-
 // 获取存储的 token
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
 
@@ -103,7 +79,7 @@ export const sendSmsCode = async (mobile: string, captcha: string, scene: string
   const response = await fetch(`${API_ENDPOINTS.AUTH}/send-sms`, {
     method: 'POST',
     headers: {
-    'Content-Type': 'application/json',
+      'Content-Type': 'application/json',
     },
     credentials: 'include',
     body: JSON.stringify({ mobile, captcha, scene }),
@@ -133,7 +109,7 @@ export const sendEmailCode = async (email: string, captcha: string, scene: 'regi
   const response = await fetch(`${API_ENDPOINTS.AUTH}/send-email`, {
     method: 'POST',
     headers: {
-        'Content-Type': 'application/json',
+      'Content-Type': 'application/json',
     },
     credentials: 'include',
     body: JSON.stringify({ email, captcha, scene }),
@@ -183,7 +159,6 @@ export const loginByEmail = async (email: string, password: string, captcha?: st
     logTokenInfo(data.data.token, '登录');
   }
   return data;
-
 };
 
 // 通过邮箱修改密码
@@ -211,11 +186,10 @@ export const resetPasswordByEmail = async (email: string, oldPassword: string, n
 // 强制重置密码
 export const forceResetPasswordByEmail = async (email: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.AUTH}/force-reset-password-by-email`, {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/force-reset-password-by-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`,
       },
       body: JSON.stringify({ email }),
     });
@@ -233,11 +207,10 @@ export const forceResetPasswordByEmail = async (email: string): Promise<void> =>
 // 修改邮箱
 export const updateEmail = async (newEmail: string, emailCode: string, captcha: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_ENDPOINTS.AUTH}/update-email`, {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/update-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${getToken()}`,
       },
       body: JSON.stringify({ new_email: newEmail, email_code: emailCode, captcha }),
     });
