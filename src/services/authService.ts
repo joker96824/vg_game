@@ -103,7 +103,7 @@ export const register = async (mobile: string, smsCode: string) => {
 };
 
 // 发送邮箱验证码
-export const sendEmailCode = async (email: string, captcha: string, scene: 'register' | 'change_email') => {
+export const sendEmailCode = async (email: string, captcha: string, scene: 'register' | 'change_email' | 'reset_password') => {
   const response = await fetch(`${API_ENDPOINTS.AUTH}/send-email`, {
     method: 'POST',
     headers: {
@@ -182,24 +182,21 @@ export const resetPasswordByEmail = async (email: string, oldPassword: string, n
 };
 
 // 强制重置密码
-export const forceResetPasswordByEmail = async (email: string): Promise<void> => {
-  try {
-    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/force-reset-password-by-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
+export const forceResetPasswordByEmail = async (email: string, newPassword: string, emailCode: string) => {
+  const response = await fetch(`${API_ENDPOINTS.AUTH}/force-reset-password/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, new_password: newPassword, email_code: emailCode }),
+  });
 
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.message || '重置密码失败');
-    }
-  } catch (error) {
-    console.error('重置密码失败:', error);
-    throw error;
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || '重置密码失败');
   }
+
+  return data;
 };
 
 // 修改邮箱
@@ -320,7 +317,7 @@ export const resetPassword = async (mobile: string, oldPassword: string, newPass
 
 // 清除登录错误计数
 export const clearLoginErrors = async (mobile: string) => {
-  const response = await fetch(`${API_ENDPOINTS.AUTH}/clear-login-errors`, {
+  const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/clear-login-errors`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

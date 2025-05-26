@@ -6,6 +6,7 @@ import CardBrowser from './pages/Card'
 import Deck from './pages/Deck'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ResetPassword from './pages/ResetPassword'
 import InitAccount from './pages/InitAccount'
 import PrivateRoute from './components/PrivateRoute'
 import './styles/global.css'
@@ -34,6 +35,7 @@ root.render(
         } />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/init-account" element={<InitAccount />} />
       </Routes>
     </Router>
