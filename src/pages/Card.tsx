@@ -682,7 +682,7 @@ const CardBrowser: React.FC = () => {
       setRideCards(processedCards.ride);
       setGCards(processedCards.g);
       setTokenCards(processedCards.token);
-      
+
     } catch (error) {
       console.error('获取卡片数据失败:', error);
       setMainCards([]);
@@ -824,7 +824,7 @@ const CardBrowser: React.FC = () => {
 
   // 当卡片数据变化时检查合规性
   useEffect(() => {
-    if (deckData && mainCards.length > 0 && rideCards.length > 0) {
+    if (deckData) {
       validateCurrentDeck();
     }
   }, [mainCards, rideCards, GCards, tokenCards]);
@@ -839,7 +839,7 @@ const CardBrowser: React.FC = () => {
         >
           返回
         </button>
-        <div className="flex items-center">
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
           {isEditingName ? (
             <input
               type="text"
@@ -858,8 +858,10 @@ const CardBrowser: React.FC = () => {
               {displayDeckName}
             </span>
           )}
-          {deckValidationErrors.length > 0 && (
-            <div className="relative group ml-2">
+        </div>
+        {deckValidationErrors.length > 0 && (
+          <div className="absolute left-1/2 translate-x-[calc(50%+1rem)] flex items-center">
+            <div className="relative group">
               <img src={warningIcon} alt="warning" className="w-5 h-5" />
               <div className="absolute left-0 top-full mt-1 w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm hidden group-hover:block z-50">
                 {deckValidationErrors.map((error, index) => (
@@ -869,8 +871,8 @@ const CardBrowser: React.FC = () => {
                 ))}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* 提示弹窗 */}
