@@ -8,7 +8,7 @@ import { IMAGE_BASE_URL } from '../constants/api';
 import CardFilter from '../components/CardFilter';
 import CardList from '../components/CardList';
 import DeckView from '../components/DeckView';
-import { useImageCache } from '../hooks/useImageCache';
+import { imageCache } from '../utils/image/imageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
 import { saveDeck } from '../services/deckService';
 import { validateDeck, validateCards } from '../utils/deck/deckValidator';
@@ -42,7 +42,6 @@ declare global {
 }
 
 const CardBrowser: React.FC = () => {
-  const { getCachedImage, handleImageLoad } = useImageCache();
   const [keyword, setKeyword] = useState('');
   const [nation, setNation] = useState<any>(null);
   const [clan, setClan] = useState<any>(null);
@@ -78,6 +77,8 @@ const CardBrowser: React.FC = () => {
   const [editingName, setEditingName] = useState('');
   const [displayDeckName, setDisplayDeckName] = useState('');
   const [deckValidationErrors, setDeckValidationErrors] = useState<string[]>([]);
+  const deckNameRef = useRef<HTMLSpanElement>(null);
+  const [deckNameWidth, setDeckNameWidth] = useState(0);
 
   // 导航标签配置
   const tabs = [
@@ -829,6 +830,13 @@ const CardBrowser: React.FC = () => {
     }
   }, [mainCards, rideCards, GCards, tokenCards]);
 
+  // 更新卡组名宽度
+  useEffect(() => {
+    if (deckNameRef.current) {
+      setDeckNameWidth(deckNameRef.current.offsetWidth);
+    }
+  }, [displayDeckName]);
+
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
       {/* 顶部栏 */}
@@ -852,6 +860,7 @@ const CardBrowser: React.FC = () => {
             />
           ) : (
             <span 
+              ref={deckNameRef}
               className="cursor-pointer hover:text-blue-500"
               onClick={handleNameClick}
             >
@@ -860,7 +869,10 @@ const CardBrowser: React.FC = () => {
           )}
         </div>
         {deckValidationErrors.length > 0 && (
-          <div className="absolute left-1/2 translate-x-[calc(50%+1rem)] flex items-center">
+          <div 
+            className="absolute left-1/2 flex items-center"
+            style={{ transform: `translateX(calc(${deckNameWidth / 2}px + 1rem))` }}
+          >
             <div className="relative group">
               <img src={warningIcon} alt="warning" className="w-5 h-5" />
               <div className="absolute left-0 top-full mt-1 w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm hidden group-hover:block z-50">
@@ -923,7 +935,7 @@ const CardBrowser: React.FC = () => {
             setModalType('left');
             setIsCardModalOpen(true);
           }}
-          getCachedImage={getCachedImage}
+          getCachedImage={imageCache.getCachedImage}
         />
 
         {/* 右侧卡组展示 */}
@@ -1006,7 +1018,10 @@ const CardBrowser: React.FC = () => {
                         alt={cards[modalCardIndex].name_cn}
                         className="w-full h-full object-contain"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
-                        onLoad={handleImageLoad}
+                        onLoad={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          imageCache.handleImageLoad(target.src);
+                        }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
@@ -1061,7 +1076,10 @@ const CardBrowser: React.FC = () => {
                       alt={getCurrentZoneCards()[modalCardIndex].name_cn}
                       className="w-full h-full object-contain"
                       style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
-                      onLoad={handleImageLoad}
+                      onLoad={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        imageCache.handleImageLoad(target.src);
+                      }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';

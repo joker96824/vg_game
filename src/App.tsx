@@ -11,7 +11,6 @@ const App: React.FC = () => {
   const navigate = useNavigate();
 
   const handleClick = (buttonName: string) => {
-    console.log(`Button clicked: ${buttonName}`)
     setActiveButton(buttonName)
     setTimeout(() => setActiveButton(null), 300)
   }

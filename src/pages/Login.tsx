@@ -35,6 +35,8 @@ const Login: React.FC = () => {
         // 保存 token 和用户信息
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        // 清除登录错误
+        await handleClearErrors();
         // 获取来源页面，如果没有则跳转到主页
         const from = (location.state as any)?.from?.pathname || '/';
         navigate(from, { replace: true });
@@ -177,6 +179,12 @@ const Login: React.FC = () => {
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 注册
+              </button>
+              <button
+                onClick={() => navigate('/reset-password')}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                忘记密码
               </button>
             </div>
           </div>

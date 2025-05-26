@@ -53,7 +53,6 @@ export const getCaptcha = async (): Promise<{ blob: Blob; sessionId: string }> =
   const response = await fetch(`${API_ENDPOINTS.AUTH}/captcha`, {
     credentials: 'include',
   });
-  console.log('Captcha response cookies:', document.cookie);
   return {
     blob: await response.blob(),
     sessionId: document.cookie.split(';').find(c => c.trim().startsWith('session_id='))?.split('=')[1] || ''
@@ -75,7 +74,6 @@ export const verifyCaptcha = async (captcha: string): Promise<{ success: boolean
 
 // 发送短信验证码
 export const sendSmsCode = async (mobile: string, captcha: string, scene: string = 'register') => {
-  console.log('Send SMS request cookies:', document.cookie);
   const response = await fetch(`${API_ENDPOINTS.AUTH}/send-sms`, {
     method: 'POST',
     headers: {
@@ -105,7 +103,7 @@ export const register = async (mobile: string, smsCode: string) => {
 };
 
 // 发送邮箱验证码
-export const sendEmailCode = async (email: string, captcha: string, scene: 'register' | 'change_email') => {
+export const sendEmailCode = async (email: string, captcha: string, scene: 'register' | 'change_email' | 'reset_password') => {
   const response = await fetch(`${API_ENDPOINTS.AUTH}/send-email`, {
     method: 'POST',
     headers: {
@@ -184,24 +182,21 @@ export const resetPasswordByEmail = async (email: string, oldPassword: string, n
 };
 
 // 强制重置密码
-export const forceResetPasswordByEmail = async (email: string): Promise<void> => {
-  try {
-    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/force-reset-password-by-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
-    });
+export const forceResetPasswordByEmail = async (email: string, newPassword: string, emailCode: string) => {
+  const response = await fetch(`${API_ENDPOINTS.AUTH}/force-reset-password/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, new_password: newPassword, email_code: emailCode }),
+  });
 
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error(data.message || '重置密码失败');
-    }
-  } catch (error) {
-    console.error('重置密码失败:', error);
-    throw error;
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || '重置密码失败');
   }
+
+  return data;
 };
 
 // 修改邮箱
@@ -231,12 +226,6 @@ const logTokenInfo = (token: string, action: string) => {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const expirationTime = payload.exp * 1000; // 转换为毫秒
     const timeLeft = Math.max(0, expirationTime - Date.now());
-    console.log(`[${action}] Token 信息:`, {
-      token: token.substring(0, 20) + '...', // 只显示前20位
-      过期时间: new Date(expirationTime).toLocaleString(),
-      剩余时间: `${Math.floor(timeLeft / 1000)}秒`,
-      payload
-    });
   } catch (error) {
     console.error(`[${action}] Token 解析失败:`, error);
   }
@@ -328,7 +317,7 @@ export const resetPassword = async (mobile: string, oldPassword: string, newPass
 
 // 清除登录错误计数
 export const clearLoginErrors = async (mobile: string) => {
-  const response = await fetch(`${API_ENDPOINTS.AUTH}/clear-login-errors`, {
+  const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/clear-login-errors`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

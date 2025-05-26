@@ -22,7 +22,7 @@ declare global {
     }
   
     private isCacheAPISupported(): boolean {
-      return 'caches' in window && typeof window.caches === 'object';
+      return typeof window !== 'undefined' && 'caches' in window && typeof window.caches === 'object';
     }
   
     /**
@@ -30,7 +30,7 @@ declare global {
      * @param imageUrl 原始图片URL
      * @returns 返回图片URL（如果缓存失败则返回原始URL）
      */
-    public async getCachedImage(imageUrl: string): Promise<string> {
+    public getCachedImage = async (imageUrl: string): Promise<string> => {
       try {
         if (!this.cacheSupported) {
           console.warn('浏览器不支持 Cache API，将使用浏览器默认缓存机制');
@@ -68,7 +68,7 @@ declare global {
      * 处理图片加载完成事件
      * @param imageUrl 图片URL
      */
-    public async handleImageLoad(imageUrl: string): Promise<void> {
+    public handleImageLoad = async (imageUrl: string): Promise<void> => {
       try {
         if (this.cacheSupported) {
           const cache = await window.caches?.open(this.cacheName);
@@ -87,7 +87,7 @@ declare global {
     /**
      * 清除所有缓存的图片
      */
-    public async clearCache(): Promise<void> {
+    public clearCache = async (): Promise<void> => {
       try {
         if (this.cacheSupported) {
           await window.caches?.delete(this.cacheName);
@@ -100,7 +100,7 @@ declare global {
     /**
      * 获取缓存状态
      */
-    public isSupported(): boolean {
+    public isSupported = (): boolean => {
       return this.cacheSupported;
     }
   }
