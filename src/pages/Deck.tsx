@@ -45,7 +45,8 @@ const Deck: React.FC = () => {
     try {
       setIsLoadingDecks(true);
       const data = await getDecks();
-      setDecks(data);
+      console.log(Array.isArray(data));
+      setDecks(Array.isArray(data) ? data : []);
       
       // 从卡片页面返回时，自动选择编辑的卡组
       if (location.state?.deck) {
@@ -61,6 +62,7 @@ const Deck: React.FC = () => {
     } catch (error) {
       console.error('获取卡组列表失败:', error);
       showToast('获取卡组列表失败');
+      setDecks([]); // 确保在错误时设置为空数组
     } finally {
       setIsLoadingDecks(false);
     }

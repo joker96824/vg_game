@@ -2,6 +2,18 @@ import { Deck, DeckCard } from '../types/deck';
 import { API_ENDPOINTS } from '../constants/api';
 import { createAuthenticatedRequest } from '../utils/request';
 
+interface ApiResponse<T> {
+  success: boolean;
+  code: string;
+  message: string;
+  data?: T;
+}
+
+interface DeckListResponse {
+  total: number;
+  items: Deck[];
+}
+
 /**
  * 获取卡组列表
  * @returns 卡组列表
@@ -9,10 +21,13 @@ import { createAuthenticatedRequest } from '../utils/request';
 export const getDecks = async (): Promise<Deck[]> => {
   try {
     const response = await createAuthenticatedRequest(API_ENDPOINTS.DECKS);
-    if (!response.ok) {
-      throw new Error('获取卡组列表失败');
+    const data: ApiResponse<DeckListResponse> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡组列表失败');
     }
-    return await response.json();
+    
+    return data.data?.items || [];
   } catch (error) {
     console.error('获取卡组列表时出错:', error);
     throw error;
@@ -37,10 +52,13 @@ export const createDeck = async (deckData: {
       body: JSON.stringify(deckData),
     });
     
-    if (!response.ok) {
-      throw new Error('创建卡组失败');
+    const data: ApiResponse<Deck> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '创建卡组失败');
     }
-    return await response.json();
+    
+    return data.data!;
   } catch (error) {
     console.error('创建卡组时出错:', error);
     throw error;
@@ -55,10 +73,13 @@ export const createDeck = async (deckData: {
 export const getDeckById = async (deckId: string): Promise<Deck> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}`);
-    if (!response.ok) {
-      throw new Error('获取卡组详情失败');
+    const data: ApiResponse<Deck> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡组详情失败');
     }
-    return await response.json();
+    
+    return data.data!;
   } catch (error) {
     console.error('获取卡组详情时出错:', error);
     throw error;
@@ -89,8 +110,10 @@ export const saveDeck = async (deckId: string, deckData: {
       body: JSON.stringify(deckData),
     });
     
-    if (!response.ok) {
-      throw new Error('保存卡组失败');
+    const data: ApiResponse<void> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '保存卡组失败');
     }
   } catch (error) {
     console.error('保存卡组时出错:', error);
@@ -144,8 +167,10 @@ export const deleteDeck = async (deckId: string): Promise<void> => {
       }
     });
 
-    if (!response.ok) {
-      throw new Error('删除卡组失败');
+    const data: ApiResponse<void> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '删除卡组失败');
     }
   } catch (error) {
     console.error('删除卡组失败:', error);
@@ -179,8 +204,10 @@ export const updateDeckInfo = async (
       body: JSON.stringify(body)
     });
 
-    if (!response.ok) {
-      throw new Error('更新卡组信息失败');
+    const data: ApiResponse<void> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '更新卡组信息失败');
     }
   } catch (error) {
     console.error('更新卡组信息失败:', error);
@@ -202,11 +229,13 @@ export const copyDeck = async (deckId: string): Promise<Deck> => {
       }
     });
 
-    if (!response.ok) {
-      throw new Error('复制卡组失败');
+    const data: ApiResponse<Deck> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '复制卡组失败');
     }
-
-    return await response.json();
+    
+    return data.data!;
   } catch (error) {
     console.error('复制卡组失败:', error);
     throw error;
