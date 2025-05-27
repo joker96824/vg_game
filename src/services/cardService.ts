@@ -2,6 +2,18 @@ import { ShowCard, Card } from '../types/card';
 import { API_ENDPOINTS } from '../constants/api';
 import { createAuthenticatedRequest } from '../utils/request';
 
+interface ApiResponse<T> {
+  success: boolean;
+  code: string;
+  message: string;
+  data?: T;
+}
+
+interface CardListResponse {
+  total: number;
+  items: Card[];
+}
+
 /**
  * 获取卡牌列表
  * @param params 查询参数
@@ -31,10 +43,13 @@ export const getCards = async (params: {
     });
 
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}?${queryParams.toString()}`);
-    if (!response.ok) {
-      throw new Error('获取卡牌列表失败');
+    const data: ApiResponse<CardListResponse> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡牌列表失败');
     }
-    return await response.json();
+    
+    return data.data?.items || [];
   } catch (error) {
     console.error('获取卡牌列表时出错:', error);
     throw error;
@@ -50,11 +65,13 @@ export const getCardsByIds = async (cardIds: string[]): Promise<Card[]> => {
   try {
     const uniqueIds = [...new Set(cardIds)];
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${uniqueIds.join(',')}`);
-    if (!response.ok) {
-      throw new Error('获取卡片信息失败');
+    const data: ApiResponse<CardListResponse> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片信息失败');
     }
     
-    return await response.json();
+    return data.data?.items || [];
   } catch (error) {
     console.error('批量获取卡片信息失败:', error);
     throw error;
@@ -91,10 +108,16 @@ export const getCardsList = async (params: {
     });
 
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}?${queryParams.toString()}`);
-    if (!response.ok) {
-      throw new Error('获取卡片列表失败');
+    const data: ApiResponse<CardListResponse> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片列表失败');
     }
-    return await response.json();
+    
+    return {
+      cards: data.data?.items || [],
+      total: data.data?.total || 0
+    };
   } catch (error) {
     console.error('获取卡片列表失败:', error);
     throw error;
@@ -109,10 +132,13 @@ export const getCardsList = async (params: {
 export const getCardById = async (cardId: string): Promise<Card> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}`);
-    if (!response.ok) {
-      throw new Error('获取卡片详情失败');
+    const data: ApiResponse<Card> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片详情失败');
     }
-    return await response.json();
+    
+    return data.data!;
   } catch (error) {
     console.error('获取卡片详情失败:', error);
     throw error;
@@ -127,10 +153,13 @@ export const getCardById = async (cardId: string): Promise<Card> => {
 export const getCardImage = async (cardId: string): Promise<Blob> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/image`);
-    if (!response.ok) {
-      throw new Error('获取卡片图片失败');
+    const data: ApiResponse<Blob> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片图片失败');
     }
-    return await response.blob();
+    
+    return data.data!;
   } catch (error) {
     console.error('获取卡片图片失败:', error);
     throw error;
@@ -159,10 +188,19 @@ export const getCardStats = async (): Promise<{
 }> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/stats`);
-    if (!response.ok) {
-      throw new Error('获取卡片统计信息失败');
+    const data: ApiResponse<{
+      total: number;
+      byClan: Record<string, number>;
+      byType: Record<string, number>;
+      byGrade: Record<number, number>;
+      byTrigger: Record<string, number>;
+    }> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片统计信息失败');
     }
-    return await response.json();
+    
+    return data.data!;
   } catch (error) {
     console.error('获取卡片统计信息失败:', error);
     throw error;
@@ -177,10 +215,13 @@ export const getCardStats = async (): Promise<{
 export const getCardSuggestions = async (keyword: string): Promise<string[]> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/suggestions?keyword=${encodeURIComponent(keyword)}`);
-    if (!response.ok) {
-      throw new Error('获取卡片搜索建议失败');
+    const data: ApiResponse<string[]> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片搜索建议失败');
     }
-    return await response.json();
+    
+    return data.data || [];
   } catch (error) {
     console.error('获取卡片搜索建议失败:', error);
     throw error;
@@ -199,10 +240,17 @@ export const getCardVersionHistory = async (cardId: string): Promise<{
 }[]> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/history`);
-    if (!response.ok) {
-      throw new Error('获取卡片版本历史失败');
+    const data: ApiResponse<{
+      version: number;
+      changes: string;
+      updated_at: string;
+    }[]> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片版本历史失败');
     }
-    return await response.json();
+    
+    return data.data || [];
   } catch (error) {
     console.error('获取卡片版本历史失败:', error);
     throw error;
@@ -217,10 +265,13 @@ export const getCardVersionHistory = async (cardId: string): Promise<{
 export const getRelatedCards = async (cardId: string): Promise<Card[]> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/related`);
-    if (!response.ok) {
-      throw new Error('获取相关卡片失败');
+    const data: ApiResponse<CardListResponse> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取相关卡片失败');
     }
-    return await response.json();
+    
+    return data.data?.items || [];
   } catch (error) {
     console.error('获取相关卡片失败:', error);
     throw error;
@@ -241,10 +292,19 @@ export const getCardUsageStats = async (cardId: string): Promise<{
 }> => {
   try {
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${cardId}/usage`);
-    if (!response.ok) {
-      throw new Error('获取卡片使用统计失败');
+    const data: ApiResponse<{
+      total_decks: number;
+      popularity: number;
+      win_rate: number;
+      by_clan: Record<string, number>;
+      by_grade: Record<number, number>;
+    }> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取卡片使用统计失败');
     }
-    return await response.json();
+    
+    return data.data!;
   } catch (error) {
     console.error('获取卡片使用统计失败:', error);
     throw error;
