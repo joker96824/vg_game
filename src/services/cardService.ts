@@ -63,8 +63,19 @@ export const getCards = async (params: {
  */
 export const getCardsByIds = async (cardIds: string[]): Promise<Card[]> => {
   try {
+    if (cardIds.length === 0) {
+      return [];
+    }
     const uniqueIds = [...new Set(cardIds)];
-    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/${uniqueIds.join(',')}`);
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        card_ids: uniqueIds
+      })
+    });
     const data: ApiResponse<CardListResponse> = await response.json();
     
     if (!data.success) {
