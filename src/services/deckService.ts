@@ -240,4 +240,31 @@ export const copyDeck = async (deckId: string): Promise<Deck> => {
     console.error('复制卡组失败:', error);
     throw error;
   }
+};
+
+/**
+ * 验证卡组
+ * @param deckId 卡组ID
+ * @returns 验证结果
+ */
+export const validateDeckValidity = async (deckId: string): Promise<{
+  isValid: boolean;
+  errors: string[];
+}> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}/validity`);
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '验证卡组失败');
+    }
+    
+    return {
+      isValid: data.data.is_valid,
+      errors: data.data.errors || []
+    };
+  } catch (error) {
+    console.error('验证卡组失败:', error);
+    throw error;
+  }
 }; 

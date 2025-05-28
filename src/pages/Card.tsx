@@ -10,7 +10,7 @@ import CardList from '../components/CardList';
 import DeckView from '../components/DeckView';
 import { imageCache } from '../utils/image/imageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
-import { saveDeck } from '../services/deckService';
+import { saveDeck, validateDeckValidity } from '../services/deckService';
 import { validateDeck, validateCards } from '../utils/deck/deckValidator';
 import warningIcon from '../assets/warning.svg';
 import { initDeckCards } from '../utils/card/initUtils';
@@ -787,6 +787,7 @@ const CardBrowser: React.FC = () => {
       await saveDeck(deckData.id, requestData);
       
       alert('保存成功');
+      await validateDeckValidity(deckData.id)
       navigate('/deck');
     } catch (error) {
       console.error('保存卡组失败:', error);
