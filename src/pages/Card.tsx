@@ -175,14 +175,18 @@ const CardBrowser: React.FC = () => {
         setModalRarityIndex(0);
         return newIndex;
       });
-    } else if (modalType === 'right' && modalCardIndex !== null && deckData?.deck_cards) {
-      setModalCardIndex((prev) => {
-        const newIndex = (prev! - 1 + deckData.deck_cards.length) % deckData.deck_cards.length;
-        setModalRarityIndex(0);
-        return newIndex;
-      });
+    } else if (modalType === 'right' && modalCardIndex !== null) {
+      const currentCards = getCurrentZoneCards();
+      if (currentCards.length > 0) {
+        setModalCardIndex((prev) => {
+          const newIndex = (prev! - 1 + currentCards.length) % currentCards.length;
+          setModalRarityIndex(0);
+          return newIndex;
+        });
+      }
     }
   };
+
   const handleNext = () => {
     if (modalType === 'left' && modalCardIndex !== null) {
       setModalCardIndex((prev) => {
@@ -190,12 +194,15 @@ const CardBrowser: React.FC = () => {
         setModalRarityIndex(0);
         return newIndex;
       });
-    } else if (modalType === 'right' && modalCardIndex !== null && deckData?.deck_cards) {
-      setModalCardIndex((prev) => {
-        const newIndex = (prev! + 1) % deckData.deck_cards.length;
-        setModalRarityIndex(0);
-        return newIndex;
-      });
+    } else if (modalType === 'right' && modalCardIndex !== null) {
+      const currentCards = getCurrentZoneCards();
+      if (currentCards.length > 0) {
+        setModalCardIndex((prev) => {
+          const newIndex = (prev! + 1) % currentCards.length;
+          setModalRarityIndex(0);
+          return newIndex;
+        });
+      }
     }
   };
 

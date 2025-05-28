@@ -82,7 +82,7 @@ const Deck: React.FC = () => {
   const createNewDeck = async () => {
     try {
       const newDeck = {
-        deck_name: newDeckName,
+        deck_name: newDeckName || '新卡组',
         deck_description: newDeckDescription
       };
       
@@ -280,8 +280,11 @@ const Deck: React.FC = () => {
   // 检查卡组合规性
   const checkDeckValidity = async (deck: Deck) => {
     try {
-      const validation = await validateDeck(deck);
-      setDeckValidationErrors(validation.errors);
+      if (!deck.is_valid) {
+        setDeckValidationErrors([deck.remark || '卡组不合规']);
+      } else {
+        setDeckValidationErrors([]);
+      }
     } catch (error) {
       console.error('检查卡组合规性失败:', error);
       setDeckValidationErrors(['检查卡组合规性失败']);
