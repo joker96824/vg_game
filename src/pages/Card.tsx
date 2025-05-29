@@ -993,7 +993,7 @@ const CardBrowser: React.FC = () => {
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                className={`flex-1 py-1 text-center text-xs font-medium transition-colors
+                className={`flex-1 py-1 text-center text-xs font-medium transition-colors 
                   ${activeTab === tab.id 
                     ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
@@ -1044,7 +1044,7 @@ const CardBrowser: React.FC = () => {
             >
               <div
                 className="flex items-center justify-center relative select-none p-4"
-                style={{width:'420px',height:'540px'}}
+                style={{width:'380px',height:'539px'}}
               >
                 {/* 展示卡片内容 */}
                 {modalType === 'left' && modalCardIndex !== null && cards[modalCardIndex] && (
@@ -1053,10 +1053,10 @@ const CardBrowser: React.FC = () => {
                       {/* 稀有度切换按钮 - 左 */}
                       {cards[modalCardIndex].rarity_infos.length > 1 && (
                         <button
-                          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                           onClick={() => setModalRarityIndex((prev) => (prev - 1 + cards[modalCardIndex].rarity_infos.length) % cards[modalCardIndex].rarity_infos.length)}
                         >
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </button>
@@ -1064,7 +1064,7 @@ const CardBrowser: React.FC = () => {
                       <img
                         src={`${IMAGE_BASE_URL}/${cards[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                         alt={cards[modalCardIndex].name_cn}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain rounded-[4%]"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                         onLoad={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -1079,10 +1079,10 @@ const CardBrowser: React.FC = () => {
                       {/* 稀有度切换按钮 - 右 */}
                       {cards[modalCardIndex].rarity_infos.length > 1 && (
                         <button
-                          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                           onClick={() => setModalRarityIndex((prev) => (prev + 1) % cards[modalCardIndex].rarity_infos.length)}
                         >
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </button>
@@ -1111,10 +1111,10 @@ const CardBrowser: React.FC = () => {
                     {/* 稀有度切换按钮 - 左 */}
                     {getCurrentZoneCards()[modalCardIndex].rarity_infos.length > 1 && (
                       <button
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                         onClick={() => setModalRarityIndex((prev) => (prev - 1 + getCurrentZoneCards()[modalCardIndex].rarity_infos.length) % getCurrentZoneCards()[modalCardIndex].rarity_infos.length)}
                       >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </button>
@@ -1122,7 +1122,7 @@ const CardBrowser: React.FC = () => {
                     <img
                       src={`${IMAGE_BASE_URL}/${getCurrentZoneCards()[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                       alt={getCurrentZoneCards()[modalCardIndex].name_cn}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain rounded-[4%]"
                       style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                       onLoad={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -1137,10 +1137,10 @@ const CardBrowser: React.FC = () => {
                     {/* 稀有度切换按钮 - 右 */}
                     {getCurrentZoneCards()[modalCardIndex].rarity_infos.length > 1 && (
                       <button
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                         onClick={() => setModalRarityIndex((prev) => (prev + 1) % getCurrentZoneCards()[modalCardIndex].rarity_infos.length)}
                       >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </button>
