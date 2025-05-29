@@ -16,6 +16,8 @@ interface ExtendedCard {
   card_type: string;
   trigger_type?: string;
   rarity_infos: ExtendedRarityInfo[];
+  grade?: number;
+  nation?: string;
 }
 
 /**
@@ -81,18 +83,11 @@ export const validateCards = async (
     errors.push(`G区最多有16张卡，当前有${gCount}张`);
   }
 
-  // 获取所有需要检查的卡片ID
-  const cardIds = [...rideCards, ...mainCards].map(card => card.id);
-
   try {
-    // 获取卡片详细信息
-    const cards = await getCardsByIds(cardIds);
-    const cardMap = new Map(cards.map(card => [card.id, card]));
-
     // 4. 检查骑升区等级
     if (rideCards.length > 0) {
       const grades = rideCards
-        .map(card => cardMap.get(card.id)?.grade || 0)
+        .map(card => card.grade || 0)
         .sort((a, b) => a - b);
       const expectedGrades = [0, 1, 2, 3];
       
@@ -104,17 +99,17 @@ export const validateCards = async (
     // 5. 检查国家一致性
     const rideNations = new Set(
       rideCards
-        .map(card => cardMap.get(card.id)?.nation)
+        .map(card => card.nation)
         .filter((nation): nation is string => Boolean(nation))
     );
     const mainNations = new Set(
       mainCards
-        .map(card => cardMap.get(card.id)?.nation)
+        .map(card => card.nation)
         .filter((nation): nation is string => Boolean(nation))
     );
     const gNations = new Set(
       GCards
-        .map(card => cardMap.get(card.id)?.nation)
+        .map(card => card.nation)
         .filter((nation): nation is string => Boolean(nation))
     );
     
@@ -135,8 +130,8 @@ export const validateCards = async (
     );
 
     if (!hasCommonNation) {
-        errors.push('骑升轴和主卡组的卡必须属于同一个国家');
-      }
+      errors.push('骑升轴和主卡组的卡必须属于同一个国家');
+    }
 
     // 6. 检查骑升区卡牌类型
     const invalidRideCards = rideCards.filter(card => 
@@ -178,13 +173,15 @@ export const validateCards = async (
       errors.push('超触发单位总数不能超过1张');
     }
 
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
   } catch (error) {
-    console.error('获取卡片信息失败:', error);
-    errors.push('获取卡片信息失败，无法完成合规性检查');
+    console.error('验证卡组时出错:', error);
+    return {
+      isValid: false,
+      errors: ['验证卡组时出错']
+    };
   }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
 }; 
