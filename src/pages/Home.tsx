@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import BottomMenu from './components/BottomMenu'
-import GameButton from './components/GameButton'
-import swordsIcon from './assets/swords.svg'
-import houseIcon from './assets/house.svg'
-import cardsIcon from './assets/cards.svg'
+import BottomMenu from '../components/BottomMenu'
+import GameButton from '../components/GameButton'
+import swordsIcon from '../assets/swords.svg'
+import houseIcon from '../assets/house.svg'
+import cardsIcon from '../assets/cards.svg'
 
-const App: React.FC = () => {
+const [nickName, setNickName] = useState('');
+
+const Home: React.FC = () => {
   const [activeButton, setActiveButton] = useState<string | null>(null)
   const navigate = useNavigate();
 
@@ -75,4 +77,4 @@ const App: React.FC = () => {
   )
 }
 
-export default App
+export default Home 

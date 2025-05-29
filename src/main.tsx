@@ -1,7 +1,7 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import App from './App'
+import Home from './pages/Home'
 import CardBrowser from './pages/Card'
 import Deck from './pages/Deck'
 import Login from './pages/Login'
@@ -20,7 +20,7 @@ root.render(
       <Routes>
         <Route path="/" element={
           <PrivateRoute>
-            <App />
+            <Home />
           </PrivateRoute>
         } />
         <Route path="/cards" element={

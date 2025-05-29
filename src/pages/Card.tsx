@@ -915,6 +915,13 @@ const CardBrowser: React.FC = () => {
             </div>
           </div>
         )}
+        <button
+          className="absolute right-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm z-10 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSaveDeck}
+          disabled={saving}
+        >
+          {saving ? '保存中...' : '保存'}
+        </button>
       </div>
 
       {/* 使用 Portal 渲染警告提示框 */}
