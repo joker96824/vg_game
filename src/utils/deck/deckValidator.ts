@@ -18,11 +18,6 @@ interface ExtendedCard {
   rarity_infos: ExtendedRarityInfo[];
 }
 
-interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-}
-
 /**
  * 获取卡组中某个区域的卡片数量
  * @param deck 卡组
@@ -140,8 +135,8 @@ export const validateCards = async (
     );
 
     if (!hasCommonNation) {
-      errors.push('骑升轴和主卡组的卡必须属于同一个国家');
-    }
+        errors.push('骑升轴和主卡组的卡必须属于同一个国家');
+      }
 
     // 6. 检查骑升区卡牌类型
     const invalidRideCards = rideCards.filter(card => 

@@ -63,6 +63,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
         localStorage.setItem('user', JSON.stringify(user));
       }
       setShowProfile(false);
+      // 重新加载页面以更新显示
+      window.location.reload();
     } catch (error: any) {
       setError(error.message || '修改昵称失败');
     } finally {
