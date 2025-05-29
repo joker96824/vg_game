@@ -6,7 +6,7 @@ import warningIcon from '../assets/warning.svg';
 import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
 import { IMAGE_BASE_URL } from '../constants/api';
-import { getDecks, saveDeck, createDeck, deleteDeck, importDeck, updateDeckInfo, copyDeck } from '../services/deckService';
+import { getDecks, saveDeck, createDeck, deleteDeck, setDeckPreset, updateDeckInfo, copyDeck } from '../services/deckService';
 import type { Deck, DeckCard } from '../types/deck';
 import Toast from '../components/Toast';
 
@@ -110,6 +110,14 @@ const Deck: React.FC = () => {
   // 处理点击设置按钮
   const handleSettingsClick = () => {
     setIsSettingsOpen(!isSettingsOpen);
+  };
+
+  //处理点击star
+  const handleStarClick = async () => {
+    if (!isStarred && selectedDeck?.id) {
+      setIsStarred(true);
+      await setDeckPreset(selectedDeck.id, 0);
+    }
   };
 
   // 处理重命名
@@ -366,7 +374,7 @@ const Deck: React.FC = () => {
         <div className="flex-[3_3_0%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
           <div className="h-12 w-full flex items-center justify-between px-4 border-b">
             <div className="flex items-center w-16">
-              <button className="p-1 hover:bg-gray-200 rounded" onClick={() => setIsStarred(!isStarred)}>
+              <button className="p-1 hover:bg-gray-200 rounded" onClick={() => handleStarClick()}>
                 <img src={isStarred ? starIcon : starOutlineIcon} alt="star" className="w-5 h-5" />
               </button>
               <div className="relative group ml-2">

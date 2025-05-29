@@ -268,3 +268,30 @@ export const validateDeckValidity = async (deckId: string): Promise<{
     throw error;
   }
 }; 
+
+/**
+ * 设置卡组预设
+ * @param deckId 卡组ID
+ * @param preset 预设值
+ */
+export const setDeckPreset = async (deckId: string, preset: number) => {
+  try {
+    const body = {
+      preset: preset
+    };
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.DECKS}/${deckId}/preset`, {
+      method: 'PUT',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    
+    return data;
+  } catch (error) {
+    console.error('设置卡组预设失败:', error);
+    throw error;
+  }
+};
