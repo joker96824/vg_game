@@ -12,113 +12,13 @@ interface ExtendedRarityInfo extends RarityInfo {
 // 扩展 Card 类型
 interface ExtendedCard {
   id: string;
+  name_cn: string;
+  card_type: string;
+  trigger_type?: string;
   rarity_infos: ExtendedRarityInfo[];
+  grade?: number;
+  nation?: string;
 }
-
-interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-}
-
-/**
- * 检查卡组是否合规
- * @param deck 要检查的卡组
- * @returns 检查结果，包含是否合规和错误信息
- */
-export const validateDeck = async (deck: Deck): Promise<ValidationResult> => {
-  const errors: string[] = [];
-  
-  // 按区域统计卡片数量
-  const cardCounts: Record<DeckZone, number> = {
-    ride: 0,
-    main: 0,
-    g: 0,
-    token: 0
-  };
-
-  // 获取各区域的卡片
-  const rideCards: DeckCard[] = [];
-  const mainCards: DeckCard[] = [];
-  
-  deck.deck_cards?.forEach(card => {
-    if (card.deck_zone && card.quantity) {
-      cardCounts[card.deck_zone as DeckZone] += card.quantity;
-      
-      // 收集骑升区和主卡组的卡片
-      if (card.deck_zone === 'ride') {
-        rideCards.push(card);
-      } else if (card.deck_zone === 'main') {
-        mainCards.push(card);
-      }
-    }
-  });
-
-  // 1. 检查骑升区数量
-  if (cardCounts['ride'] !== 4) {
-    errors.push(`骑升区必须有4张卡，当前有${cardCounts['ride']}张`);
-  }
-
-  // 2. 检查主卡组数量
-  if (cardCounts['main'] !== 50) {
-    errors.push(`主卡组必须有50张卡，当前有${cardCounts['main']}张`);
-  }
-
-  // 3. 检查G区数量
-  if (cardCounts['g'] > 16) {
-    errors.push(`G区最多有16张卡，当前有${cardCounts['g']}张`);
-  }
-
-  // 获取所有需要检查的卡片ID
-  const cardIds = [...rideCards, ...mainCards].map(card => card.card_id);
-
-  try {
-    // 获取卡片详细信息
-    const cards = await getCardsByIds(cardIds);
-    const cardMap = new Map(cards.map(card => [card.id, card]));
-
-    // 4. 检查骑升区等级
-    if (rideCards.length === 4) {
-      const grades = rideCards
-        .map(card => cardMap.get(card.card_id)?.grade || 0)
-        .sort((a, b) => a - b);
-      const expectedGrades = [0, 1, 2, 3];
-      
-      if (!grades.every((grade, index) => grade === expectedGrades[index])) {
-        errors.push('骑升轴必须包含等级为0、1、2、3的卡各一张');
-      }
-    }
-    else if(cardCounts['ride'] === 4) {
-      errors.push('骑升轴必须包含等级为0、1、2、3的卡各一张');
-    }
-
-    // 5. 检查国家一致性
-    const rideNations = new Set(
-      rideCards
-        .map(card => cardMap.get(card.card_id)?.nation)
-        .filter(Boolean)
-    );
-    const mainNations = new Set(
-      mainCards
-        .map(card => cardMap.get(card.card_id)?.nation)
-        .filter(Boolean)
-    );
-    
-    if (rideNations.size > 0 && mainNations.size > 0) {
-      const allNations = new Set([...rideNations, ...mainNations]);
-      if (allNations.size > 1) {
-        errors.push('骑升轴和主卡组的卡必须属于同一个国家');
-      }
-    }
-  } catch (error) {
-    console.error('获取卡片信息失败:', error);
-    errors.push('获取卡片信息失败，无法完成合规性检查');
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-};
 
 /**
  * 获取卡组中某个区域的卡片数量
@@ -183,18 +83,11 @@ export const validateCards = async (
     errors.push(`G区最多有16张卡，当前有${gCount}张`);
   }
 
-  // 获取所有需要检查的卡片ID
-  const cardIds = [...rideCards, ...mainCards].map(card => card.id);
-
   try {
-    // 获取卡片详细信息
-    const cards = await getCardsByIds(cardIds);
-    const cardMap = new Map(cards.map(card => [card.id, card]));
-
     // 4. 检查骑升区等级
     if (rideCards.length > 0) {
       const grades = rideCards
-        .map(card => cardMap.get(card.id)?.grade || 0)
+        .map(card => card.grade || 0)
         .sort((a, b) => a - b);
       const expectedGrades = [0, 1, 2, 3];
       
@@ -206,28 +99,89 @@ export const validateCards = async (
     // 5. 检查国家一致性
     const rideNations = new Set(
       rideCards
-        .map(card => cardMap.get(card.id)?.nation)
-        .filter(Boolean)
+        .map(card => card.nation)
+        .filter((nation): nation is string => Boolean(nation))
     );
     const mainNations = new Set(
       mainCards
-        .map(card => cardMap.get(card.id)?.nation)
-        .filter(Boolean)
+        .map(card => card.nation)
+        .filter((nation): nation is string => Boolean(nation))
+    );
+    const gNations = new Set(
+      GCards
+        .map(card => card.nation)
+        .filter((nation): nation is string => Boolean(nation))
     );
     
-    if (rideNations.size > 0 && mainNations.size > 0) {
-      const allNations = new Set([...rideNations, ...mainNations]);
-      if (allNations.size > 1) {
-        errors.push('骑升轴和主卡组的卡必须属于同一个国家');
-      }
-    }
-  } catch (error) {
-    console.error('获取卡片信息失败:', error);
-    errors.push('获取卡片信息失败，无法完成合规性检查');
-  }
+    // 将所有国家字符串拆分成国家数组
+    const allNationArrays = [
+      ...Array.from(rideNations),
+      ...Array.from(mainNations),
+      ...Array.from(gNations)
+    ].map(nation => nation.split('/').map(n => n.trim()));
 
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
+    // 检查是否存在一个共同的国家
+    const hasCommonNation = allNationArrays.length > 0 && allNationArrays.every(nations => 
+      allNationArrays.some(otherNations => 
+        nations.some(nation => 
+          otherNations.includes(nation)
+        )
+      )
+    );
+
+    if (!hasCommonNation) {
+      errors.push('骑升轴和主卡组的卡必须属于同一个国家');
+    }
+
+    // 6. 检查骑升区卡牌类型
+    const invalidRideCards = rideCards.filter(card => 
+      !['普通单位', '触发单位'].includes(card.card_type)
+    );
+    if (invalidRideCards.length > 0) {
+      errors.push('骑升区只能放置普通单位或触发单位');
+    }
+
+    // 7. 检查触发单位总数
+    const triggerUnitTotal = [...mainCards, ...rideCards].reduce((sum, card) => {
+      if (card.card_type === '触发单位') {
+        return sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0);
+      }
+      return sum;
+    }, 0);
+    if (triggerUnitTotal > 16) {
+      errors.push('触发单位总数不能超过16张');
+    }
+
+    // 8. 检查特定触发类型数量
+    const healTriggerTotal = [...mainCards, ...rideCards].reduce((sum, card) => {
+      if (card.trigger_type?.includes('治')) {
+        return sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0);
+      }
+      return sum;
+    }, 0);
+    if (healTriggerTotal > 4) {
+      errors.push('治疗触发单位总数不能超过4张');
+    }
+
+    const overTriggerTotal = [...mainCards, ...rideCards].reduce((sum, card) => {
+      if (card.trigger_type?.includes('超')) {
+        return sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0);
+      }
+      return sum;
+    }, 0);
+    if (overTriggerTotal > 1) {
+      errors.push('超触发单位总数不能超过1张');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  } catch (error) {
+    console.error('验证卡组时出错:', error);
+    return {
+      isValid: false,
+      errors: ['验证卡组时出错']
+    };
+  }
 }; 

@@ -6,10 +6,9 @@ import warningIcon from '../assets/warning.svg';
 import editIcon from '../assets/edit.svg';
 import settingIcon from '../assets/setting.svg';
 import { IMAGE_BASE_URL } from '../constants/api';
-import { getDecks, saveDeck, createDeck, deleteDeck, importDeck, updateDeckInfo, copyDeck } from '../services/deckService';
+import { getDecks, saveDeck, createDeck, deleteDeck, setDeckPreset, updateDeckInfo, copyDeck } from '../services/deckService';
 import type { Deck, DeckCard } from '../types/deck';
 import Toast from '../components/Toast';
-import { validateDeck } from '../utils/deck/deckValidator';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
@@ -48,16 +47,31 @@ const Deck: React.FC = () => {
       console.log(Array.isArray(data));
       setDecks(Array.isArray(data) ? data : []);
       
-      // 从卡片页面返回时，自动选择编辑的卡组
-      if (location.state?.deck) {
+      // 检查 URL 参数中是否有选中的卡组ID
+      const urlParams = new URLSearchParams(window.location.search);
+      const selectedDeckId = urlParams.get('selected');
+      
+      if (selectedDeckId) {
+        const deck = data.find((d: Deck) => d.id === selectedDeckId);
+        if (deck) {
+          setSelectedDeck(deck);
+          setIsStarred(deck.preset === 0);
+        } else if (data.length > 0) {
+          setSelectedDeck(data[0]);
+          setIsStarred(data[0].preset === 0);
+        }
+      } else if (location.state?.deck) {
         const editedDeck = data.find((d: Deck) => d.id === location.state.deck.id);
         if (editedDeck) {
           setSelectedDeck(editedDeck);
+          setIsStarred(editedDeck.preset === 0);
         } else if (data.length > 0) {
           setSelectedDeck(data[0]);
+          setIsStarred(data[0].preset === 0);
         }
       } else if (data.length > 0) {
         setSelectedDeck(data[0]);
+        setIsStarred(data[0].preset === 0);
       }
     } catch (error) {
       console.error('获取卡组列表失败:', error);
@@ -82,7 +96,7 @@ const Deck: React.FC = () => {
   const createNewDeck = async () => {
     try {
       const newDeck = {
-        deck_name: newDeckName,
+        deck_name: newDeckName || '新卡组',
         deck_description: newDeckDescription
       };
       
@@ -111,6 +125,24 @@ const Deck: React.FC = () => {
   // 处理点击设置按钮
   const handleSettingsClick = () => {
     setIsSettingsOpen(!isSettingsOpen);
+  };
+
+  //处理点击star
+  const handleStarClick = async () => {
+    if (!isStarred && selectedDeck?.id) {
+      try {
+        await setDeckPreset(selectedDeck.id, 0);
+        // 保存当前选中的卡组ID
+        const currentDeckId = selectedDeck.id;
+        // 刷新页面
+        window.location.reload();
+        // 页面刷新后，通过 URL 参数传递选中的卡组ID
+        window.location.href = `/deck?selected=${currentDeckId}`;
+      } catch (error) {
+        console.error('设置预设卡组失败:', error);
+        showToast('设置失败，请重试');
+      }
+    }
   };
 
   // 处理重命名
@@ -280,8 +312,11 @@ const Deck: React.FC = () => {
   // 检查卡组合规性
   const checkDeckValidity = async (deck: Deck) => {
     try {
-      const validation = await validateDeck(deck);
-      setDeckValidationErrors(validation.errors);
+      if (!deck.is_valid) {
+        setDeckValidationErrors([deck.remark || '卡组不合规']);
+      } else {
+        setDeckValidationErrors([]);
+      }
     } catch (error) {
       console.error('检查卡组合规性失败:', error);
       setDeckValidationErrors(['检查卡组合规性失败']);
@@ -350,7 +385,10 @@ const Deck: React.FC = () => {
                         ? 'ring-2 ring-blue-500 ring-offset-2 transform scale-105 bg-blue-50'
                         : 'hover:bg-gray-100'
                     }`}
-                    onClick={() => setSelectedDeck(deck)}
+                    onClick={() => {
+                      setSelectedDeck(deck);
+                      setIsStarred(deck.preset === 0);
+                    }}
                   >
                     <div className="font-medium">{deck.deck_name}</div>
                   </div>
@@ -364,7 +402,7 @@ const Deck: React.FC = () => {
         <div className="flex-[3_3_0%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
           <div className="h-12 w-full flex items-center justify-between px-4 border-b">
             <div className="flex items-center w-16">
-              <button className="p-1 hover:bg-gray-200 rounded" onClick={() => setIsStarred(!isStarred)}>
+              <button className="p-1 hover:bg-gray-200 rounded" onClick={() => handleStarClick()}>
                 <img src={isStarred ? starIcon : starOutlineIcon} alt="star" className="w-5 h-5" />
               </button>
               <div className="relative group ml-2">

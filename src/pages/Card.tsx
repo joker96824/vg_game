@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import type { Card, ShowCard, RarityInfo } from '../types/card';
 import type { Deck, DeckCard } from '../types/deck';
 import MinusIcon from '../assets/minus.svg';
@@ -11,7 +12,7 @@ import DeckView from '../components/DeckView';
 import { imageCache } from '../utils/image/imageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
 import { saveDeck, validateDeckValidity } from '../services/deckService';
-import { validateDeck, validateCards } from '../utils/deck/deckValidator';
+import { validateCards } from '../utils/deck/deckValidator';
 import warningIcon from '../assets/warning.svg';
 import { initDeckCards } from '../utils/card/initUtils';
 
@@ -79,6 +80,9 @@ const CardBrowser: React.FC = () => {
   const [deckValidationErrors, setDeckValidationErrors] = useState<string[]>([]);
   const deckNameRef = useRef<HTMLSpanElement>(null);
   const [deckNameWidth, setDeckNameWidth] = useState(0);
+  const [showWarningTooltip, setShowWarningTooltip] = useState(false);
+  const warningIconRef = useRef<HTMLDivElement>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
 
   // 导航标签配置
   const tabs = [
@@ -175,14 +179,18 @@ const CardBrowser: React.FC = () => {
         setModalRarityIndex(0);
         return newIndex;
       });
-    } else if (modalType === 'right' && modalCardIndex !== null && deckData?.deck_cards) {
-      setModalCardIndex((prev) => {
-        const newIndex = (prev! - 1 + deckData.deck_cards.length) % deckData.deck_cards.length;
-        setModalRarityIndex(0);
-        return newIndex;
-      });
+    } else if (modalType === 'right' && modalCardIndex !== null) {
+      const currentCards = getCurrentZoneCards();
+      if (currentCards.length > 0) {
+        setModalCardIndex((prev) => {
+          const newIndex = (prev! - 1 + currentCards.length) % currentCards.length;
+          setModalRarityIndex(0);
+          return newIndex;
+        });
+      }
     }
   };
+
   const handleNext = () => {
     if (modalType === 'left' && modalCardIndex !== null) {
       setModalCardIndex((prev) => {
@@ -190,12 +198,15 @@ const CardBrowser: React.FC = () => {
         setModalRarityIndex(0);
         return newIndex;
       });
-    } else if (modalType === 'right' && modalCardIndex !== null && deckData?.deck_cards) {
-      setModalCardIndex((prev) => {
-        const newIndex = (prev! + 1) % deckData.deck_cards.length;
-        setModalRarityIndex(0);
-        return newIndex;
-      });
+    } else if (modalType === 'right' && modalCardIndex !== null) {
+      const currentCards = getCurrentZoneCards();
+      if (currentCards.length > 0) {
+        setModalCardIndex((prev) => {
+          const newIndex = (prev! + 1) % currentCards.length;
+          setModalRarityIndex(0);
+          return newIndex;
+        });
+      }
     }
   };
 
@@ -838,6 +849,23 @@ const CardBrowser: React.FC = () => {
     }
   }, [displayDeckName]);
 
+  // 更新提示框位置
+  const updateTooltipPosition = () => {
+    if (warningIconRef.current) {
+      const rect = warningIconRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX
+      });
+    }
+  };
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    window.addEventListener('resize', updateTooltipPosition);
+    return () => window.removeEventListener('resize', updateTooltipPosition);
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
       {/* 顶部栏 */}
@@ -874,19 +902,45 @@ const CardBrowser: React.FC = () => {
             className="absolute left-1/2 flex items-center"
             style={{ transform: `translateX(calc(${deckNameWidth / 2}px + 1rem))` }}
           >
-            <div className="relative group">
+            <div 
+              ref={warningIconRef}
+              className="relative"
+              onMouseEnter={() => {
+                updateTooltipPosition();
+                setShowWarningTooltip(true);
+              }}
+              onMouseLeave={() => setShowWarningTooltip(false)}
+            >
               <img src={warningIcon} alt="warning" className="w-5 h-5" />
-              <div className="absolute left-0 top-full mt-1 w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm hidden group-hover:block z-50">
-                {deckValidationErrors.map((error, index) => (
-                  <div key={index} className="mb-1 last:mb-0">
-                    {error}
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
+        <button
+          className="absolute right-4 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm z-10 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSaveDeck}
+          disabled={saving}
+        >
+          {saving ? '保存中...' : '保存'}
+        </button>
       </div>
+
+      {/* 使用 Portal 渲染警告提示框 */}
+      {showWarningTooltip && deckValidationErrors.length > 0 && createPortal(
+        <div 
+          className="fixed w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm z-[9999]"
+          style={{
+            top: `${tooltipPosition.top + 4}px`,
+            left: `${tooltipPosition.left}px`
+          }}
+        >
+          {deckValidationErrors.map((error, index) => (
+            <div key={index} className="mb-1 last:mb-0">
+              {error}
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
 
       {/* 提示弹窗 */}
       {showToast && (
@@ -946,7 +1000,7 @@ const CardBrowser: React.FC = () => {
             {tabs.map(tab => (
               <button
                 key={tab.id}
-                className={`flex-1 py-1 text-center text-xs font-medium transition-colors
+                className={`flex-1 py-1 text-center text-xs font-medium transition-colors 
                   ${activeTab === tab.id 
                     ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'}`}
@@ -997,7 +1051,7 @@ const CardBrowser: React.FC = () => {
             >
               <div
                 className="flex items-center justify-center relative select-none p-4"
-                style={{width:'420px',height:'540px'}}
+                style={{width:'380px',height:'539px'}}
               >
                 {/* 展示卡片内容 */}
                 {modalType === 'left' && modalCardIndex !== null && cards[modalCardIndex] && (
@@ -1006,10 +1060,10 @@ const CardBrowser: React.FC = () => {
                       {/* 稀有度切换按钮 - 左 */}
                       {cards[modalCardIndex].rarity_infos.length > 1 && (
                         <button
-                          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                           onClick={() => setModalRarityIndex((prev) => (prev - 1 + cards[modalCardIndex].rarity_infos.length) % cards[modalCardIndex].rarity_infos.length)}
                         >
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </button>
@@ -1017,7 +1071,7 @@ const CardBrowser: React.FC = () => {
                       <img
                         src={`${IMAGE_BASE_URL}/${cards[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                         alt={cards[modalCardIndex].name_cn}
-                        className="w-full h-full object-contain"
+                        className="w-full h-full object-contain rounded-[4%]"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                         onLoad={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -1032,10 +1086,10 @@ const CardBrowser: React.FC = () => {
                       {/* 稀有度切换按钮 - 右 */}
                       {cards[modalCardIndex].rarity_infos.length > 1 && (
                         <button
-                          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                           onClick={() => setModalRarityIndex((prev) => (prev + 1) % cards[modalCardIndex].rarity_infos.length)}
                         >
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </button>
@@ -1064,10 +1118,10 @@ const CardBrowser: React.FC = () => {
                     {/* 稀有度切换按钮 - 左 */}
                     {getCurrentZoneCards()[modalCardIndex].rarity_infos.length > 1 && (
                       <button
-                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-r-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                         onClick={() => setModalRarityIndex((prev) => (prev - 1 + getCurrentZoneCards()[modalCardIndex].rarity_infos.length) % getCurrentZoneCards()[modalCardIndex].rarity_infos.length)}
                       >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </button>
@@ -1075,7 +1129,7 @@ const CardBrowser: React.FC = () => {
                     <img
                       src={`${IMAGE_BASE_URL}/${getCurrentZoneCards()[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                       alt={getCurrentZoneCards()[modalCardIndex].name_cn}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain rounded-[4%]"
                       style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                       onLoad={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -1090,10 +1144,10 @@ const CardBrowser: React.FC = () => {
                     {/* 稀有度切换按钮 - 右 */}
                     {getCurrentZoneCards()[modalCardIndex].rarity_infos.length > 1 && (
                       <button
-                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-2 py-4 hover:bg-opacity-100 transition-all"
+                        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white bg-opacity-80 rounded-l-lg px-1 py-4 hover:bg-opacity-100 transition-all"
                         onClick={() => setModalRarityIndex((prev) => (prev + 1) % getCurrentZoneCards()[modalCardIndex].rarity_infos.length)}
                       >
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg width="16" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                           <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         </svg>
                       </button>

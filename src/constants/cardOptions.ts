@@ -253,5 +253,6 @@ export const packOptions = [
   { value: 'DZ-SS07', label: 'DZ-SS07' },
   { value: 'DZ-SS08', label: 'DZ-SS08' },
   { value: 'DZ-SS09', label: 'DZ-SS09' },
-  { value: 'DZ-SS10', label: 'DZ-SS10' }
+  { value: 'DZ-SS10', label: 'DZ-SS10' },
+  { value: 'DZ-SS11', label: 'DZ-SS11' }
 ]; 

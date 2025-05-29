@@ -20,14 +20,14 @@ const DeckView: React.FC<DeckViewProps> = ({
           return (
             <div 
               key={idx} 
-              className="w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow cursor-pointer"
+              className="w-16 h-22 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow cursor-pointer"
               onClick={() => onCardClick(idx)}
             >
               {card.card_rarity[firstNonZeroIndex]?.card_number ? (
                 <img 
                   src={`${IMAGE_BASE_URL}/${card.card_rarity[firstNonZeroIndex].card_number}.jpg`}
                   alt={card.name_cn}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain rounded-[4%]"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';

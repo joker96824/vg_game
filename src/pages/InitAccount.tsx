@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { resetPassword, resetPasswordByEmail } from '../services/authService';
+import { resetPassword, resetPasswordByEmail, updateNickname } from '../services/authService';
 
 const InitAccount: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +28,14 @@ const InitAccount: React.FC = () => {
 
     try {
       const response = await resetPasswordByEmail(email, oldPassword, newPassword);
+      console.log(nickname);
+      const response2 = await updateNickname(nickname);
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        user.nickname = response2.data.nickname;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
       if (response.success) {
         navigate('/');
       } else {

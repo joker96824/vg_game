@@ -39,7 +39,7 @@ const CardList: React.FC<CardListProps> = ({
                 <img 
                   src={`${IMAGE_BASE_URL}/${card.rarity_infos[0].card_number}.jpg`}
                   alt={card.name_cn}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain rounded-[4%]"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';

@@ -21,4 +21,5 @@ export interface DeckCard {
     preset?: number;
     deck_version?: number;
     remark?: string;
+    is_valid?: boolean;
   }
