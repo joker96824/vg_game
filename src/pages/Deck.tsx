@@ -47,16 +47,31 @@ const Deck: React.FC = () => {
       console.log(Array.isArray(data));
       setDecks(Array.isArray(data) ? data : []);
       
-      // 从卡片页面返回时，自动选择编辑的卡组
-      if (location.state?.deck) {
+      // 检查 URL 参数中是否有选中的卡组ID
+      const urlParams = new URLSearchParams(window.location.search);
+      const selectedDeckId = urlParams.get('selected');
+      
+      if (selectedDeckId) {
+        const deck = data.find((d: Deck) => d.id === selectedDeckId);
+        if (deck) {
+          setSelectedDeck(deck);
+          setIsStarred(deck.preset === 0);
+        } else if (data.length > 0) {
+          setSelectedDeck(data[0]);
+          setIsStarred(data[0].preset === 0);
+        }
+      } else if (location.state?.deck) {
         const editedDeck = data.find((d: Deck) => d.id === location.state.deck.id);
         if (editedDeck) {
           setSelectedDeck(editedDeck);
+          setIsStarred(editedDeck.preset === 0);
         } else if (data.length > 0) {
           setSelectedDeck(data[0]);
+          setIsStarred(data[0].preset === 0);
         }
       } else if (data.length > 0) {
         setSelectedDeck(data[0]);
+        setIsStarred(data[0].preset === 0);
       }
     } catch (error) {
       console.error('获取卡组列表失败:', error);
@@ -115,8 +130,18 @@ const Deck: React.FC = () => {
   //处理点击star
   const handleStarClick = async () => {
     if (!isStarred && selectedDeck?.id) {
-      setIsStarred(true);
-      await setDeckPreset(selectedDeck.id, 0);
+      try {
+        await setDeckPreset(selectedDeck.id, 0);
+        // 保存当前选中的卡组ID
+        const currentDeckId = selectedDeck.id;
+        // 刷新页面
+        window.location.reload();
+        // 页面刷新后，通过 URL 参数传递选中的卡组ID
+        window.location.href = `/deck?selected=${currentDeckId}`;
+      } catch (error) {
+        console.error('设置预设卡组失败:', error);
+        showToast('设置失败，请重试');
+      }
     }
   };
 
@@ -360,7 +385,10 @@ const Deck: React.FC = () => {
                         ? 'ring-2 ring-blue-500 ring-offset-2 transform scale-105 bg-blue-50'
                         : 'hover:bg-gray-100'
                     }`}
-                    onClick={() => setSelectedDeck(deck)}
+                    onClick={() => {
+                      setSelectedDeck(deck);
+                      setIsStarred(deck.preset === 0);
+                    }}
                   >
                     <div className="font-medium">{deck.deck_name}</div>
                   </div>
