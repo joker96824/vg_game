@@ -9,7 +9,6 @@ import { IMAGE_BASE_URL } from '../constants/api';
 import { getDecks, saveDeck, createDeck, deleteDeck, importDeck, updateDeckInfo, copyDeck } from '../services/deckService';
 import type { Deck, DeckCard } from '../types/deck';
 import Toast from '../components/Toast';
-import { validateDeck } from '../utils/deck/deckValidator';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();

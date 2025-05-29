@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import type { Card, ShowCard, RarityInfo } from '../types/card';
 import type { Deck, DeckCard } from '../types/deck';
 import MinusIcon from '../assets/minus.svg';
@@ -11,7 +12,7 @@ import DeckView from '../components/DeckView';
 import { imageCache } from '../utils/image/imageCache';
 import { getCards, getCardsByIds } from '../services/cardService';
 import { saveDeck, validateDeckValidity } from '../services/deckService';
-import { validateDeck, validateCards } from '../utils/deck/deckValidator';
+import { validateCards } from '../utils/deck/deckValidator';
 import warningIcon from '../assets/warning.svg';
 import { initDeckCards } from '../utils/card/initUtils';
 
@@ -79,6 +80,9 @@ const CardBrowser: React.FC = () => {
   const [deckValidationErrors, setDeckValidationErrors] = useState<string[]>([]);
   const deckNameRef = useRef<HTMLSpanElement>(null);
   const [deckNameWidth, setDeckNameWidth] = useState(0);
+  const [showWarningTooltip, setShowWarningTooltip] = useState(false);
+  const warningIconRef = useRef<HTMLDivElement>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
 
   // 导航标签配置
   const tabs = [
@@ -845,6 +849,23 @@ const CardBrowser: React.FC = () => {
     }
   }, [displayDeckName]);
 
+  // 更新提示框位置
+  const updateTooltipPosition = () => {
+    if (warningIconRef.current) {
+      const rect = warningIconRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX
+      });
+    }
+  };
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    window.addEventListener('resize', updateTooltipPosition);
+    return () => window.removeEventListener('resize', updateTooltipPosition);
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
       {/* 顶部栏 */}
@@ -881,19 +902,38 @@ const CardBrowser: React.FC = () => {
             className="absolute left-1/2 flex items-center"
             style={{ transform: `translateX(calc(${deckNameWidth / 2}px + 1rem))` }}
           >
-            <div className="relative group">
+            <div 
+              ref={warningIconRef}
+              className="relative"
+              onMouseEnter={() => {
+                updateTooltipPosition();
+                setShowWarningTooltip(true);
+              }}
+              onMouseLeave={() => setShowWarningTooltip(false)}
+            >
               <img src={warningIcon} alt="warning" className="w-5 h-5" />
-              <div className="absolute left-0 top-full mt-1 w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm hidden group-hover:block z-50">
-                {deckValidationErrors.map((error, index) => (
-                  <div key={index} className="mb-1 last:mb-0">
-                    {error}
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* 使用 Portal 渲染警告提示框 */}
+      {showWarningTooltip && deckValidationErrors.length > 0 && createPortal(
+        <div 
+          className="fixed w-64 p-2 bg-yellow-50 border border-yellow-200 rounded shadow-lg text-red-600 text-sm z-[9999]"
+          style={{
+            top: `${tooltipPosition.top + 4}px`,
+            left: `${tooltipPosition.left}px`
+          }}
+        >
+          {deckValidationErrors.map((error, index) => (
+            <div key={index} className="mb-1 last:mb-0">
+              {error}
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
 
       {/* 提示弹窗 */}
       {showToast && (
