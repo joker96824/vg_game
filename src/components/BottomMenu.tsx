@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import bagIcon from '../assets/bag.svg'
 import friendIcon from '../assets/friend.svg'
@@ -13,16 +13,27 @@ interface MenuItem {
   route?: string;
   icon: string;
   onClick?: () => void;
-  requiredRole?: string;
+  requiredLevel?: number;
 }
 
 const BottomMenu: React.FC = () => {
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [userLevel, setUserLevel] = useState<number>(0);
 
-  // 模拟用户权限，实际应该从用户状态或API获取
-  const userRole = 'admin'; // 可以是 'admin', 'user', 'guest' 等
+  // 从 localStorage 获取用户信息
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserLevel(user.level || 0);
+      } catch (error) {
+        console.error('解析用户信息失败:', error);
+      }
+    }
+  }, []);
 
   const menuItems: MenuItem[] = [
     { 
@@ -41,12 +52,8 @@ const BottomMenu: React.FC = () => {
       label: '管理员',
       icon: adminIcon,
       onClick: () => setIsAdminOpen(true),
-      requiredRole: 'admin'
+      requiredLevel: 5
     },
-    // { 
-    //   label: '关于',
-    //   icon: infoIcon
-    // },
     { 
       label: '设置',
       icon: settingsIcon,
@@ -54,9 +61,9 @@ const BottomMenu: React.FC = () => {
     }
   ]
 
-  // 过滤菜单项，根据用户权限显示
+  // 过滤菜单项，根据用户等级显示
   const filteredMenuItems = menuItems.filter(item => 
-    !item.requiredRole || item.requiredRole === userRole
+    !item.requiredLevel || item.requiredLevel <= userLevel
   );
 
   return (
