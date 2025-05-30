@@ -132,12 +132,14 @@ const Deck: React.FC = () => {
     if (!isStarred && selectedDeck?.id) {
       try {
         await setDeckPreset(selectedDeck.id, 0);
-        // 保存当前选中的卡组ID
-        const currentDeckId = selectedDeck.id;
-        // 刷新页面
-        window.location.reload();
-        // 页面刷新后，通过 URL 参数传递选中的卡组ID
-        window.location.href = `/deck?selected=${currentDeckId}`;
+        // 更新所有卡组的 preset 值
+        setDecks(prevDecks => 
+          prevDecks.map(deck => ({
+            ...deck,
+            preset: deck.id === selectedDeck.id ? 0 : -1
+          }))
+        );
+        setIsStarred(true);
       } catch (error) {
         console.error('设置预设卡组失败:', error);
         showToast('设置失败，请重试');
