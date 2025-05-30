@@ -4,9 +4,9 @@ import bagIcon from '../assets/bag.svg'
 import friendIcon from '../assets/friend.svg'
 import historyIcon from '../assets/history.svg'
 import adminIcon from '../assets/admin.svg'
-import infoIcon from '../assets/info.svg'
 import settingsIcon from '../assets/settings.svg'
 import SettingsMenu from './SettingsMenu'
+import AdminMenu from './AdminMenu'
 
 interface MenuItem {
   label: string;
@@ -104,41 +104,10 @@ const BottomMenu: React.FC = () => {
       />
 
       {/* 管理员菜单 */}
-      {isAdminOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 w-96 max-w-[90vw] relative">
-            <button
-              onClick={() => setIsAdminOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <h2 className="text-2xl font-game mb-6">管理员面板</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="font-game">用户管理</span>
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                  进入
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-game">系统设置</span>
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                  进入
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="font-game">数据统计</span>
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                  进入
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AdminMenu
+        isOpen={isAdminOpen}
+        onClose={() => setIsAdminOpen(false)}
+      />
     </>
   )
 }
