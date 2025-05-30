@@ -130,6 +130,12 @@ const Deck: React.FC = () => {
   //处理点击star
   const handleStarClick = async () => {
     if (!isStarred && selectedDeck?.id) {
+      // 首先检查卡组合规性
+      if (!selectedDeck.is_valid) {
+        showToast('卡组不合规');
+        return;
+      }
+
       try {
         await setDeckPreset(selectedDeck.id, 0);
         // 更新所有卡组的 preset 值
