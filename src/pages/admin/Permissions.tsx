@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUsers, updateUserLevel } from '../../services/authService';
+import Toast from '../../components/Toast';
 
 interface User {
   id: string;
@@ -68,6 +69,7 @@ const Permissions: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     // 检查用户权限
@@ -117,9 +119,9 @@ const Permissions: React.FC = () => {
         user.id === selectedUser.id ? { ...user, level: newLevel } : user
       ));
       setIsModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('修改用户等级失败:', error);
-      setError('修改用户等级失败');
+      setToastMessage(error.message || '修改用户等级失败');
     }
   };
 
@@ -202,6 +204,8 @@ const Permissions: React.FC = () => {
         onConfirm={handleUpdateLevel}
         currentLevel={selectedUser?.level || 1}
       />
+
+      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage('')} />}
     </div>
   );
 };
