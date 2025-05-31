@@ -425,3 +425,24 @@ export const getUsers = async () => {
     throw error;
   }
 };
+
+export const updateUserLevel = async (userId: string, newLevel: number) => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/users/level`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ user_id: userId, new_level: newLevel }),
+    });
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || '修改用户等级失败');
+    }
+    return data;
+  } catch (error) {
+    console.error('修改用户等级失败:', error);
+    throw error;
+  }
+};
