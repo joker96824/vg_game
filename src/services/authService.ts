@@ -414,3 +414,14 @@ export const updateAvatar = async (avatarUrl: string) => {
   }
   return data;
 };
+
+export const getUsers = async () => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/users`);
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    console.error('获取用户列表失败:', error);
+    throw error;
+  }
+};
