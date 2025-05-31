@@ -68,13 +68,13 @@ const BottomMenu: React.FC = () => {
 
   return (
     <>
-      <footer className="fixed bottom-0 left-0 right-0 h-24 flex items-center px-8 border-t border-gray-200 bg-white">
-        <span className="text-xs text-gray-400">版本号</span>
-        <div className="flex flex-1 justify-end">
-          <div className="flex space-x-6">
+    <footer className="fixed bottom-0 left-0 right-0 h-24 flex items-center px-8 border-t border-gray-200 bg-white">
+      <span className="text-xs text-gray-400">版本号</span>
+      <div className="flex flex-1 justify-end">
+        <div className="flex space-x-6">
             {filteredMenuItems.map(({ icon, label, route, onClick }) => (
               <button
-                key={label}
+              key={label}
                 className="group relative w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all duration-100 ease-in-out"
                 onClick={() => {
                   if (route) {
@@ -88,14 +88,14 @@ const BottomMenu: React.FC = () => {
                 <img src={icon} alt={label} className="w-6 h-6" />
                 <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
                   <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                    {label}
-                  </div>
-                </div>
+                  {label}
+              </div>
+            </div>
               </button>
-            ))}
-          </div>
+          ))}
         </div>
-      </footer>
+      </div>
+    </footer>
 
       {/* 设置菜单 */}
       <SettingsMenu
