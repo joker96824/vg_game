@@ -129,7 +129,7 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
       newValue = value;
     }
     
-    const newData = { ...data };
+    const newData = Array.isArray(data) ? [...data] : { ...data };
     if (Array.isArray(data)) {
       console.log('当前是数组，直接添加值');
       newData.push(newValue);
@@ -142,7 +142,7 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
   };
 
   const handleDelete = (key: string) => {
-    const newData = { ...data };
+    const newData = Array.isArray(data) ? [...data] : { ...data };
     if (Array.isArray(data)) {
       console.log('当前是数组，使用 splice 删除元素');
       newData.splice(parseInt(key), 1);
@@ -193,14 +193,14 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
       {isExpanded && (
         <div className="ml-4">
           {Object.entries(data).map(([key, value]) => (
-            <div key={key} className="flex items-start gap-2">
+            <div key={key} className="flex items-start">
               {!isArray && (
-                <div className="flex items-center gap-2 min-w-[100px]">
+                <div className="flex items-center">
                   <span className="text-blue-600">"{key}"</span>
                   <span className="text-gray-700">:</span>
                 </div>
               )}
-              <div className="flex-1">
+              <div className="flex-1 ml-1">
                 {typeof value === 'object' && value !== null ? (
                   <JsonNode
                     data={value}
@@ -220,7 +220,7 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
               </div>
               <button
                 onClick={() => handleDelete(key)}
-                className="text-red-500 hover:text-red-700"
+                className="text-red-500 hover:text-red-700 ml-1"
               >
                 ×
               </button>
