@@ -94,6 +94,26 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
   const [modalType, setModalType] = useState<'object' | 'array' | 'value' | null>(null);
 
   const handleAdd = (type: 'object' | 'array' | 'value') => {
+    console.log('当前路径:', path);
+    console.log('当前数据:', data);
+    console.log('数据类型:', Array.isArray(data) ? '数组' : '对象');
+    console.log('添加类型:', type);
+
+    // 如果是数组，直接添加对应的空值
+    if (Array.isArray(data)) {
+      console.log('当前是数组，直接添加空', type);
+      const newData = [...data];
+      if (type === 'value') {
+        newData.push('');
+      } else if (type === 'object') {
+        newData.push({});
+      } else if (type === 'array') {
+        newData.push([]);
+      }
+      onChange(path, newData);
+      return;
+    }
+
     setModalType(type);
   };
 
@@ -110,14 +130,26 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
     }
     
     const newData = { ...data };
-    newData[key] = newValue;
+    if (Array.isArray(data)) {
+      console.log('当前是数组，直接添加值');
+      newData.push(newValue);
+    } else {
+      console.log('当前是对象，使用 key-value 方式添加');
+      newData[key] = newValue;
+    }
     onChange(path, newData);
     setModalType(null);
   };
 
   const handleDelete = (key: string) => {
     const newData = { ...data };
-    delete newData[key];
+    if (Array.isArray(data)) {
+      console.log('当前是数组，使用 splice 删除元素');
+      newData.splice(parseInt(key), 1);
+    } else {
+      console.log('当前是对象，使用 delete 删除属性');
+      delete newData[key];
+    }
     onChange(path, newData);
   };
 
@@ -163,8 +195,8 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
           {Object.entries(data).map(([key, value]) => (
             <div key={key} className="ml-4">
               <div className="flex items-center gap-2">
-                <span className="text-blue-600">"{key}"</span>
-                <span className="text-gray-700">:</span>
+                {!isArray && <span className="text-blue-600">"{key}"</span>}
+                {!isArray && <span className="text-gray-700">:</span>}
                 {typeof value === 'object' && value !== null ? (
                   <JsonNode
                     data={value}
