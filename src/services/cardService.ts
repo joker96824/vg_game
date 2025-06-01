@@ -1,6 +1,7 @@
 import { ShowCard, Card } from '../types/card';
 import { API_ENDPOINTS } from '../constants/api';
 import { createAuthenticatedRequest } from '../utils/request';
+import axios from 'axios';
 
 interface ApiResponse<T> {
   success: boolean;
@@ -318,6 +319,31 @@ export const getCardUsageStats = async (cardId: string): Promise<{
     return data.data!;
   } catch (error) {
     console.error('获取卡片使用统计失败:', error);
+    throw error;
+  }
+};
+
+export const saveCardAbility = async (id: string, ability: Record<string, any>) => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}/abilities`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id,
+        ability
+      })
+    });
+    const data: ApiResponse<any> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '保存技能配置失败');
+    }
+    
+    return data.data;
+  } catch (error) {
+    console.error('保存技能配置失败:', error);
     throw error;
   }
 }; 

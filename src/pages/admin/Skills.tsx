@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import JsonEditor from '../../components/JsonEditor';
-import { getCardsList } from '../../services/cardService';
+import { getCardsList, saveCardAbility } from '../../services/cardService';
 import { Card } from '../../types/card';
 
 interface AbilityInfo {
+  id: string;
   ability_desc: string;
   ability: Record<string, any>;
 }
@@ -18,6 +19,7 @@ const Skills: React.FC = () => {
   const [jsonData, setJsonData] = useState<any>({
     id: "1"
   });
+  const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [searchText, setSearchText] = useState('');
   const [cards, setCards] = useState<CardWithAbilities[]>([]);
   const [filteredCards, setFilteredCards] = useState<CardWithAbilities[]>([]);
@@ -27,6 +29,7 @@ const Skills: React.FC = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
   const lastCardElementRef = useCallback((node: HTMLDivElement | null) => {
     if (isLoading) return;
@@ -162,8 +165,35 @@ const Skills: React.FC = () => {
     setExpandedCard(expandedCard === cardName ? null : cardName);
   };
 
+  const handleAbilityClick = (ability: AbilityInfo) => {
+    if (ability.ability) {
+      setJsonData(ability.ability);
+      setSelectedCardId(ability.id);
+    }
+  };
+
   const handleJsonChange = (newData: any) => {
     setJsonData(newData);
+  };
+
+  const handleSave = async () => {
+    if (!selectedCardId) {
+      alert('请先选择一个技能');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await saveCardAbility(selectedCardId, jsonData);
+      alert('保存成功');
+      // 重新加载数据
+      fetchCards();
+    } catch (error) {
+      console.error('保存失败:', error);
+      alert('保存失败');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -183,11 +213,11 @@ const Skills: React.FC = () => {
             onClick={() => setShowSpecialSkills(!showSpecialSkills)}
             className={`absolute right-0 top-1/2 -translate-y-1/2 px-3 py-1 rounded text-sm ${
               showSpecialSkills 
-                ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                : 'bg-blue-500 text-white hover:bg-blue-600' 
             }`}
           >
-            {showSpecialSkills ? '隐藏已完成技能' : '显示已完成技能'}
+            {showSpecialSkills ? '显示已完成技能' : '隐藏已完成技能'}
           </button>
         </div>
 
@@ -247,7 +277,10 @@ const Skills: React.FC = () => {
                       {card.ability_infos.map((ability, index) => (
                         <div
                           key={index}
-                          className="p-2 text-xs text-gray-600 hover:bg-gray-50"
+                          onClick={() => handleAbilityClick(ability)}
+                          className={`p-2 text-xs text-gray-600 hover:bg-gray-50 cursor-pointer ${
+                            ability.ability ? 'text-blue-600' : ''
+                          }`}
                         >
                           {ability.ability_desc}
                         </div>
@@ -266,7 +299,16 @@ const Skills: React.FC = () => {
 
           {/* 右侧部分 */}
           <div className="flex-1 bg-white rounded-lg shadow p-4">
-            <h2 className="text-lg font-medium mb-4">JSON 编辑器</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-medium">JSON 编辑器</h2>
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !selectedCardId}
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? '保存中...' : '保存'}
+              </button>
+            </div>
             <JsonEditor
               data={jsonData}
               onChange={handleJsonChange}
