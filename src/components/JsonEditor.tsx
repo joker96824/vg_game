@@ -156,8 +156,8 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
   const isArray = Array.isArray(data);
 
   return (
-    <div className="ml-4">
-      <div className="flex items-center gap-2 mb-2">
+    <div>
+      <div className="flex items-center gap-2">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-gray-500 hover:text-gray-700"
@@ -191,12 +191,16 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
       </div>
 
       {isExpanded && (
-        <>
+        <div className="ml-4">
           {Object.entries(data).map(([key, value]) => (
-            <div key={key} className="ml-4">
-              <div className="flex items-center gap-2">
-                {!isArray && <span className="text-blue-600">"{key}"</span>}
-                {!isArray && <span className="text-gray-700">:</span>}
+            <div key={key} className="flex items-start gap-2">
+              {!isArray && (
+                <div className="flex items-center gap-2 min-w-[100px]">
+                  <span className="text-blue-600">"{key}"</span>
+                  <span className="text-gray-700">:</span>
+                </div>
+              )}
+              <div className="flex-1">
                 {typeof value === 'object' && value !== null ? (
                   <JsonNode
                     data={value}
@@ -213,16 +217,16 @@ const JsonNode: React.FC<JsonNodeProps> = ({ data, path, onChange, onAdd, onDele
                     className="border border-gray-300 rounded px-2 py-1"
                   />
                 )}
-                <button
-                  onClick={() => handleDelete(key)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ×
-                </button>
               </div>
+              <button
+                onClick={() => handleDelete(key)}
+                className="text-red-500 hover:text-red-700"
+              >
+                ×
+              </button>
             </div>
           ))}
-        </>
+        </div>
       )}
 
       <div className="ml-4">
