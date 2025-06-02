@@ -130,8 +130,8 @@ export const validateCards = async (
     );
 
     if (!hasCommonNation) {
-      errors.push('骑升轴和主卡组的卡必须属于同一个国家');
-    }
+        errors.push('骑升轴和主卡组的卡必须属于同一个国家');
+      }
 
     // 6. 检查骑升区卡牌类型
     const invalidRideCards = rideCards.filter(card => 
@@ -171,12 +171,12 @@ export const validateCards = async (
     }, 0);
     if (overTriggerTotal > 1) {
       errors.push('超触发单位总数不能超过1张');
-    }
+  }
 
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
   } catch (error) {
     console.error('验证卡组时出错:', error);
     return {

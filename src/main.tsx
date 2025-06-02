@@ -8,6 +8,8 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import ResetPassword from './pages/ResetPassword'
 import InitAccount from './pages/InitAccount'
+import Permissions from './pages/admin/Permissions'
+import Skills from './pages/admin/Skills'
 import PrivateRoute from './components/PrivateRoute'
 import './styles/global.css'
 
@@ -31,6 +33,16 @@ root.render(
         <Route path="/deck" element={
           <PrivateRoute>
             <Deck />
+          </PrivateRoute>
+        } />
+        <Route path="/admin/permissions" element={
+          <PrivateRoute>
+            <Permissions />
+          </PrivateRoute>
+        } />
+        <Route path="/admin/skills" element={
+          <PrivateRoute>
+            <Skills />
           </PrivateRoute>
         } />
         <Route path="/login" element={<Login />} />
