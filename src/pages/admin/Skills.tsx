@@ -16,9 +16,7 @@ interface CardWithAbilities extends Card {
 
 const Skills: React.FC = () => {
   const navigate = useNavigate();
-  const [jsonData, setJsonData] = useState<any>({
-    id: "1"
-  });
+  const [jsonData, setJsonData] = useState<any>({});
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [searchText, setSearchText] = useState('');
   const [cards, setCards] = useState<CardWithAbilities[]>([]);
@@ -108,11 +106,14 @@ const Skills: React.FC = () => {
 
     // 根据特殊技能开关过滤
     if (!showSpecial) {
-      filtered = filtered.filter(card => 
-        !card.ability_infos.some(ability => 
+      filtered = filtered.filter(card => {
+        // 检查是否所有 ability_info 都有非空的 ability
+        const allAbilitiesCompleted = card.ability_infos.every(ability => 
           ability.ability && Object.keys(ability.ability).length > 0
-        )
-      );
+        );
+        // 如果所有技能都已完成，则隐藏该卡片
+        return !allAbilitiesCompleted;
+      });
     }
 
     setFilteredCards(filtered);
