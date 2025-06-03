@@ -110,7 +110,14 @@ const CardBrowser: React.FC = () => {
       if (pageNum === 1) {
         setCards(response);
       } else {
-        setCards(prev => [...prev, ...response]);
+        setCards(prev => {
+          // 使用 Map 来去重，以 card.id 为 key
+          const cardMap = new Map(prev.map(card => [card.id, card]));
+          // 添加新卡片，如果有重复的会覆盖
+          response.forEach(card => cardMap.set(card.id, card));
+          // 转换回数组
+          return Array.from(cardMap.values());
+        });
       }
       
       setHasMore(response.length === 20);
