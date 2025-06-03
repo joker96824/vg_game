@@ -1114,7 +1114,10 @@ const CardBrowser: React.FC = () => {
         >
           <div
             className="relative flex flex-col items-center"
-            style={{ minWidth: 400, minHeight: 400 }}
+            style={{ 
+              minWidth: isMobile ? 300 : 400, 
+              minHeight: isMobile ? 300 : 400 
+            }}
             onClick={e => e.stopPropagation()}
           >
             {/* 左箭头SVG，极窄宽度，贴边 */}
@@ -1130,11 +1133,18 @@ const CardBrowser: React.FC = () => {
             {/* 中间大卡片 */}
             <div
               className="flex flex-col items-center justify-center relative select-none bg-white rounded-lg border border-gray-200"
-              style={{width:'420px',minHeight:'600px'}}
+              style={{
+                width: isMobile ? '300px' : '420px',
+                minHeight: isMobile ? '450px' : '600px'
+              }}
             >
               <div
                 className="flex items-center justify-center relative select-none p-4"
-                style={{width:'380px',height:'539px'}}
+                style={{
+                  width: isMobile ? '260px' : '380px',
+                  height: 'auto',
+                  aspectRatio: 'auto'
+                }}
               >
                 {/* 展示卡片内容 */}
                 {modalType === 'left' && modalCardIndex !== null && cards[modalCardIndex] && (
@@ -1154,11 +1164,17 @@ const CardBrowser: React.FC = () => {
                       <img
                         src={`${IMAGE_BASE_URL}/${cards[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                         alt={cards[modalCardIndex].name_cn}
-                        className="w-full h-full object-contain rounded-[4%]"
+                        className="w-full h-auto object-contain rounded-[4%]"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                         onLoad={(e) => {
                           const target = e.target as HTMLImageElement;
                           imageCache.handleImageLoad(target.src);
+                          // 设置外层div的宽高比
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const ratio = target.naturalWidth / target.naturalHeight;
+                            parent.style.aspectRatio = ratio.toString();
+                          }
                         }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -1212,11 +1228,17 @@ const CardBrowser: React.FC = () => {
                     <img
                       src={`${IMAGE_BASE_URL}/${getCurrentZoneCards()[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                       alt={getCurrentZoneCards()[modalCardIndex].name_cn}
-                      className="w-full h-full object-contain rounded-[4%]"
+                      className="w-full h-auto object-contain rounded-[4%]"
                       style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                       onLoad={(e) => {
                         const target = e.target as HTMLImageElement;
                         imageCache.handleImageLoad(target.src);
+                        // 设置外层div的宽高比
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const ratio = target.naturalWidth / target.naturalHeight;
+                          parent.style.aspectRatio = ratio.toString();
+                        }
                       }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
