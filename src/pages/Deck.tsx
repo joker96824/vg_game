@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import starIcon from '../assets/star.svg';
 import starOutlineIcon from '../assets/star-outline.svg';
@@ -30,6 +30,8 @@ const Deck: React.FC = () => {
   const [editingName, setEditingName] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [deckValidationErrors, setDeckValidationErrors] = useState<string[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   // 新增导航栏tab配置
   const tabs = [
@@ -340,9 +342,34 @@ const Deck: React.FC = () => {
     }
   }, [selectedDeck]);
 
+  // 检测设备类型
+  useEffect(() => {
+    const checkDevice = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
   useEffect(() => {
     fetchDecks();
   }, []);
+
+  // 过滤卡组列表
+  const filteredDecks = useMemo(() => {
+    return decks.filter(deck => 
+      deck.deck_name.toLowerCase().includes(searchKeyword.toLowerCase())
+    );
+  }, [decks, searchKeyword]);
+
+  // 处理卡组选择
+  const handleDeckSelect = (deck: Deck) => {
+    setSelectedDeck(deck);
+    setIsStarred(deck.preset === 0);
+  };
 
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
@@ -370,44 +397,35 @@ const Deck: React.FC = () => {
 
       {/* 主体区域 */}
       <div className="flex flex-1 overflow-hidden">
-        {/* 左侧卡组区 - 占70%宽度 */}
-        <div className="flex-[7_7_0%] h-full flex flex-col items-center justify-center bg-white">
-          <div className="w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent p-8">
-            <div className="grid grid-cols-3 gap-6">
-              {/* 第一个为添加卡组按钮 */}
-              <div 
-                className="w-44 h-52 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center text-3xl font-bold cursor-pointer hover:bg-gray-100"
-                onClick={() => setIsModalOpen(true)}
-              >
-                +
-              </div>
-              {/* 后续为卡组格子 */}
-              {isLoadingDecks ? (
-                <div className="text-center text-gray-500">加载中...</div>
-              ) : (
-                decks.map((deck, index) => (
-                  <div 
-                    key={index}
-                    className={`w-44 h-52 border rounded-lg flex items-center justify-center text-gray-700 text-base bg-white shadow transition-all duration-200 ${
-                      selectedDeck?.id === deck.id
-                        ? 'ring-2 ring-blue-500 ring-offset-2 transform scale-105 bg-blue-50'
-                        : 'hover:bg-gray-100'
-                    }`}
-                    onClick={() => {
-                      setSelectedDeck(deck);
-                      setIsStarred(deck.preset === 0);
-                    }}
-                  >
-                    <div className="font-medium">{deck.deck_name}</div>
-                  </div>
-                ))
-              )}
+        {/* 左侧卡组区 - 占30%宽度 */}
+        <div className="w-[30%] border-r overflow-y-auto custom-scrollbar">
+          <div className="p-4">
+            <button
+              className="w-full p-1.5 mb-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors"
+              onClick={() => setIsModalOpen(true)}
+            >
+              <span className="text-xl">+</span>
+            </button>
+            <div className="space-y-2">
+              {decks.map((deck) => (
+                <div
+                  key={deck.id}
+                  className={`p-2 rounded-lg cursor-pointer transition-colors ${
+                    selectedDeck?.id === deck.id
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'hover:bg-gray-100'
+                  }`}
+                  onClick={() => handleDeckSelect(deck)}
+                >
+                  <div className="truncate">{deck.deck_name}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* 右侧卡牌区 - 占30%宽度 */}
-        <div className="flex-[3_3_0%] h-full border-l flex flex-col items-center justify-start pt-4 bg-gray-50">
+        {/* 右侧卡牌区 - 占70%宽度 */}
+        <div className="w-[70%] flex flex-col">
           <div className="h-12 w-full flex items-center justify-between px-4 border-b">
             <div className="flex items-center w-16">
               <button className="p-1 hover:bg-gray-200 rounded" onClick={() => handleStarClick()}>
@@ -524,16 +542,21 @@ const Deck: React.FC = () => {
           </div>
 
           {/* 卡片展示区域 */}
-          <div className="grid grid-cols-4 gap-2 w-full px-4 overflow-y-auto">
+          <div className={`grid ${isMobile ? 'grid-cols-3' : 'grid-cols-5'} gap-2 w-full px-4 overflow-y-auto`}>
             {selectedDeck && getCurrentZoneCards(selectedDeck).map((card, index) => (
               <div 
                 key={index} 
-                className="relative w-16 h-24 border rounded flex items-center justify-center text-gray-500 text-xs bg-white shadow"
+                className="relative border rounded-lg flex items-center justify-center text-gray-500 text-xs bg-white shadow"
               >
                 <img
                   src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
                   alt={`Card ${card.card_id}`}
-                  className="w-full h-full object-contain"
+                  className="w-full h-auto object-contain"
+                  onLoad={(e) => {
+                    const img = e.target as HTMLImageElement;
+                    const ratio = img.naturalWidth / img.naturalHeight;
+                    img.parentElement!.style.aspectRatio = ratio.toString();
+                  }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
