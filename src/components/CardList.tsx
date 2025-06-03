@@ -25,7 +25,7 @@ const CardList: React.FC<CardListProps> = ({
 
   return (
     <div 
-      className={`${isMobile ? 'w-full' : 'w-[70%]'} overflow-y-auto custom-scrollbar`}
+      className={`card-list-container ${isMobile ? 'w-full' : 'w-[70%]'} overflow-y-auto custom-scrollbar`}
       onScroll={onScroll}
     >
       <div className={`grid ${isMobile ? 'grid-cols-4' : 'grid-cols-5'} gap-0 p-0`}>

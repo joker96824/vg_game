@@ -114,8 +114,10 @@ const CardBrowser: React.FC = () => {
       }
       
       setHasMore(response.length === 20);
+      return response.length;
     } catch (error) {
       console.error('获取卡牌数据失败:', error);
+      return 0;
     } finally {
       setLoading(false);
     }
@@ -124,14 +126,20 @@ const CardBrowser: React.FC = () => {
   // 初始加载
   useEffect(() => {
     const loadInitialCards = async () => {
-      if (isMobile) {
-        // 移动端直接加载两页
-        await fetchCards(1);
-        await fetchCards(2);
-        setPage(2);
-      } else {
-        // 桌面端只加载一页
-        await fetchCards(1);
+      const cardCount = await fetchCards(1);
+      setPage(1);
+      
+      // 等待图片加载完成
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // 如果第一页加载完成后，检查是否需要加载第二页
+      if (cardCount > 0) {
+        const cardListElement = document.querySelector('.card-list-container');
+        if (cardListElement && cardListElement.scrollHeight <= cardListElement.clientHeight) {
+          // 如果没有滚动条，加载第二页
+          await fetchCards(2);
+          setPage(2);
+        }
       }
     };
     
