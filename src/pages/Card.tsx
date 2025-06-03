@@ -160,9 +160,22 @@ const CardBrowser: React.FC = () => {
   };
 
   // 筛选条件搜索
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setPage(1);
-    fetchCards(1);
+    const cardCount = await fetchCards(1);
+    
+    // 等待图片加载完成
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // 检查是否需要加载第二页
+    if (cardCount > 0) {
+      const cardListElement = document.querySelector('.card-list-container');
+      if (cardListElement && cardListElement.scrollHeight <= cardListElement.clientHeight) {
+        // 如果没有滚动条，加载第二页
+        await fetchCards(2);
+        setPage(2);
+      }
+    }
   };
 
   // 无限滚动加载更多
