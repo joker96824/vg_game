@@ -28,9 +28,9 @@ const DeckView: React.FC<DeckViewProps> = ({ showCards, onCardClick, isMobile = 
                 img.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
               }}
             />
-            {card.card_rarity[0]?.quantity > 1 && (
+            {card.card_rarity.reduce((sum, rarity) => sum + rarity.quantity, 0) > 1 && (
               <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-                {card.card_rarity[0].quantity}
+                {card.card_rarity.reduce((sum, rarity) => sum + rarity.quantity, 0)}
               </div>
             )}
           </div>
