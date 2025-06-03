@@ -7,8 +7,9 @@ interface CardListProps {
   loading: boolean;
   hasMore: boolean;
   onScroll: (e: React.UIEvent<HTMLDivElement>) => void;
-  onCardClick: (index: number) => void;
+  onCardClick: (idx: number) => void;
   getCachedImage: (imageUrl: string) => Promise<string>;
+  isMobile?: boolean;
 }
 
 const CardList: React.FC<CardListProps> = ({
@@ -17,59 +18,41 @@ const CardList: React.FC<CardListProps> = ({
   hasMore,
   onScroll,
   onCardClick,
-  getCachedImage
+  getCachedImage,
+  isMobile = false
 }) => {
   const cardListRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="w-[70%] h-full flex flex-col items-center justify-center">
-      <div
-        className="w-full h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pr-2"
-        ref={cardListRef}
-        onScroll={onScroll}
-      >
-        <div className="grid grid-cols-5 gap-4 py-4">
-          {cards.map((card, idx) => (
-            <div 
-              key={card.id} 
-              className="w-36 h-52 flex flex-col items-center justify-center text-gray-700 text-base bg-transparent cursor-pointer"
-              onClick={() => onCardClick(idx)}
-            >
-              {card.rarity_infos?.[0]?.card_number ? (
-                <img 
-                  src={`${IMAGE_BASE_URL}/${card.rarity_infos[0].card_number}.jpg`}
-                  alt={card.name_cn}
-                  className="w-full h-full object-contain rounded-[4%]"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.parentElement?.classList.add('text-center');
-                  }}
-                  onLoad={async (e) => {
-                    const target = e.target as HTMLImageElement;
-                    const imageUrl = target.src;
-                    const cachedUrl = await getCachedImage(imageUrl);
-                    if (cachedUrl !== imageUrl) {
-                      target.src = cachedUrl;
-                    }
-                  }}
-                />
-              ) : (
-                <div className="text-center">
-                  <div className="font-bold">{card.name_cn}</div>
-                  <div className="text-xs mt-1">{card.card_type}</div>
-                  <div className="text-xs mt-1">{card.card_power}</div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        {loading && (
-          <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+    <div 
+      className={`${isMobile ? 'w-full' : 'w-[70%]'} overflow-y-auto custom-scrollbar`}
+      onScroll={onScroll}
+    >
+      <div className={`grid ${isMobile ? 'grid-cols-4' : 'grid-cols-5'} gap-0 p-0`}>
+        {cards.map((card, index) => (
+          <div
+            key={card.id}
+            className="relative cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => onCardClick(index)}
+          >
+            <img
+              src={`${IMAGE_BASE_URL}/${card.rarity_infos?.[0]?.card_number}.jpg`}
+              alt={card.name_cn}
+              className="w-full h-auto object-contain rounded border border-gray-200"
+              onLoad={(e) => {
+                const target = e.target as HTMLImageElement;
+                getCachedImage(target.src);
+                target.style.aspectRatio = `${target.naturalWidth} / ${target.naturalHeight}`;
+              }}
+            />
           </div>
-        )}
+        ))}
       </div>
+      {loading && (
+        <div className="text-center py-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        </div>
+      )}
     </div>
   );
 };

@@ -21,16 +21,12 @@ interface CardListResponse {
  * @returns 卡牌列表
  */
 export const getCards = async (params: {
-  page?: number;
-  page_size?: number;
+  page: number;
+  page_size: number;
   keyword?: string;
   nation?: string;
   clan?: string;
-  grade?: number;
-  skill?: string;
-  card_power_min?: number;
-  card_power_max?: number;
-  shield?: number;
+  grade?: string;
   card_type?: string;
   trigger_type?: string;
   package?: string;
@@ -44,8 +40,11 @@ export const getCards = async (params: {
     });
 
     const response = await createAuthenticatedRequest(`${API_ENDPOINTS.CARDS}?${queryParams.toString()}`);
-    const data: ApiResponse<CardListResponse> = await response.json();
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
     
+    const data: ApiResponse<CardListResponse> = await response.json();
     if (!data.success) {
       throw new Error(data.message || '获取卡牌列表失败');
     }
