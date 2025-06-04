@@ -18,9 +18,13 @@ interface DeckListResponse {
  * 获取卡组列表
  * @returns 卡组列表
  */
-export const getDecks = async (): Promise<Deck[]> => {
+export const getDecks = async (only_preset?: boolean): Promise<Deck[]> => {
   try {
-    const response = await createAuthenticatedRequest(API_ENDPOINTS.DECKS);
+    const url = new URL(API_ENDPOINTS.DECKS);
+    if (only_preset !== undefined) {
+      url.searchParams.append('only_preset', only_preset.toString());
+    }
+    const response = await createAuthenticatedRequest(url.toString());
     const data: ApiResponse<DeckListResponse> = await response.json();
     
     if (!data.success) {

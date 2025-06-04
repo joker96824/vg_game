@@ -5,10 +5,14 @@ import GameButton from '../components/GameButton'
 import swordsIcon from '../assets/swords.svg'
 import houseIcon from '../assets/house.svg'
 import cardsIcon from '../assets/cards.svg'
+import { getDecks } from '../services/deckService'
+import type { Deck } from '../types/deck'
 
 const Home: React.FC = () => {
   const [activeButton, setActiveButton] = useState<string | null>(null)
   const [nickName, setNickName] = useState('');
+  const [presetDecks, setPresetDecks] = useState<Deck[]>([]);
+  const [defaultDeck, setDefaultDeck] = useState<Deck | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +26,25 @@ const Home: React.FC = () => {
         console.error('解析用户信息失败:', error);
       }
     }
+
+    // 加载预设卡组
+    const loadPresetDecks = async () => {
+      try {
+        const decks = await getDecks(true);
+        // 找到 preset=0 的卡组作为默认卡组
+        const defaultDeck = decks.find(deck => deck.preset === 0);
+        if (defaultDeck) {
+          setDefaultDeck(defaultDeck);
+        }
+        // 其他预设卡组（preset=1）
+        const otherPresetDecks = decks.filter(deck => deck.preset === 1);
+        setPresetDecks(otherPresetDecks);
+      } catch (error) {
+        console.error('加载预设卡组失败:', error);
+      }
+    };
+
+    loadPresetDecks();
   }, []);
 
   const handleClick = (buttonName: string) => {
@@ -59,23 +82,28 @@ const Home: React.FC = () => {
           <div className="flex items-center">
             {/* 卡组大区域 */}
             <GameButton 
-              text="卡组" 
+              text={defaultDeck?.deck_name || "卡组"} 
               icon={cardsIcon}
               isActive={activeButton === '卡组'}
               onClick={() => {
                 handleClick('卡组');
-                setTimeout(() => navigate('/deck'), 300);
+                if (defaultDeck) {
+                  setTimeout(() => navigate('/deck', { state: { deck: defaultDeck } }), 300);
+                } else {
+                  setTimeout(() => navigate('/deck'), 300);
+                }
               }}
               size="large"
             />
             {/* 预设卡组 */}
             <div className="flex flex-col ml-8">
-              {[1, 2, 3, 4].map((i) => (
+              {presetDecks.slice(0, 4).map((deck) => (
                 <div
-                  key={i}
-                  className="border border-gray-200 rounded-xl w-28 h-20 flex items-center justify-center mb-4 last:mb-0 hover:border-gray-300 transition-colors"
+                  key={deck.id}
+                  className="border border-gray-200 rounded-xl w-28 h-20 flex items-center justify-center mb-4 last:mb-0 hover:border-gray-300 transition-colors cursor-pointer"
+                  onClick={() => navigate('/deck', { state: { deck } })}
                 >
-                  预设卡组{i}
+                  {deck.deck_name}
                 </div>
               ))}
             </div>
