@@ -9,4 +9,5 @@ export const API_ENDPOINTS = {
   CARDS: `${API_BASE_URL}/cards`,
   DECKS: `${API_BASE_URL}/decks`,
   AUTH: `${API_BASE_URL}/auth`,
+  FRIEND: `${API_BASE_URL}/friends`,
 } as const; 

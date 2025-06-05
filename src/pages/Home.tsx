@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import BottomMenu from '../components/BottomMenu'
 import ChatPanel from '../components/ChatPanel'
 import { getDecks, setDeckPreset } from '../services/deckService'
+import { getFriends } from '../services/friendService'
 import type { Deck } from '../types/deck'
-import { IMAGE_BASE_URL } from '../constants/api'
+import { IMAGE_BASE_URL, API_BASE_URL } from '../constants/api'
 
 const Home: React.FC = () => {
   const [activeButton, setActiveButton] = useState<string | null>(null)
@@ -44,7 +45,17 @@ const Home: React.FC = () => {
       }
     };
 
+    // 加载好友列表
+    const loadFriends = async () => {
+      try {
+        await getFriends();
+      } catch (error) {
+        console.error('加载好友列表失败:', error);
+      }
+    };
+
     loadPresetDecks();
+    loadFriends();
   }, []);
 
   const handleClick = (buttonName: string) => {

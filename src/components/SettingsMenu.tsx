@@ -37,6 +37,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
   const handleLogout = async () => {
     try {
       await logout();
+      onClose(); // 关闭菜单
       navigate('/login');
     } catch (error) {
       console.error('退出登录失败:', error);
