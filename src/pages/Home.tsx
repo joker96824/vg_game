@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomMenu from '../components/BottomMenu'
 import { getDecks } from '../services/deckService'
@@ -10,7 +10,20 @@ const Home: React.FC = () => {
   const [nickName, setNickName] = useState('');
   const [allDecks, setAllDecks] = useState<Deck[]>([]);
   const [selectedDeckIndex, setSelectedDeckIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     // 从 localStorage 获取用户信息
@@ -58,11 +71,143 @@ const Home: React.FC = () => {
     }
   };
 
-  return (
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(distance) < minSwipeDistance) return;
+
+    if (distance > 0 && selectedDeckIndex < allDecks.length - 1) {
+      // Swiped left
+      setSelectedDeckIndex(prev => prev + 1);
+    }
+
+    if (distance < 0 && selectedDeckIndex > 0) {
+      // Swiped right
+      setSelectedDeckIndex(prev => prev - 1);
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
+  };
+
+  const MobileLayout = () => (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* 顶部栏 */}
+      {/* 移动端顶部栏 - 只显示欢迎文字 */}
+      <header className="w-full h-14 flex items-center justify-center px-4 border-b border-gray-200">
+        <span className="font-bold text-lg">欢迎你，{nickName}</span>
+      </header>
+
+      {/* 移动端主内容区域 */}
+      <main className="flex-1 flex flex-col p-4">
+        {/* 上半部分 - 三个按钮 */}
+        <div className="grid grid-cols-1 gap-4 mb-8 mt-12">
+          <button className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+            匹配对战
+          </button>
+          <button className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors">
+            加入房间
+          </button>
+          <button className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors">
+            创建房间
+          </button>
+        </div>
+
+        {/* 下半部分 - 卡组展示 */}
+        <div className="flex-1 flex flex-col mt-8">
+          {/* 卡组轮播区域 */}
+          <div 
+            ref={carouselRef}
+            className="relative w-full overflow-hidden px-4"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div 
+              className="flex transition-transform duration-300 ease-out"
+              style={{
+                transform: `translateX(calc(${-selectedDeckIndex * 100}% + ${(100 - 70) / 2}%))`,
+              }}
+            >
+              {allDecks.map((deck, index) => {
+                const isSelected = index === selectedDeckIndex;
+                const rideCards = deck.deck_cards.filter(card => card.deck_zone === 'ride').slice(0, 4);
+                
+                return (
+                  <div
+                    key={deck.id}
+                    className={`shrink-0 transition-all duration-300 px-1`}
+                    style={{ width: '70%' }}
+                    onClick={() => {
+                      handleDeckClick(index);
+                      if (isSelected) handleSelectedDeckClick();
+                    }}
+                  >
+                    <div className={`aspect-[16/9] relative border rounded-2xl overflow-hidden ${
+                      isSelected ? 'border-blue-500 border-2 scale-100' : 'border-gray-200 scale-90'
+                    } transition-all duration-300`}>
+                      <div className="absolute inset-0 flex">
+                        {rideCards.map((card, cardIndex) => (
+                          <div key={cardIndex} className="flex-1 relative">
+                            <img 
+                              src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                              alt={deck.deck_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.parentElement?.classList.add('text-center');
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <span className="absolute bottom-0 left-0 right-0 text-center px-2 py-1 bg-white/80 text-sm">
+                        {deck.deck_name}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          
+          {/* 分页指示器 */}
+          <div className="flex justify-center space-x-2 mt-4">
+            {allDecks.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full ${
+                  index === selectedDeckIndex ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+                onClick={() => handleDeckClick(index)}
+              />
+            ))}
+          </div>
+        </div>
+      </main>
+
+      {/* 底部菜单栏 */}
+      <footer className="bg-white border-t border-gray-200">
+        <BottomMenu />
+      </footer>
+    </div>
+  );
+
+  const DesktopLayout = () => (
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* 桌面版顶部栏 */}
       <header className="w-full h-14 flex items-center justify-between px-4 border-b border-gray-200">
-        {/* 左侧按钮组 */}
         <div className="flex space-x-4">
           <button className="px-4 py-1.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm">
             匹配对战
@@ -74,11 +219,10 @@ const Home: React.FC = () => {
             创建房间
           </button>
         </div>
-        {/* 右侧用户信息 */}
         <span className="font-bold text-lg">欢迎你，{nickName}</span>
       </header>
 
-      {/* 主内容区域 */}
+      {/* 桌面版主内容区域 */}
       <main className="flex-1 flex min-h-0">
         {/* 左侧所有卡组 */}
         <div className="w-64 p-4 border-r border-gray-200 overflow-y-auto">
@@ -172,7 +316,9 @@ const Home: React.FC = () => {
         <BottomMenu />
       </footer>
     </div>
-  )
+  );
+
+  return isMobile ? <MobileLayout /> : <DesktopLayout />;
 }
 
 export default Home 
