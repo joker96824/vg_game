@@ -111,7 +111,7 @@ const Home: React.FC = () => {
       {/* 移动端主内容区域 */}
       <main className="flex-1 flex flex-col p-4">
         {/* 上半部分 - 三个按钮 */}
-        <div className="grid grid-cols-1 gap-4 mb-8 mt-12">
+        <div className="grid grid-cols-1 gap-4 mb-4">
           <button className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
             匹配对战
           </button>
@@ -124,21 +124,50 @@ const Home: React.FC = () => {
         </div>
 
         {/* 下半部分 - 卡组展示 */}
-        <div className="flex-1 flex flex-col mt-8">
-          {/* 卡组轮播区域 */}
-          <div 
-            ref={carouselRef}
-            className="relative w-full overflow-hidden px-4"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div 
-              className="flex transition-transform duration-300 ease-out"
-              style={{
-                transform: `translateX(calc(${-selectedDeckIndex * 100}% + ${(100 - 70) / 2}%))`,
-              }}
-            >
+        <div className="h-[calc(100vh-350px)] flex flex-col">
+          {/* 选中卡组展示区域 - 80%高度 */}
+          <div className="h-[80%] mb-4">
+            {allDecks[selectedDeckIndex] && (
+              <div 
+                className="w-full h-full border-2 border-blue-500 rounded-2xl overflow-hidden cursor-pointer"
+                onClick={() => handleSelectedDeckClick()}
+              >
+                <div className="w-full h-full relative flex">
+                  {/* 卡组图片展示 */}
+                  <div className="absolute inset-0 flex">
+                    {allDecks[selectedDeckIndex].deck_cards
+                      .filter(card => card.deck_zone === 'ride')
+                      .slice(0, 4)
+                      .map((card, index) => (
+                        <div 
+                          key={index} 
+                          className="flex-1 relative"
+                        >
+                          <img 
+                            src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                            alt={allDecks[selectedDeckIndex].deck_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.parentElement?.classList.add('text-center', 'bg-gray-100');
+                            }}
+                          />
+                        </div>
+                    ))}
+                  </div>
+                  {/* 卡组名称 */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
+                    {allDecks[selectedDeckIndex].deck_name}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 卡组列表区域 - 20%高度 */}
+          <div className="h-[20%] overflow-x-auto">
+            <div className="flex gap-3 h-full pb-2 px-2">
               {allDecks.map((deck, index) => {
                 const isSelected = index === selectedDeckIndex;
                 const rideCards = deck.deck_cards.filter(card => card.deck_zone === 'ride').slice(0, 4);
@@ -146,14 +175,13 @@ const Home: React.FC = () => {
                 return (
                   <div
                     key={deck.id}
-                    className={`shrink-0 transition-all duration-300 px-1`}
-                    style={{ width: '70%' }}
+                    className={`shrink-0 transition-all duration-300 h-full w-[calc(25%-12px)] min-w-[200px] cursor-pointer`}
                     onClick={() => {
                       handleDeckClick(index);
                       if (isSelected) handleSelectedDeckClick();
                     }}
                   >
-                    <div className={`aspect-[16/9] relative border rounded-2xl overflow-hidden ${
+                    <div className={`h-full relative border rounded-2xl overflow-hidden ${
                       isSelected ? 'border-blue-500 border-2 scale-100' : 'border-gray-200 scale-90'
                     } transition-all duration-300`}>
                       <div className="absolute inset-0 flex">
@@ -166,33 +194,20 @@ const Home: React.FC = () => {
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
-                                target.parentElement?.classList.add('text-center');
+                                target.parentElement?.classList.add('text-center', 'bg-gray-100');
                               }}
                             />
                           </div>
                         ))}
                       </div>
-                      <span className="absolute bottom-0 left-0 right-0 text-center px-2 py-1 bg-white/80 text-sm">
+                      <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
                         {deck.deck_name}
-                      </span>
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-          </div>
-          
-          {/* 分页指示器 */}
-          <div className="flex justify-center space-x-2 mt-4">
-            {allDecks.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full ${
-                  index === selectedDeckIndex ? 'bg-blue-500' : 'bg-gray-300'
-                }`}
-                onClick={() => handleDeckClick(index)}
-              />
-            ))}
           </div>
         </div>
       </main>
