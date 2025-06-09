@@ -47,9 +47,6 @@ const CardBrowser: React.FC = () => {
   const [nation, setNation] = useState<any>(null);
   const [clan, setClan] = useState<any>(null);
   const [grade, setGrade] = useState<any>(null);
-  const [skill, setSkill] = useState<any>(null);
-  const [cardPowerRange, setCardPowerRange] = useState<number[]>([0, 20000]);
-  const [shield, setShield] = useState<any>(null);
   const [cardType, setCardType] = useState<any>(null);
   const [triggerType, setTriggerType] = useState<any>(null);
   const [selectedPack, setSelectedPack] = useState<any>(null);
@@ -83,6 +80,15 @@ const CardBrowser: React.FC = () => {
   const [showWarningTooltip, setShowWarningTooltip] = useState(false);
   const warningIconRef = useRef<HTMLDivElement>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const [isMobile, setIsMobile] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+
+  // 计算卡组内卡片数量
+  const getDeckCardCount = () => {
+    const rideCount = rideCards.reduce((sum, card) => sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0), 0);
+    const mainCount = mainCards.reduce((sum, card) => sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0), 0);
+    return `${rideCount}+${mainCount}/54`;
+  };
 
   // 导航标签配置
   const tabs = [
@@ -103,10 +109,6 @@ const CardBrowser: React.FC = () => {
         nation: nation?.value,
         clan: clan?.value,
         grade: grade?.value,
-        skill: skill?.value,
-        card_power_min: cardPowerRange[0],
-        card_power_max: cardPowerRange[1],
-        shield: shield?.value,
         card_type: cardType?.value,
         trigger_type: triggerType?.value,
         package: selectedPack?.value
@@ -115,12 +117,21 @@ const CardBrowser: React.FC = () => {
       if (pageNum === 1) {
         setCards(response);
       } else {
-        setCards(prev => [...prev, ...response]);
+        setCards(prev => {
+          // 使用 Map 来去重，以 card.id 为 key
+          const cardMap = new Map(prev.map(card => [card.id, card]));
+          // 添加新卡片，如果有重复的会覆盖
+          response.forEach(card => cardMap.set(card.id, card));
+          // 转换回数组
+          return Array.from(cardMap.values());
+        });
       }
       
       setHasMore(response.length === 20);
+      return response.length;
     } catch (error) {
       console.error('获取卡牌数据失败:', error);
+      return 0;
     } finally {
       setLoading(false);
     }
@@ -128,7 +139,25 @@ const CardBrowser: React.FC = () => {
 
   // 初始加载
   useEffect(() => {
-    fetchCards(1);
+    const loadInitialCards = async () => {
+      const cardCount = await fetchCards(1);
+      setPage(1);
+      
+      // 等待图片加载完成
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // 如果第一页加载完成后，检查是否需要加载第二页
+      if (cardCount > 0) {
+        const cardListElement = document.querySelector('.card-list-container');
+        if (cardListElement && cardListElement.scrollHeight <= cardListElement.clientHeight) {
+          // 如果没有滚动条，加载第二页
+          await fetchCards(2);
+          setPage(2);
+        }
+      }
+    };
+    
+    loadInitialCards();
   }, []);
 
   // 筛选条件清空
@@ -137,9 +166,6 @@ const CardBrowser: React.FC = () => {
     setNation(null);
     setClan(null);
     setGrade(null);
-    setSkill(null);
-    setCardPowerRange([0, 20000]);
-    setShield(null);
     setCardType(null);
     setTriggerType(null);
     setSelectedPack(null);
@@ -148,9 +174,22 @@ const CardBrowser: React.FC = () => {
   };
 
   // 筛选条件搜索
-  const handleSearch = () => {
+  const handleSearch = async () => {
     setPage(1);
-    fetchCards(1);
+    const cardCount = await fetchCards(1);
+    
+    // 等待图片加载完成
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // 检查是否需要加载第二页
+    if (cardCount > 0) {
+      const cardListElement = document.querySelector('.card-list-container');
+      if (cardListElement && cardListElement.scrollHeight <= cardListElement.clientHeight) {
+        // 如果没有滚动条，加载第二页
+        await fetchCards(2);
+        setPage(2);
+      }
+    }
   };
 
   // 无限滚动加载更多
@@ -866,6 +905,18 @@ const CardBrowser: React.FC = () => {
     return () => window.removeEventListener('resize', updateTooltipPosition);
   }, []);
 
+  // 检测设备类型
+  useEffect(() => {
+    const checkDevice = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    
+    return () => window.removeEventListener('resize', checkDevice);
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-white overflow-hidden h-screen flex flex-col">
       {/* 顶部栏 */}
@@ -877,6 +928,7 @@ const CardBrowser: React.FC = () => {
           返回
         </button>
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+          <span className="text-gray-400 mr-2 text-sm absolute -left-16">{getDeckCardCount()}</span>
           {isEditingName ? (
             <input
               type="text"
@@ -950,32 +1002,69 @@ const CardBrowser: React.FC = () => {
       )}
 
       {/* 筛选条件 */}
-      <CardFilter
-        keyword={keyword}
-        setKeyword={setKeyword}
-        nation={nation}
-        setNation={setNation}
-        clan={clan}
-        setClan={setClan}
-        grade={grade}
-        setGrade={setGrade}
-        skill={skill}
-        setSkill={setSkill}
-        cardPowerRange={cardPowerRange}
-        setCardPowerRange={setCardPowerRange}
-        shield={shield}
-        setShield={setShield}
-        cardType={cardType}
-        setCardType={setCardType}
-        triggerType={triggerType}
-        setTriggerType={setTriggerType}
-        selectedPack={selectedPack}
-        setSelectedPack={setSelectedPack}
-        onClear={handleClear}
-        onSearch={handleSearch}
-        onSave={handleSaveDeck}
-        saving={saving}
-      />
+      {isMobile ? (
+        <div className="relative">
+          <button
+            className="w-full px-4 py-2 bg-gray-100 text-gray-700 flex items-center justify-between"
+            onClick={() => setShowFilter(!showFilter)}
+          >
+            <span>筛选条件</span>
+            <svg
+              className={`w-5 h-5 transform transition-transform ${showFilter ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showFilter && (
+            <div className="absolute top-full left-0 right-0 bg-white shadow-lg z-20">
+              <CardFilter
+                keyword={keyword}
+                setKeyword={setKeyword}
+                nation={nation}
+                setNation={setNation}
+                clan={clan}
+                setClan={setClan}
+                grade={grade}
+                setGrade={setGrade}
+                cardType={cardType}
+                setCardType={setCardType}
+                triggerType={triggerType}
+                setTriggerType={setTriggerType}
+                selectedPack={selectedPack}
+                setSelectedPack={setSelectedPack}
+                onClear={handleClear}
+                onSearch={handleSearch}
+                onSave={handleSaveDeck}
+                saving={saving}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <CardFilter
+          keyword={keyword}
+          setKeyword={setKeyword}
+          nation={nation}
+          setNation={setNation}
+          clan={clan}
+          setClan={setClan}
+          grade={grade}
+          setGrade={setGrade}
+          cardType={cardType}
+          setCardType={setCardType}
+          triggerType={triggerType}
+          setTriggerType={setTriggerType}
+          selectedPack={selectedPack}
+          setSelectedPack={setSelectedPack}
+          onClear={handleClear}
+          onSearch={handleSearch}
+          onSave={handleSaveDeck}
+          saving={saving}
+        />
+      )}
 
       {/* 主体区域 */}
       <div className="flex flex-1 overflow-hidden">
@@ -991,10 +1080,11 @@ const CardBrowser: React.FC = () => {
             setIsCardModalOpen(true);
           }}
           getCachedImage={imageCache.getCachedImage}
+          isMobile={isMobile}
         />
 
         {/* 右侧卡组展示 */}
-        <div className="w-[30%] flex flex-col border-l">
+        <div className={`${isMobile ? 'w-full' : 'w-[30%]'} flex flex-col border-l`}>
           {/* 顶部导航栏 */}
           <div className="flex border-b h-8">
             {tabs.map(tab => (
@@ -1019,6 +1109,7 @@ const CardBrowser: React.FC = () => {
               setIsCardModalOpen(true);
               setModalRarityIndex(getFirstNonZeroRarityIndex(getCurrentZoneCards()[idx]));
             }}
+            isMobile={isMobile}
           />
         </div>
       </div>
@@ -1031,7 +1122,10 @@ const CardBrowser: React.FC = () => {
         >
           <div
             className="relative flex flex-col items-center"
-            style={{ minWidth: 400, minHeight: 400 }}
+            style={{ 
+              minWidth: isMobile ? 300 : 400, 
+              minHeight: isMobile ? 300 : 400 
+            }}
             onClick={e => e.stopPropagation()}
           >
             {/* 左箭头SVG，极窄宽度，贴边 */}
@@ -1047,11 +1141,18 @@ const CardBrowser: React.FC = () => {
             {/* 中间大卡片 */}
             <div
               className="flex flex-col items-center justify-center relative select-none bg-white rounded-lg border border-gray-200"
-              style={{width:'420px',minHeight:'600px'}}
+              style={{
+                width: isMobile ? '300px' : '420px',
+                minHeight: isMobile ? '450px' : '600px'
+              }}
             >
               <div
                 className="flex items-center justify-center relative select-none p-4"
-                style={{width:'380px',height:'539px'}}
+                style={{
+                  width: isMobile ? '260px' : '380px',
+                  height: 'auto',
+                  aspectRatio: 'auto'
+                }}
               >
                 {/* 展示卡片内容 */}
                 {modalType === 'left' && modalCardIndex !== null && cards[modalCardIndex] && (
@@ -1071,11 +1172,17 @@ const CardBrowser: React.FC = () => {
                       <img
                         src={`${IMAGE_BASE_URL}/${cards[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                         alt={cards[modalCardIndex].name_cn}
-                        className="w-full h-full object-contain rounded-[4%]"
+                        className="w-full h-auto object-contain rounded-[4%]"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                         onLoad={(e) => {
                           const target = e.target as HTMLImageElement;
                           imageCache.handleImageLoad(target.src);
+                          // 设置外层div的宽高比
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const ratio = target.naturalWidth / target.naturalHeight;
+                            parent.style.aspectRatio = ratio.toString();
+                          }
                         }}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
@@ -1129,11 +1236,17 @@ const CardBrowser: React.FC = () => {
                     <img
                       src={`${IMAGE_BASE_URL}/${getCurrentZoneCards()[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                       alt={getCurrentZoneCards()[modalCardIndex].name_cn}
-                      className="w-full h-full object-contain rounded-[4%]"
+                      className="w-full h-auto object-contain rounded-[4%]"
                       style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
                       onLoad={(e) => {
                         const target = e.target as HTMLImageElement;
                         imageCache.handleImageLoad(target.src);
+                        // 设置外层div的宽高比
+                        const parent = target.parentElement;
+                        if (parent) {
+                          const ratio = target.naturalWidth / target.naturalHeight;
+                          parent.style.aspectRatio = ratio.toString();
+                        }
                       }}
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;

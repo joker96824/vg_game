@@ -5,7 +5,6 @@ import { createAuthenticatedRequest } from '../utils/request';
 const TOKEN_KEY = 'token';
 const TOKEN_REFRESH_THRESHOLD = 20 * 60 * 1000; // 20分钟，转换为毫秒
 const INITIAL_TOKEN_EXPIRY = 4 * 60 * 60 * 1000; // 4小时，转换为毫秒
-const REFRESH_TOKEN_EXPIRY = 40 * 60 * 1000; // 40分钟，转换为毫秒
 
 // 获取存储的 token
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
@@ -446,3 +445,23 @@ export const updateUserLevel = async (userId: string, newLevel: number) => {
     throw error;
   }
 };
+
+export interface FriendSearchResult {
+    id: number;
+    username: string;
+    nickname: string;
+    avatar: string;
+  }
+
+export const searchUsers = async (keyword: string) => {
+    try {
+      const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/search?keyword=${encodeURIComponent(keyword)}`);
+      if (!response.ok) {
+        throw new Error('搜索好友失败');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('搜索好友失败:', error);
+      throw error;
+    }
+  };

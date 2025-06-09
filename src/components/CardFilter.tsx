@@ -22,12 +22,6 @@ interface CardFilterProps {
   setClan: (value: any) => void;
   grade: any;
   setGrade: (value: any) => void;
-  skill: any;
-  setSkill: (value: any) => void;
-  cardPowerRange: number[];
-  setCardPowerRange: (value: number[]) => void;
-  shield: any;
-  setShield: (value: any) => void;
   cardType: any;
   setCardType: (value: any) => void;
   triggerType: any;
@@ -49,12 +43,6 @@ const CardFilter: React.FC<CardFilterProps> = ({
   setClan,
   grade,
   setGrade,
-  skill,
-  setSkill,
-  cardPowerRange,
-  setCardPowerRange,
-  shield,
-  setShield,
   cardType,
   setCardType,
   triggerType,
@@ -66,10 +54,6 @@ const CardFilter: React.FC<CardFilterProps> = ({
   onSave,
   saving
 }) => {
-  const handleCardPowerChange = (event: Event, newValue: number | number[]) => {
-    setCardPowerRange(newValue as number[]);
-  };
-
   return (
     <div className="flex flex-wrap gap-x-2 gap-y-1 items-end px-8 py-2 text-xs bg-white z-10">
       <div className="flex flex-col w-48">
@@ -118,30 +102,6 @@ const CardFilter: React.FC<CardFilterProps> = ({
         />
       </div>
       <div className="flex flex-col w-48">
-        <label className="mb-0.5">技能</label>
-        <Select
-          options={skillOptions}
-          value={skill}
-          onChange={setSkill}
-          classNamePrefix="select"
-          styles={customSelectStyles}
-          placeholder="请选择..."
-          isClearable
-        />
-      </div>
-      <div className="flex flex-col w-48">
-        <label className="mb-0.5">盾值</label>
-        <Select
-          options={shieldOptions}
-          value={shield}
-          onChange={setShield}
-          classNamePrefix="select"
-          styles={customSelectStyles}
-          placeholder="请选择..."
-          isClearable
-        />
-      </div>
-      <div className="flex flex-col w-48">
         <label className="mb-0.5">种类</label>
         <Select
           options={typeOptions}
@@ -176,21 +136,6 @@ const CardFilter: React.FC<CardFilterProps> = ({
           placeholder="请选择..."
           isClearable
         />
-      </div>
-      <div className="flex flex-col w-48">
-        <label className="mb-0.5">力量值范围</label>
-        <div className="px-1">
-          <Slider
-            value={cardPowerRange}
-            onChange={handleCardPowerChange}
-            valueLabelDisplay="auto"
-            min={0}
-            max={20000}
-            step={1000}
-            size="small"
-            marks={false}
-          />
-        </div>
       </div>
       <button
         className="ml-2 px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 text-xs h-6"

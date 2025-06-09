@@ -57,7 +57,10 @@ export const createAuthenticatedRequest = async (
   }
 
   // 应用请求拦截器
-  const interceptedOptions = requestInterceptor(options);
+  const interceptedOptions = requestInterceptor({
+    ...options,
+    method: options.method || 'GET'
+  });
 
   // 发送请求
   const response = await fetch(url, interceptedOptions);
