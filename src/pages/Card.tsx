@@ -83,6 +83,13 @@ const CardBrowser: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
 
+  // 计算卡组内卡片数量
+  const getDeckCardCount = () => {
+    const rideCount = rideCards.reduce((sum, card) => sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0), 0);
+    const mainCount = mainCards.reduce((sum, card) => sum + card.rarity_infos.reduce((s, r) => s + r.quantity, 0), 0);
+    return `${rideCount}+${mainCount}/54`;
+  };
+
   // 导航标签配置
   const tabs = [
     { id: 'ride', label: '骑升' },
@@ -921,6 +928,7 @@ const CardBrowser: React.FC = () => {
           返回
         </button>
         <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+          <span className="text-gray-400 mr-2 text-sm absolute -left-16">{getDeckCardCount()}</span>
           {isEditingName ? (
             <input
               type="text"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomMenu from '../components/BottomMenu'
 import { getDecks } from '../services/deckService'
@@ -6,14 +6,10 @@ import type { Deck } from '../types/deck'
 import { IMAGE_BASE_URL } from '../constants/api'
 
 const Home: React.FC = () => {
-  const [activeButton, setActiveButton] = useState<string | null>(null)
   const [nickName, setNickName] = useState('');
   const [allDecks, setAllDecks] = useState<Deck[]>([]);
   const [selectedDeckIndex, setSelectedDeckIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
-  const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,11 +52,6 @@ const Home: React.FC = () => {
     loadDecks();
   }, []);
 
-  const handleClick = (buttonName: string) => {
-    setActiveButton(buttonName)
-    setTimeout(() => setActiveButton(null), 300)
-  }
-
   const handleDeckClick = (index: number) => {
     setSelectedDeckIndex(index);
   };
@@ -69,36 +60,6 @@ const Home: React.FC = () => {
     if (allDecks[selectedDeckIndex]) {
       navigate('/deck', { state: { deck: allDecks[selectedDeckIndex] } });
     }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const minSwipeDistance = 50;
-
-    if (Math.abs(distance) < minSwipeDistance) return;
-
-    if (distance > 0 && selectedDeckIndex < allDecks.length - 1) {
-      // Swiped left
-      setSelectedDeckIndex(prev => prev + 1);
-    }
-
-    if (distance < 0 && selectedDeckIndex > 0) {
-      // Swiped right
-      setSelectedDeckIndex(prev => prev - 1);
-    }
-
-    setTouchStart(0);
-    setTouchEnd(0);
   };
 
   const MobileLayout = () => (
@@ -127,41 +88,50 @@ const Home: React.FC = () => {
         <div className="h-[calc(100vh-350px)] flex flex-col">
           {/* 选中卡组展示区域 - 80%高度 */}
           <div className="h-[80%] mb-4">
-            {allDecks[selectedDeckIndex] && (
-              <div 
-                className="w-full h-full border-2 border-blue-500 rounded-2xl overflow-hidden cursor-pointer"
-                onClick={() => handleSelectedDeckClick()}
-              >
-                <div className="w-full h-full relative flex">
-                  {/* 卡组图片展示 */}
-                  <div className="absolute inset-0 flex">
-                    {allDecks[selectedDeckIndex].deck_cards
-                      .filter(card => card.deck_zone === 'ride')
-                      .slice(0, 4)
-                      .map((card, index) => (
-                        <div 
-                          key={index} 
-                          className="flex-1 relative"
-                        >
-                          <img 
-                            src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
-                            alt={allDecks[selectedDeckIndex].deck_name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              target.parentElement?.classList.add('text-center', 'bg-gray-100');
-                            }}
-                          />
-                        </div>
-                    ))}
-                  </div>
-                  {/* 卡组名称 */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
-                    {allDecks[selectedDeckIndex].deck_name}
+            {allDecks.length > 0 ? (
+              allDecks[selectedDeckIndex] && (
+                <div 
+                  className="w-full h-full border-2 border-blue-500 rounded-2xl overflow-hidden cursor-pointer"
+                  onClick={() => handleSelectedDeckClick()}
+                >
+                  <div className="w-full h-full relative flex">
+                    {/* 卡组图片展示 */}
+                    <div className="absolute inset-0 flex">
+                      {allDecks[selectedDeckIndex].deck_cards
+                        .filter(card => card.deck_zone === 'ride')
+                        .slice(0, 4)
+                        .map((card, index) => (
+                          <div 
+                            key={index} 
+                            className="flex-1 relative"
+                          >
+                            <img 
+                              src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                              alt={allDecks[selectedDeckIndex].deck_name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                target.parentElement?.classList.add('text-center', 'bg-gray-100');
+                              }}
+                            />
+                          </div>
+                      ))}
+                    </div>
+                    {/* 卡组名称 */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
+                      {allDecks[selectedDeckIndex].deck_name}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
+            ) : (
+              <button
+                className="w-full h-full border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors"
+                onClick={() => navigate('/deck')}
+              >
+                <span className="text-xl">请编辑你的卡组</span>
+              </button>
             )}
           </div>
 
@@ -279,34 +249,43 @@ const Home: React.FC = () => {
 
         {/* 中间选中卡组区域 */}
         <div className="flex-1 flex items-center justify-center">
-          {allDecks[selectedDeckIndex] && (
-            <div 
-              className="relative border border-gray-200 rounded-2xl w-96 h-56 flex items-center justify-center hover:border-gray-300 transition-colors cursor-pointer overflow-hidden"
-              onClick={handleSelectedDeckClick}
-            >
-              <div className="absolute inset-0 flex">
-                {allDecks[selectedDeckIndex].deck_cards
-                  .filter(card => card.deck_zone === 'ride')
-                  .slice(0, 4)
-                  .map((card, index) => (
-                    <div key={index} className="flex-1 relative">
-                      <img 
-                        src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
-                        alt={allDecks[selectedDeckIndex].deck_name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.parentElement?.classList.add('text-center');
-                        }}
-                      />
-                    </div>
-                  ))}
+          {allDecks.length > 0 ? (
+            allDecks[selectedDeckIndex] && (
+              <div 
+                className="relative border border-gray-200 rounded-2xl w-96 h-56 flex items-center justify-center hover:border-gray-300 transition-colors cursor-pointer overflow-hidden"
+                onClick={handleSelectedDeckClick}
+              >
+                <div className="absolute inset-0 flex">
+                  {allDecks[selectedDeckIndex].deck_cards
+                    .filter(card => card.deck_zone === 'ride')
+                    .slice(0, 4)
+                    .map((card, index) => (
+                      <div key={index} className="flex-1 relative">
+                        <img 
+                          src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                          alt={allDecks[selectedDeckIndex].deck_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            target.parentElement?.classList.add('text-center');
+                          }}
+                        />
+                      </div>
+                    ))}
+                </div>
+                <span className="absolute bottom-0 left-0 right-0 text-center px-2 py-1 bg-white/80 rounded-b-2xl text-sm">
+                  {allDecks[selectedDeckIndex].deck_name}
+                </span>
               </div>
-              <span className="absolute bottom-0 left-0 right-0 text-center px-2 py-1 bg-white/80 rounded-b-2xl text-sm">
-                {allDecks[selectedDeckIndex].deck_name}
-              </span>
-            </div>
+            )
+          ) : (
+            <button
+              className="relative border-2 border-dashed border-gray-300 rounded-2xl w-96 h-56 flex items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-500 transition-colors"
+              onClick={() => navigate('/deck')}
+            >
+              <span className="text-xl">请编辑你的卡组</span>
+            </button>
           )}
         </div>
 
