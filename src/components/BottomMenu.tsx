@@ -8,6 +8,7 @@ import settingsIcon from '../assets/settings.svg'
 import SettingsMenu from './SettingsMenu'
 import AdminMenu from './AdminMenu'
 import FriendMenu from './FriendMenu'
+import { APP_VERSION } from '../constants/version'
 
 interface MenuItem {
   label: string;
@@ -83,7 +84,9 @@ const BottomMenu: React.FC = () => {
   return (
     <>
       <div className="h-20 flex items-center px-8 border-t border-gray-200 bg-white">
-        <span className="text-xs text-gray-400">版本号</span>
+        <div className="flex items-center">
+          <span className="text-sm font-medium text-gray-600">v{APP_VERSION}</span>
+        </div>
         <div className="flex flex-1 justify-end">
           <div className="flex space-x-6">
             {filteredMenuItems.map(({ icon, label, route, onClick }) => (
