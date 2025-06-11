@@ -6,6 +6,7 @@ interface FriendMenuProps {
   isOpen: boolean;
   onClose: () => void;
   position: { left: number; bottom: number } | null;
+  onStartChat?: (friend: Friend) => void;
 }
 
 interface SearchResult {
@@ -40,7 +41,7 @@ interface Friend {
   friend_avatar: string;
 }
 
-const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) => {
+const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onStartChat }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const searchModalRef = useRef<HTMLDivElement>(null);
   const requestModalRef = useRef<HTMLDivElement>(null);
@@ -568,16 +569,33 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
                         />
                         <div className="font-medium">{friend.friend_nickname}</div>
                       </div>
-                      <button
-                        className="px-3 py-1 text-sm text-gray-500 hover:text-red-500"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFriendToDelete(friend);
-                          setIsDeleteConfirmOpen(true);
-                        }}
-                      >
-                        删除
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            if (onStartChat) {
+                              onStartChat(friend);
+                              onClose();
+                              setIsFriendListOpen(false);
+                            }
+                          }}
+                          className="p-2 text-blue-500 hover:bg-blue-50 rounded-full"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setFriendToDelete(friend);
+                            setIsDeleteConfirmOpen(true);
+                          }}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -4,6 +4,24 @@ import BottomMenu from '../components/BottomMenu'
 import { getDecks } from '../services/deckService'
 import type { Deck } from '../types/deck'
 import { IMAGE_BASE_URL } from '../constants/api'
+import FriendMenu from '../components/FriendMenu'
+
+interface Friend {
+  id: number;
+  username: string;
+  nickname: string;
+  avatar: string;
+  is_blocked: boolean;
+  friend_id: number;
+  friend_username: string;
+  friend_nickname: string;
+  friend_avatar: string;
+}
+
+interface ChatTab {
+  type: 'world' | 'friend';
+  friend?: Friend;
+}
 
 const Home: React.FC = () => {
   const [nickName, setNickName] = useState('');
@@ -12,6 +30,11 @@ const Home: React.FC = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatType, setChatType] = useState<'world' | 'friend'>('world');
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
+  const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
+  const [chatTabs, setChatTabs] = useState<ChatTab[]>([{ type: 'world' }]);
+  const [activeChatTab, setActiveChatTab] = useState<number>(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -61,6 +84,30 @@ const Home: React.FC = () => {
   const handleSelectedDeckClick = () => {
     if (allDecks[selectedDeckIndex]) {
       navigate('/deck', { state: { deck: allDecks[selectedDeckIndex] } });
+    }
+  };
+
+  const handleStartChat = (friend: Friend) => {
+    // 检查是否已经存在该好友的聊天标签
+    const existingTabIndex = chatTabs.findIndex(
+      tab => tab.type === 'friend' && tab.friend?.friend_id === friend.friend_id
+    );
+
+    if (existingTabIndex === -1) {
+      // 如果不存在，添加新的聊天标签
+      setChatTabs(prev => [...prev, { type: 'friend', friend }]);
+      setActiveChatTab(chatTabs.length);
+    } else {
+      // 如果已存在，切换到该标签
+      setActiveChatTab(existingTabIndex);
+    }
+    setIsChatOpen(true);
+  };
+
+  const handleCloseChatTab = (index: number) => {
+    setChatTabs(prev => prev.filter((_, i) => i !== index));
+    if (activeChatTab >= index) {
+      setActiveChatTab(Math.max(0, activeChatTab - 1));
     }
   };
 
@@ -194,6 +241,17 @@ const Home: React.FC = () => {
         </svg>
       </button>
 
+      {/* 聊天遮罩层 */}
+      {isChatOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-30 z-30"
+          onClick={() => {
+            setIsChatOpen(false);
+            setSelectedFriend(null);
+          }}
+        />
+      )}
+
       {/* 聊天框 */}
       <div 
         className={`fixed top-0 right-0 h-full w-[70%] bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
@@ -206,7 +264,9 @@ const Home: React.FC = () => {
             <span className="font-bold">聊天</span>
             <button 
               className="p-2 hover:bg-gray-100 rounded-full"
-              onClick={() => setIsChatOpen(false)}
+              onClick={() => {
+                setIsChatOpen(false);
+              }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -214,29 +274,49 @@ const Home: React.FC = () => {
             </button>
           </div>
 
-          {/* 聊天类型切换 */}
-          <div className="flex border-b border-gray-200 bg-white">
-            <button 
-              className={`flex-1 py-2 text-center transition-colors text-sm ${
-                chatType === 'world' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-              }`}
-              onClick={() => setChatType('world')}
-            >
-              世界聊天
-            </button>
-            <button 
-              className={`flex-1 py-2 text-center transition-colors text-sm ${
-                chatType === 'friend' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
-              }`}
-              onClick={() => setChatType('friend')}
-            >
-              好友聊天
-            </button>
+          {/* 聊天标签栏 */}
+          <div className="flex border-b border-gray-200 bg-white overflow-x-auto">
+            {chatTabs.map((tab, index) => (
+              <div
+                key={index}
+                className={`flex items-center px-3 py-2 border-b-2 ${
+                  activeChatTab === index
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600'
+                }`}
+              >
+                <button
+                  className="flex items-center space-x-1"
+                  onClick={() => setActiveChatTab(index)}
+                >
+                  <span className="text-sm whitespace-nowrap">
+                    {tab.type === 'world' ? '世界聊天' : tab.friend?.friend_nickname}
+                  </span>
+                </button>
+                {index > 0 && (
+                  <button
+                    className="ml-2 p-1 hover:bg-gray-100 rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseChatTab(index);
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
 
           {/* 聊天内容区域 */}
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="text-gray-500 text-center">聊天内容</div>
+            <div className="text-gray-500 text-center">
+              {chatTabs[activeChatTab]?.type === 'world' 
+                ? '世界聊天内容' 
+                : `与 ${chatTabs[activeChatTab]?.friend?.friend_nickname} 的聊天内容`}
+            </div>
           </div>
 
           {/* 聊天输入区域 */}
@@ -257,9 +337,20 @@ const Home: React.FC = () => {
         </div>
       </div>
 
+      {/* 好友菜单 */}
+      <FriendMenu
+        isOpen={isFriendMenuOpen}
+        onClose={() => setIsFriendMenuOpen(false)}
+        position={friendButtonPosition}
+        onStartChat={handleStartChat}
+      />
+
       {/* 底部菜单栏 */}
       <footer className="bg-white border-t border-gray-200">
-        <BottomMenu />
+        <BottomMenu onFriendClick={(position) => {
+          setFriendButtonPosition(position);
+          setIsFriendMenuOpen(true);
+        }} />
       </footer>
     </div>
   );
@@ -366,23 +457,83 @@ const Home: React.FC = () => {
 
         {/* 右侧聊天区域 */}
         <div className="w-80 flex flex-col border-l border-gray-200">
-          <div className="flex-1 overflow-y-auto p-4">
-            <div className="text-gray-500 text-center">聊天内容</div>
+          {/* 聊天标签栏 */}
+          <div className="flex border-b border-gray-200 bg-white overflow-x-auto">
+            {chatTabs.map((tab, index) => (
+              <div
+                key={index}
+                className={`flex items-center px-3 py-2 border-b-2 ${
+                  activeChatTab === index
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-600'
+                }`}
+              >
+                <button
+                  className="flex items-center space-x-1"
+                  onClick={() => setActiveChatTab(index)}
+                >
+                  <span className="text-sm whitespace-nowrap">
+                    {tab.type === 'world' ? '世界聊天' : tab.friend?.friend_nickname}
+                  </span>
+                </button>
+                {index > 0 && (
+                  <button
+                    className="ml-2 p-1 hover:bg-gray-100 rounded-full"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCloseChatTab(index);
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
-          <div className="flex border-t border-gray-200 bg-white">
-            <button className="flex-1 py-2 text-center transition-colors text-sm bg-blue-50 text-blue-600">
-              世界聊天
-            </button>
-            <button className="flex-1 py-2 text-center transition-colors text-sm text-gray-600 hover:bg-gray-50">
-              好友聊天
-            </button>
+
+          {/* 聊天内容区域 */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="text-gray-500 text-center">
+              {chatTabs[activeChatTab]?.type === 'world' 
+                ? '世界聊天内容' 
+                : `与 ${chatTabs[activeChatTab]?.friend?.friend_nickname} 的聊天内容`}
+            </div>
+          </div>
+
+          {/* 聊天输入区域 */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="输入消息..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+              />
+              <button className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </main>
 
+      {/* 好友菜单 */}
+      <FriendMenu
+        isOpen={isFriendMenuOpen}
+        onClose={() => setIsFriendMenuOpen(false)}
+        position={friendButtonPosition}
+        onStartChat={handleStartChat}
+      />
+
       {/* 底部菜单栏 */}
       <footer className="bg-white border-t border-gray-200">
-        <BottomMenu />
+        <BottomMenu onFriendClick={(position) => {
+          setFriendButtonPosition(position);
+          setIsFriendMenuOpen(true);
+        }} />
       </footer>
     </div>
   );

@@ -18,7 +18,11 @@ interface MenuItem {
   requiredLevel?: number;
 }
 
-const BottomMenu: React.FC = () => {
+interface BottomMenuProps {
+  onFriendClick?: (position: { left: number; bottom: number }) => void;
+}
+
+const BottomMenu: React.FC<BottomMenuProps> = ({ onFriendClick }) => {
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
@@ -51,10 +55,14 @@ const BottomMenu: React.FC = () => {
       onClick: () => {
         if (friendButtonRef.current) {
           const rect = friendButtonRef.current.getBoundingClientRect();
-          setFriendButtonPosition({
+          const position = {
             left: rect.left,
             bottom: window.innerHeight - rect.top
-          });
+          };
+          setFriendButtonPosition(position);
+          if (onFriendClick) {
+            onFriendClick(position);
+          }
         }
         setIsFriendOpen(true);
       }
