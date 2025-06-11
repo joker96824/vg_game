@@ -10,6 +10,8 @@ const Home: React.FC = () => {
   const [allDecks, setAllDecks] = useState<Deck[]>([]);
   const [selectedDeckIndex, setSelectedDeckIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatType, setChatType] = useState<'world' | 'friend'>('world');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,7 +65,7 @@ const Home: React.FC = () => {
   };
 
   const MobileLayout = () => (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col relative">
       {/* 移动端顶部栏 - 只显示欢迎文字 */}
       <header className="w-full h-14 flex items-center justify-center px-4 border-b border-gray-200">
         <span className="font-bold text-lg">欢迎你，{nickName}</span>
@@ -181,6 +183,79 @@ const Home: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* 聊天框切换按钮 */}
+      <button
+        className="fixed right-4 bottom-24 w-10 h-10 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors z-50"
+        onClick={() => setIsChatOpen(!isChatOpen)}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+      </button>
+
+      {/* 聊天框 */}
+      <div 
+        className={`fixed top-0 right-0 h-full w-[70%] bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40 ${
+          isChatOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="h-full flex flex-col">
+          {/* 聊天框头部 */}
+          <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200">
+            <span className="font-bold">聊天</span>
+            <button 
+              className="p-2 hover:bg-gray-100 rounded-full"
+              onClick={() => setIsChatOpen(false)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          {/* 聊天类型切换 */}
+          <div className="flex border-b border-gray-200 bg-white">
+            <button 
+              className={`flex-1 py-2 text-center transition-colors text-sm ${
+                chatType === 'world' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+              onClick={() => setChatType('world')}
+            >
+              世界聊天
+            </button>
+            <button 
+              className={`flex-1 py-2 text-center transition-colors text-sm ${
+                chatType === 'friend' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+              }`}
+              onClick={() => setChatType('friend')}
+            >
+              好友聊天
+            </button>
+          </div>
+
+          {/* 聊天内容区域 */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="text-gray-500 text-center">聊天内容</div>
+          </div>
+
+          {/* 聊天输入区域 */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="输入消息..."
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+              />
+              <button className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* 底部菜单栏 */}
       <footer className="bg-white border-t border-gray-200">
