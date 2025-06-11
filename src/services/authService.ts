@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from '../constants/api';
+import { API_ENDPOINTS, API_BASE_URL } from '../constants/api';
 import { createAuthenticatedRequest } from '../utils/request';
 
 // Token 相关常量
@@ -465,3 +465,26 @@ export const searchUsers = async (keyword: string) => {
       throw error;
     }
   };
+
+export const uploadAvatar = async (file: File): Promise<void> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('未登录');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/auth/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || '上传头像失败');
+  }
+};

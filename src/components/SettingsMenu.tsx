@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { logout, updateNickname, updateAvatar, resetPassword, resetPasswordByEmail } from '../services/authService';
+import { logout, updateNickname, updateAvatar, resetPassword, resetPasswordByEmail, uploadAvatar } from '../services/authService';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showAvatar, setShowAvatar] = useState(false);
   
   // 个人信息状态
   const [nickname, setNickname] = useState('');
@@ -25,12 +26,19 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
   const [isPasswordLoading, setIsPasswordLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
+  // 头像上传状态
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
   // 从 localStorage 获取用户信息
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
       const user = JSON.parse(userStr);
       setNickname(user.nickname || '');
+      setPreviewUrl(user.avatar || null);
     }
   }, []);
 
@@ -108,6 +116,70 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // 检查文件类型
+      if (!file.type.startsWith('image/')) {
+        setToastMessage({ type: 'error', message: '请选择图片文件' });
+        return;
+      }
+      // 检查文件大小（限制为2MB）
+      if (file.size > 2 * 1024 * 1024) {
+        setToastMessage({ type: 'error', message: '图片大小不能超过2MB' });
+        return;
+      }
+      // 创建预览URL
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleUpload = async () => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) {
+      setToastMessage({ type: 'error', message: '请先选择图片' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      await uploadAvatar(file);
+      setToastMessage({ type: 'success', message: '头像上传成功' });
+      // 更新本地存储中的用户信息
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        user.avatar = previewUrl;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      // 清除预览
+      setPreviewUrl(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      setShowAvatar(false);
+    } catch (error) {
+      console.error('上传头像失败:', error);
+      setToastMessage({ 
+        type: 'error', 
+        message: error instanceof Error ? error.message : '上传头像失败'
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // 自动关闭提示消息
+  React.useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => {
+        setToastMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
   if (!isOpen) return null;
 
   return (
@@ -120,6 +192,12 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
             onClick={() => setShowProfile(true)}
           >
             个人信息
+          </button>
+          <button
+            className="w-full px-4 py-2 text-left hover:bg-gray-100"
+            onClick={() => setShowAvatar(true)}
+          >
+            更换头像
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100"
@@ -262,7 +340,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
                 <p>版本：1.0.0</p>
                 <p>开发者：Your Name</p>
                 <p>联系方式：your.email@example.com</p>
-                {/* 预留更多文本位置 */}
               </div>
               <div className="flex justify-end">
                 <button
@@ -273,6 +350,83 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 头像上传弹窗 */}
+      {showAvatar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96">
+            <h2 className="text-xl font-bold mb-4">更换头像</h2>
+            <div className="space-y-4">
+              {/* 头像预览 */}
+              <div className="flex justify-center">
+                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200">
+                  {previewUrl ? (
+                    <img
+                      src={previewUrl}
+                      alt="头像预览"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <span className="text-gray-400">暂无头像</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 文件选择和上传按钮 */}
+              <div className="flex flex-col items-center space-y-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  选择图片
+                </button>
+                <button
+                  onClick={handleUpload}
+                  disabled={!previewUrl || isUploading}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300"
+                >
+                  {isUploading ? '上传中...' : '上传头像'}
+                </button>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  className="px-4 py-2 border rounded hover:bg-gray-100"
+                  onClick={() => {
+                    setShowAvatar(false);
+                    setPreviewUrl(null);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = '';
+                    }
+                  }}
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 提示消息 */}
+      {toastMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60]">
+          <div className={`px-4 py-2 rounded-lg shadow-lg ${
+            toastMessage.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          } text-white`}>
+            {toastMessage.message}
           </div>
         </div>
       )}
