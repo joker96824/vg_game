@@ -12,6 +12,7 @@ import Permissions from './pages/admin/Permissions'
 import Skills from './pages/admin/Skills'
 import PrivateRoute from './components/PrivateRoute'
 import './styles/global.css'
+import AvatarAudit from './pages/admin/AvatarAudit'
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);
@@ -43,6 +44,11 @@ root.render(
         <Route path="/admin/skills" element={
           <PrivateRoute>
             <Skills />
+          </PrivateRoute>
+        } />
+        <Route path="/admin/avatar-audit" element={
+          <PrivateRoute>
+            <AvatarAudit />
           </PrivateRoute>
         } />
         <Route path="/login" element={<Login />} />

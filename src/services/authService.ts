@@ -509,3 +509,27 @@ export const getUnauditedFiles = async () => {
     return [];
   }
 };
+
+export const updateFileStatus = async (filename: string, newStatus: 'Valid' | 'Unvalid') => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/files/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        filename,
+        new_status: newStatus
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('更新文件状态失败');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('更新文件状态失败:', error);
+    throw error;
+  }
+};
