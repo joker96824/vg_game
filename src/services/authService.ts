@@ -488,3 +488,24 @@ export const uploadAvatar = async (file: File): Promise<void> => {
     throw new Error(error.message || '上传头像失败');
   }
 };
+
+export interface UnauditedFile {
+  id: string;
+  url: string;
+  userId: string;
+  createdAt: string;
+}
+
+export const getUnauditedFiles = async () => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/files/unaudited`);
+    if (!response.ok) {
+      throw new Error('获取未审核文件失败');
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('获取未审核文件失败:', error);
+    return [];
+  }
+};

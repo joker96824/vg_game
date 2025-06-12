@@ -5,6 +5,7 @@ import { getDecks } from '../services/deckService'
 import type { Deck } from '../types/deck'
 import { IMAGE_BASE_URL } from '../constants/api'
 import FriendMenu from '../components/FriendMenu'
+import { getUnauditedFiles } from '../services/authService'
 
 interface Friend {
   id: number;
@@ -75,6 +76,20 @@ const Home: React.FC = () => {
     };
 
     loadDecks();
+  }, []);
+
+  useEffect(() => {
+    const checkUnauditedFiles = async () => {
+      try {
+        const files = await getUnauditedFiles();
+        // 将未审核文件状态存储到 localStorage 中，供 AdminMenu 使用
+        localStorage.setItem('hasUnauditedFiles', files.items.length > 0 ? 'true' : 'false');
+      } catch (error) {
+        console.error('检查未审核文件失败:', error);
+      }
+    };
+
+    checkUnauditedFiles();
   }, []);
 
   const handleDeckClick = (index: number) => {
