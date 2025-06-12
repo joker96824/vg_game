@@ -6,6 +6,7 @@ import type { Deck } from '../types/deck'
 import { IMAGE_BASE_URL } from '../constants/api'
 import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
+import { getFriendRequests } from '../services/friendService'
 
 interface Friend {
   id: number;
@@ -81,15 +82,37 @@ const Home: React.FC = () => {
   useEffect(() => {
     const checkUnauditedFiles = async () => {
       try {
-        const files = await getUnauditedFiles();
-        // 将未审核文件状态存储到 localStorage 中，供 AdminMenu 使用
-        localStorage.setItem('hasUnauditedFiles', files.items.length > 0 ? 'true' : 'false');
+        // 从 localStorage 获取用户信息
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          // 检查用户权限
+          if (user.level >= 5) {
+            const files = await getUnauditedFiles();
+            // 将未审核文件状态存储到 localStorage 中，供 AdminMenu 使用
+            localStorage.setItem('hasUnauditedFiles', files.items.length > 0 ? 'true' : 'false');
+          } else {
+            // 如果权限不足，确保状态为 false
+            localStorage.setItem('hasUnauditedFiles', 'false');
+          }
+        }
       } catch (error) {
         console.error('检查未审核文件失败:', error);
       }
     };
 
+    const checkFriendRequests = async () => {
+      try {
+        const requests = await getFriendRequests();
+        // 将好友请求状态存储到 localStorage 中，供 FriendMenu 使用
+        localStorage.setItem('hasFriendRequests', requests.length > 0 ? 'true' : 'false');
+      } catch (error) {
+        console.error('获取好友请求失败:', error);
+      }
+    };
+
     checkUnauditedFiles();
+    checkFriendRequests();
   }, []);
 
   const handleDeckClick = (index: number) => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { searchUsers } from '../services/authService';
 import { sendFriendRequest, getFriendRequests, acceptFriendRequest, rejectFriendRequest, getFriends, deleteFriend } from '../services/friendService';
+import { useNavigate } from 'react-router-dom';
 
 interface FriendMenuProps {
   isOpen: boolean;
@@ -63,6 +64,8 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [friendToDelete, setFriendToDelete] = useState<Friend | null>(null);
   const deleteConfirmModalRef = useRef<HTMLDivElement>(null);
+  const [hasFriendRequests, setHasFriendRequests] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // 从 localStorage 获取当前用户信息
@@ -77,7 +80,12 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
     }
   }, []);
 
-  // 获取好友请求
+  useEffect(() => {
+    const hasRequests = localStorage.getItem('hasFriendRequests') === 'true';
+    setHasFriendRequests(hasRequests);
+  }, [isOpen]);
+
+  // 获取好友请求列表
   useEffect(() => {
     const fetchFriendRequests = async () => {
       try {
@@ -88,10 +96,10 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
       }
     };
 
-    if (isOpen) {
+    if (isRequestOpen) {
       fetchFriendRequests();
     }
-  }, [isOpen]);
+  }, [isRequestOpen]);
 
   // 获取好友列表
   useEffect(() => {
@@ -206,6 +214,9 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
       // 重新获取好友请求列表
       const requests = await getFriendRequests();
       setPendingRequests(requests);
+      // 更新localStorage中的状态
+      localStorage.setItem('hasFriendRequests', requests.length > 0 ? 'true' : 'false');
+      setHasFriendRequests(requests.length > 0);
     } catch (error) {
       console.error('处理好友申请失败:', error);
       setToastMessage({ 
@@ -251,12 +262,14 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
 
   return (
     <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
       <div 
-        ref={menuRef} 
         className="fixed bg-white rounded-lg shadow-lg z-50 w-48"
         style={{
-          left: `${position.left}px`,
-          bottom: `${position.bottom + 16}px`
+          left: position?.left,
+          bottom: position?.bottom ? position.bottom + 10 : 'auto',
+          top: position?.bottom ? 'auto' : '50%',
+          transform: position?.bottom ? 'none' : 'translateY(-50%)',
         }}
       >
         <div className="py-1">
@@ -275,9 +288,8 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
             }}
           >
             好友申请
-            {pendingRequests.length > 0 && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {pendingRequests.length}
+            {hasFriendRequests && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center">
               </span>
             )}
           </button>
