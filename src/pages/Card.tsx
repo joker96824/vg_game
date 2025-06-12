@@ -1169,8 +1169,8 @@ const CardBrowser: React.FC = () => {
                           </svg>
                         </button>
                       )}
-                      <img
-                        src={`${IMAGE_BASE_URL}/${cards[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
+                      <img 
+                        src={`${IMAGE_BASE_URL}/vg_image/${cards[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                         alt={cards[modalCardIndex].name_cn}
                         className="w-full h-auto object-contain rounded-[4%]"
                         style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
@@ -1233,26 +1233,10 @@ const CardBrowser: React.FC = () => {
                         </svg>
                       </button>
                     )}
-                    <img
-                      src={`${IMAGE_BASE_URL}/${getCurrentZoneCards()[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
+                    <img 
+                      src={`${IMAGE_BASE_URL}/vg_image/${getCurrentZoneCards()[modalCardIndex].rarity_infos[modalRarityIndex]?.card_number}.jpg`}
                       alt={getCurrentZoneCards()[modalCardIndex].name_cn}
-                      className="w-full h-auto object-contain rounded-[4%]"
-                      style={{boxShadow:'0 8px 32px rgba(0,0,0,0.4)'}}
-                      onLoad={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        imageCache.handleImageLoad(target.src);
-                        // 设置外层div的宽高比
-                        const parent = target.parentElement;
-                        if (parent) {
-                          const ratio = target.naturalWidth / target.naturalHeight;
-                          parent.style.aspectRatio = ratio.toString();
-                        }
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.parentElement?.classList.add('text-center');
-                      }}
+                      className="w-full h-full object-contain"
                     />
                     {/* 稀有度切换按钮 - 右 */}
                     {getCurrentZoneCards()[modalCardIndex].rarity_infos.length > 1 && (

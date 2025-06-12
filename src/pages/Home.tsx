@@ -193,7 +193,7 @@ const Home: React.FC = () => {
                             className="flex-1 relative"
                           >
                             <img 
-                              src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                              src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
                               alt={allDecks[selectedDeckIndex].deck_name}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -245,7 +245,7 @@ const Home: React.FC = () => {
                         {rideCards.map((card, cardIndex) => (
                           <div key={cardIndex} className="flex-1 relative">
                             <img 
-                              src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                              src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
                               alt={deck.deck_name}
                               className="w-full h-full object-cover"
                               onError={(e) => {
@@ -430,7 +430,7 @@ const Home: React.FC = () => {
                     {rideCards.map((card, index) => (
                       <div key={index} className="flex-1 relative">
                         <img 
-                          src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                          src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
                           alt={deck.deck_name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -466,7 +466,7 @@ const Home: React.FC = () => {
                     .map((card, index) => (
                       <div key={index} className="flex-1 relative">
                         <img 
-                          src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                          src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
                           alt={allDecks[selectedDeckIndex].deck_name}
                           className="w-full h-full object-cover"
                           onError={(e) => {

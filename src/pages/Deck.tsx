@@ -549,7 +549,7 @@ const Deck: React.FC = () => {
                 className="relative border rounded-lg flex items-center justify-center text-gray-500 text-xs bg-white shadow"
               >
                 <img
-                  src={`${IMAGE_BASE_URL}/${card.image}.jpg`}
+                  src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
                   alt={`Card ${card.card_id}`}
                   className="w-full h-auto object-contain"
                   onLoad={(e) => {

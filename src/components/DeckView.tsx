@@ -20,7 +20,7 @@ const DeckView: React.FC<DeckViewProps> = ({ showCards, onCardClick, isMobile = 
             onClick={() => onCardClick(index)}
           >
             <img
-              src={`${IMAGE_BASE_URL}/${card.card_rarity[0]?.card_number}.jpg`}
+              src={`${IMAGE_BASE_URL}/vg_image/${card.card_rarity[0]?.card_number}.jpg`}
               alt={card.name_cn}
               className="w-full h-auto object-contain rounded border border-gray-200"
               onLoad={(e) => {
