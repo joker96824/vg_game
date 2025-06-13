@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout, updateNickname, updateAvatar, resetPassword, resetPasswordByEmail, uploadAvatar } from '../services/authService';
+import { IMAGE_BASE_URL } from '../constants/api';
 
 interface SettingsMenuProps {
   isOpen: boolean;
@@ -38,7 +39,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
     if (userStr) {
       const user = JSON.parse(userStr);
       setNickname(user.nickname || '');
-      setPreviewUrl(user.avatar || null);
+      setPreviewUrl(user.avatar ? `${IMAGE_BASE_URL}/avatars/${user.avatar}` : null);
     }
   }, []);
 
