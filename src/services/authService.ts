@@ -466,7 +466,7 @@ export const searchUsers = async (keyword: string) => {
     }
   };
 
-export const uploadAvatar = async (file: File): Promise<void> => {
+export const uploadAvatar = async (file: File): Promise<{ data: { filename: string } }> => {
   const token = localStorage.getItem('token');
   if (!token) {
     throw new Error('未登录');
@@ -487,6 +487,13 @@ export const uploadAvatar = async (file: File): Promise<void> => {
     const error = await response.json();
     throw new Error(error.message || '上传头像失败');
   }
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || '上传头像失败');
+  }
+
+  return data;
 };
 
 export interface UnauditedFile {

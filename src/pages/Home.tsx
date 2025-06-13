@@ -50,19 +50,46 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // 从 localStorage 获取用户信息
     const userStr = localStorage.getItem('user');
-    if (userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        console.log(user);
-        setNickName(user.nickname || '');
-        setAvatar(user.avatar || '');
-      } catch (error) {
-        console.error('解析用户信息失败:', error);
-      }
+    if (!userStr) {
+      navigate('/login');
+      return;
     }
 
+    try {
+      const user = JSON.parse(userStr);
+      setNickName(user.nickname || '');
+      // 优先使用临时 blob URL，如果不存在则使用服务器头像
+      const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
+      console.log('Home组件读取临时头像URL:', tempAvatarUrl);
+      if (tempAvatarUrl) {
+        setAvatar(tempAvatarUrl);
+      } else if (user.avatar) {
+        setAvatar(`${IMAGE_BASE_URL}/avatars/${user.avatar}`);
+      } else {
+        setAvatar('');
+      }
+    } catch (error) {
+      console.error('解析用户信息失败:', error);
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // 添加头像更新事件监听
+  useEffect(() => {
+    const handleAvatarUpdate = (event: CustomEvent) => {
+      console.log('收到头像更新事件:', event.detail);
+      // 直接使用 blob URL
+      setAvatar(event.detail.avatarUrl);
+    };
+
+    window.addEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    return () => {
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
     // 加载所有卡组
     const loadDecks = async () => {
       try {
@@ -159,7 +186,7 @@ const Home: React.FC = () => {
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-full overflow-hidden">
             <img
-              src={`${IMAGE_BASE_URL}/avatars/${avatar}`}
+              src={avatar}
               alt="用户头像"
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -428,7 +455,7 @@ const Home: React.FC = () => {
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 rounded-full overflow-hidden">
             <img
-              src={`${IMAGE_BASE_URL}/avatars/${avatar}`}
+              src={avatar}
               alt="用户头像"
               className="w-full h-full object-cover"
               onError={(e) => {
