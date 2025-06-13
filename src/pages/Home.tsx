@@ -27,6 +27,7 @@ interface ChatTab {
 
 const Home: React.FC = () => {
   const [nickName, setNickName] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [allDecks, setAllDecks] = useState<Deck[]>([]);
   const [selectedDeckIndex, setSelectedDeckIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -54,7 +55,9 @@ const Home: React.FC = () => {
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
+        console.log(user);
         setNickName(user.nickname || '');
+        setAvatar(user.avatar || '');
       } catch (error) {
         console.error('解析用户信息失败:', error);
       }
@@ -153,7 +156,21 @@ const Home: React.FC = () => {
     <div className="min-h-screen bg-white flex flex-col relative">
       {/* 移动端顶部栏 - 只显示欢迎文字 */}
       <header className="w-full h-14 flex items-center justify-center px-4 border-b border-gray-200">
-        <span className="font-bold text-lg">欢迎你，{nickName}</span>
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-full overflow-hidden">
+            <img
+              src={`${IMAGE_BASE_URL}/avatars/${avatar}`}
+              alt="用户头像"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.parentElement?.classList.add('bg-gray-200');
+              }}
+            />
+          </div>
+          <span className="font-bold text-lg">欢迎你，{nickName}</span>
+        </div>
       </header>
 
       {/* 移动端主内容区域 */}
@@ -408,7 +425,21 @@ const Home: React.FC = () => {
             创建房间
           </button>
         </div>
-        <span className="font-bold text-lg">欢迎你，{nickName}</span>
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 rounded-full overflow-hidden">
+            <img
+              src={`${IMAGE_BASE_URL}/avatars/${avatar}`}
+              alt="用户头像"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                target.parentElement?.classList.add('bg-gray-200');
+              }}
+            />
+          </div>
+          <span className="font-bold text-lg">欢迎你，{nickName}</span>
+        </div>
       </header>
 
       {/* 桌面版主内容区域 */}
