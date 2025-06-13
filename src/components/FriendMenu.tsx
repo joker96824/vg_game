@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { searchUsers } from '../services/authService';
 import { sendFriendRequest, getFriendRequests, acceptFriendRequest, rejectFriendRequest, getFriends, deleteFriend } from '../services/friendService';
+import { useNavigate } from 'react-router-dom';
 
 interface FriendMenuProps {
   isOpen: boolean;
   onClose: () => void;
   position: { left: number; bottom: number } | null;
+  onStartChat?: (friend: Friend) => void;
 }
 
 interface SearchResult {
@@ -40,7 +42,7 @@ interface Friend {
   friend_avatar: string;
 }
 
-const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) => {
+const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onStartChat }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const searchModalRef = useRef<HTMLDivElement>(null);
   const requestModalRef = useRef<HTMLDivElement>(null);
@@ -62,6 +64,8 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [friendToDelete, setFriendToDelete] = useState<Friend | null>(null);
   const deleteConfirmModalRef = useRef<HTMLDivElement>(null);
+  const [hasFriendRequests, setHasFriendRequests] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // 从 localStorage 获取当前用户信息
@@ -76,7 +80,12 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
     }
   }, []);
 
-  // 获取好友请求
+  useEffect(() => {
+    const hasRequests = localStorage.getItem('hasFriendRequests') === 'true';
+    setHasFriendRequests(hasRequests);
+  }, [isOpen]);
+
+  // 获取好友请求列表
   useEffect(() => {
     const fetchFriendRequests = async () => {
       try {
@@ -87,10 +96,10 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
       }
     };
 
-    if (isOpen) {
+    if (isRequestOpen) {
       fetchFriendRequests();
     }
-  }, [isOpen]);
+  }, [isRequestOpen]);
 
   // 获取好友列表
   useEffect(() => {
@@ -205,6 +214,9 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
       // 重新获取好友请求列表
       const requests = await getFriendRequests();
       setPendingRequests(requests);
+      // 更新localStorage中的状态
+      localStorage.setItem('hasFriendRequests', requests.length > 0 ? 'true' : 'false');
+      setHasFriendRequests(requests.length > 0);
     } catch (error) {
       console.error('处理好友申请失败:', error);
       setToastMessage({ 
@@ -250,12 +262,14 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
 
   return (
     <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
       <div 
-        ref={menuRef} 
         className="fixed bg-white rounded-lg shadow-lg z-50 w-48"
         style={{
-          left: `${position.left}px`,
-          bottom: `${position.bottom + 16}px`
+          left: position?.left,
+          bottom: position?.bottom ? position.bottom + 10 : 'auto',
+          top: position?.bottom ? 'auto' : '50%',
+          transform: position?.bottom ? 'none' : 'translateY(-50%)',
         }}
       >
         <div className="py-1">
@@ -274,9 +288,8 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
             }}
           >
             好友申请
-            {pendingRequests.length > 0 && (
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {pendingRequests.length}
+            {hasFriendRequests && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-3 h-3 flex items-center justify-center">
               </span>
             )}
           </button>
@@ -568,16 +581,33 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position }) =>
                         />
                         <div className="font-medium">{friend.friend_nickname}</div>
                       </div>
-                      <button
-                        className="px-3 py-1 text-sm text-gray-500 hover:text-red-500"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFriendToDelete(friend);
-                          setIsDeleteConfirmOpen(true);
-                        }}
-                      >
-                        删除
-                      </button>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            if (onStartChat) {
+                              onStartChat(friend);
+                              onClose();
+                              setIsFriendListOpen(false);
+                            }
+                          }}
+                          className="p-2 text-blue-500 hover:bg-blue-50 rounded-full"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setFriendToDelete(friend);
+                            setIsDeleteConfirmOpen(true);
+                          }}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-full"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

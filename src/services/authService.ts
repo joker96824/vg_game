@@ -1,4 +1,4 @@
-import { API_ENDPOINTS } from '../constants/api';
+import { API_ENDPOINTS, API_BASE_URL } from '../constants/api';
 import { createAuthenticatedRequest } from '../utils/request';
 
 // Token 相关常量
@@ -465,3 +465,78 @@ export const searchUsers = async (keyword: string) => {
       throw error;
     }
   };
+
+export const uploadAvatar = async (file: File): Promise<{ data: { filename: string } }> => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('未登录');
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE_URL}/auth/upload-avatar`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || '上传头像失败');
+  }
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || '上传头像失败');
+  }
+
+  return data;
+};
+
+export interface UnauditedFile {
+  id: string;
+  url: string;
+  userId: string;
+  createdAt: string;
+}
+
+export const getUnauditedFiles = async () => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/files/unaudited`);
+    if (!response.ok) {
+      throw new Error('获取未审核文件失败');
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error('获取未审核文件失败:', error);
+    return [];
+  }
+};
+
+export const updateFileStatus = async (filename: string, newStatus: 'Valid' | 'Unvalid') => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.AUTH}/files/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        filename,
+        new_status: newStatus
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('更新文件状态失败');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('更新文件状态失败:', error);
+    throw error;
+  }
+};

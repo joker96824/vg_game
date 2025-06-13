@@ -1,6 +1,6 @@
 {
   "name": "vg_game",
-  "version": "1.0.0",
+  "version": "0.1.4",
   "description": "A cross-platform game application",
   "main": "electron/main.js",
   "scripts": {
