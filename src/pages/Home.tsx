@@ -61,7 +61,6 @@ const Home: React.FC = () => {
       setNickName(user.nickname || '');
       // 优先使用临时 blob URL，如果不存在则使用服务器头像
       const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
-      console.log('Home组件读取临时头像URL:', tempAvatarUrl);
       if (tempAvatarUrl) {
         setAvatar(tempAvatarUrl);
       } else if (user.avatar) {
@@ -78,8 +77,6 @@ const Home: React.FC = () => {
   // 添加头像更新事件监听
   useEffect(() => {
     const handleAvatarUpdate = (event: CustomEvent) => {
-      console.log('收到头像更新事件:', event.detail);
-      // 直接使用 blob URL
       setAvatar(event.detail.avatarUrl);
     };
 

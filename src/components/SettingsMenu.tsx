@@ -122,36 +122,28 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('handleFileSelect 被调用');
     const file = event.target.files?.[0];
-    console.log('选择的文件:', file);
     if (file) {
       // 检查文件类型
       if (!file.type.startsWith('image/')) {
-        console.log('文件类型检查失败:', file.type);
         setToastMessage({ type: 'error', message: '请选择图片文件' });
         return;
       }
       // 检查文件大小（限制为2MB）
       if (file.size > 2 * 1024 * 1024) {
-        console.log('文件大小检查失败:', file.size);
         setToastMessage({ type: 'error', message: '图片大小不能超过2MB' });
         return;
       }
       // 创建预览URL
       const url = URL.createObjectURL(file);
-      console.log('创建的预览URL:', url);
       setPreviewUrl(url);
       // 保存临时 blob URL 到 localStorage
       localStorage.setItem('tempAvatarUrl', url);
-      console.log('保存临时头像URL到localStorage:', url);
     }
   };
 
   const handleUpload = async () => {
-    console.log('handleUpload 被调用');
     const file = fileInputRef.current?.files?.[0];
-    console.log('准备上传的文件:', file);
     if (!file) {
       setToastMessage({ type: 'error', message: '请先选择图片' });
       return;
@@ -159,9 +151,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
 
     setIsUploading(true);
     try {
-      console.log('开始上传头像');
       const response = await uploadAvatar(file);
-      console.log('上传响应:', response);
       setToastMessage({ type: 'success', message: '头像上传成功' });
       // 更新本地存储中的用户信息
       const userStr = localStorage.getItem('user');
