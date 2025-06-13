@@ -5,16 +5,16 @@ import Toast from '../../components/Toast';
 import { IMAGE_BASE_URL } from '../../constants/api';
 
 interface UnauditedFile {
-  id: string;
-  url: string;
-  userId: string;
-  createdAt: string;
+  filename: string;
+  size: number;
+  create_time: string;
+  modify_time: string;
 }
 
 interface ProcessedFile extends UnauditedFile {
+  userId: string;
   timestamp: number;
   fileExt: string;
-  originalFilename: string;
 }
 
 const AvatarAudit: React.FC = () => {
@@ -50,7 +50,7 @@ const AvatarAudit: React.FC = () => {
       const files = await getUnauditedFiles();
       
       // 处理文件名，提取用户ID和时间戳
-      const processedFiles = files.items.map((file: any) => {
+      const processedFiles = files.items.map((file: UnauditedFile) => {
         const fileName = file.filename.split('/').pop() || '';
         const [nameWithoutExt, fileExt] = fileName.split('.');
         const parts = nameWithoutExt.split('_');
@@ -61,8 +61,7 @@ const AvatarAudit: React.FC = () => {
             ...file,
             userId,
             timestamp: parseInt(timestamp),
-            fileExt,
-            originalFilename: fileName
+            fileExt
           };
         }
         console.error('文件名格式不匹配:', fileName);
@@ -73,8 +72,18 @@ const AvatarAudit: React.FC = () => {
       const latestFiles = processedFiles.reduce((acc: ProcessedFile[], file: ProcessedFile) => {
         const existingFile = acc.find((f: ProcessedFile) => f.userId === file.userId);
         if (!existingFile || file.timestamp > existingFile.timestamp) {
+          // 如果存在旧文件，将其标记为无效
+          if (existingFile) {
+            updateFileStatus(existingFile.filename, 'Unvalid').catch(error => {
+              console.error('自动标记旧头像为无效失败:', error);
+            });
+          }
           return [...acc.filter((f: ProcessedFile) => f.userId !== file.userId), file];
         }
+        // 如果当前文件不是最新的，将其标记为无效
+        updateFileStatus(file.filename, 'Unvalid').catch(error => {
+          console.error('自动标记旧头像为无效失败:', error);
+        });
         return acc;
       }, [] as ProcessedFile[]);
 
@@ -87,7 +96,7 @@ const AvatarAudit: React.FC = () => {
 
   const handleApprove = async (file: ProcessedFile) => {
     try {
-      await updateFileStatus(file.originalFilename, 'Valid');
+      await updateFileStatus(file.filename, 'Valid');
       setToastMessage('审核通过成功');
       // 刷新文件列表
       fetchUnauditedFiles();
@@ -99,7 +108,7 @@ const AvatarAudit: React.FC = () => {
 
   const handleReject = async (file: ProcessedFile) => {
     try {
-      await updateFileStatus(file.originalFilename, 'Unvalid');
+      await updateFileStatus(file.filename, 'Unvalid');
       setToastMessage('审核拒绝成功');
       // 刷新文件列表
       fetchUnauditedFiles();
@@ -134,14 +143,14 @@ const AvatarAudit: React.FC = () => {
               <div key={`${file.userId}_${file.timestamp}`} className="flex items-center gap-4 p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow">
                 <div className="w-16 h-16 flex-shrink-0">
                   <img
-                    src={`${IMAGE_BASE_URL}/avatars/${file.originalFilename}`}
+                    src={`${IMAGE_BASE_URL}/avatars/${file.filename}`}
                     alt={`用户 ${file.userId} 的头像`}
                     className="w-full h-full object-cover rounded-lg"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       console.error('图片加载失败:', {
                         url: target.src,
-                        filename: file.originalFilename,
+                        filename: file.filename,
                         userId: file.userId
                       });
                       target.style.display = 'none';
@@ -152,7 +161,7 @@ const AvatarAudit: React.FC = () => {
                       const target = e.target as HTMLImageElement;
                       console.log('图片加载成功:', {
                         url: target.src,
-                        filename: file.originalFilename,
+                        filename: file.filename,
                         userId: file.userId
                       });
                     }}
@@ -164,6 +173,9 @@ const AvatarAudit: React.FC = () => {
                   </div>
                   <div className="text-xs text-gray-500">
                     上传时间: {file.timestamp.toString().replace(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1-$2-$3 $4:$5:$6')}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    文件大小: {(file.size / 1024).toFixed(2)} KB
                   </div>
                 </div>
                 <div className="flex gap-2">
