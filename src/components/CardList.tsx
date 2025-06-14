@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import type { Card } from '../types/card';
 import { IMAGE_BASE_URL } from '../constants/api';
+import { getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils';
 
 interface CardListProps {
   cards: Card[];
@@ -36,7 +37,7 @@ const CardList: React.FC<CardListProps> = ({
             onClick={() => onCardClick(index)}
           >
             <img
-              src={`${IMAGE_BASE_URL}/vg_image/${card.rarity_infos?.[0]?.card_number}.jpg`}
+              src={getCardImageUrl(card.rarity_infos?.[0]?.card_number)}
               alt={card.name_cn}
               className="w-full h-auto object-contain rounded border border-gray-200"
               onLoad={(e) => {
@@ -44,6 +45,7 @@ const CardList: React.FC<CardListProps> = ({
                 getCachedImage(target.src);
                 target.style.aspectRatio = `${target.naturalWidth} / ${target.naturalHeight}`;
               }}
+              onError={handleCardImageError}
             />
           </div>
         ))}

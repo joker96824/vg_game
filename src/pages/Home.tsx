@@ -7,6 +7,7 @@ import { IMAGE_BASE_URL } from '../constants/api'
 import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
 import { getFriendRequests } from '../services/friendService'
+import { getAvatarUrl, handleImageError, getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils'
 
 interface Friend {
   id: number;
@@ -61,11 +62,10 @@ const Home: React.FC = () => {
       setNickName(user.nickname || '');
       // 优先使用临时 blob URL，如果不存在则使用服务器头像
       const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
-      console.log('Home组件读取临时头像URL:', tempAvatarUrl);
       if (tempAvatarUrl) {
         setAvatar(tempAvatarUrl);
       } else if (user.avatar) {
-        setAvatar(`${IMAGE_BASE_URL}/avatars/${user.avatar}`);
+        setAvatar(getAvatarUrl(user.avatar));
       } else {
         setAvatar('');
       }
@@ -78,8 +78,6 @@ const Home: React.FC = () => {
   // 添加头像更新事件监听
   useEffect(() => {
     const handleAvatarUpdate = (event: CustomEvent) => {
-      console.log('收到头像更新事件:', event.detail);
-      // 直接使用 blob URL
       setAvatar(event.detail.avatarUrl);
     };
 
@@ -189,11 +187,7 @@ const Home: React.FC = () => {
               src={avatar}
               alt="用户头像"
               className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.parentElement?.classList.add('bg-gray-200');
-              }}
+              onError={handleImageError}
             />
           </div>
           <span className="font-bold text-lg">欢迎你，{nickName}</span>
@@ -237,14 +231,10 @@ const Home: React.FC = () => {
                             className="flex-1 relative"
                           >
                             <img 
-                              src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                              src={getCardImageUrl(card.image)}
                               alt={allDecks[selectedDeckIndex].deck_name}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.parentElement?.classList.add('text-center', 'bg-gray-100');
-                              }}
+                              onError={handleCardImageError}
                             />
                           </div>
                       ))}
@@ -289,14 +279,10 @@ const Home: React.FC = () => {
                         {rideCards.map((card, cardIndex) => (
                           <div key={cardIndex} className="flex-1 relative">
                             <img 
-                              src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                              src={getCardImageUrl(card.image)}
                               alt={deck.deck_name}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.parentElement?.classList.add('text-center', 'bg-gray-100');
-                              }}
+                              onError={handleCardImageError}
                             />
                           </div>
                         ))}
@@ -458,11 +444,7 @@ const Home: React.FC = () => {
               src={avatar}
               alt="用户头像"
               className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.parentElement?.classList.add('bg-gray-200');
-              }}
+              onError={handleImageError}
             />
           </div>
           <span className="font-bold text-lg">欢迎你，{nickName}</span>
@@ -488,14 +470,10 @@ const Home: React.FC = () => {
                     {rideCards.map((card, index) => (
                       <div key={index} className="flex-1 relative">
                         <img 
-                          src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                          src={getCardImageUrl(card.image)}
                           alt={deck.deck_name}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.parentElement?.classList.add('text-center');
-                          }}
+                          onError={handleCardImageError}
                         />
                       </div>
                     ))}
@@ -524,14 +502,10 @@ const Home: React.FC = () => {
                     .map((card, index) => (
                       <div key={index} className="flex-1 relative">
                         <img 
-                          src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                          src={getCardImageUrl(card.image)}
                           alt={allDecks[selectedDeckIndex].deck_name}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.parentElement?.classList.add('text-center');
-                          }}
+                          onError={handleCardImageError}
                         />
                       </div>
                     ))}
