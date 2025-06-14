@@ -1,5 +1,6 @@
-import { IMAGE_BASE_URL } from '../constants/api';
-import defaultAvatar from '../assets/default-avatar.png';
+import { IMAGE_BASE_URL } from '../../constants/api';
+import defaultAvatar from '../../assets/default-avatar.png';
+import defaultCard from '../../assets/default-card.png';
 
 /**
  * 生成头像URL
@@ -26,6 +27,15 @@ export const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event
  * @returns 完整的卡牌图片URL
  */
 export const getCardImageUrl = (image: string | null | undefined): string => {
-  if (!image) return '';
+  if (!image) return defaultCard;
   return `${IMAGE_BASE_URL}/vg_image/${image}.jpg`;
+};
+
+/**
+ * 处理卡牌图片加载错误，显示默认卡牌图片
+ * @param e 图片加载错误事件
+ */
+export const handleCardImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+  const target = e.target as HTMLImageElement;
+  target.src = defaultCard;
 }; 

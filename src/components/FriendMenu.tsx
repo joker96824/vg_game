@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { searchUsers } from '../services/authService';
 import { sendFriendRequest, getFriendRequests, acceptFriendRequest, rejectFriendRequest, getFriends, deleteFriend } from '../services/friendService';
 import { useNavigate } from 'react-router-dom';
-import { getAvatarUrl, handleImageError } from '../utils/imageUtils';
+import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 import defaultAvatar from '../assets/default-avatar.png';
 
 interface FriendMenuProps {

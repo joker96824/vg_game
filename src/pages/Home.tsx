@@ -7,7 +7,7 @@ import { IMAGE_BASE_URL } from '../constants/api'
 import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
 import { getFriendRequests } from '../services/friendService'
-import { getAvatarUrl, handleImageError } from '../utils/imageUtils'
+import { getAvatarUrl, handleImageError, getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils'
 
 interface Friend {
   id: number;
@@ -231,14 +231,10 @@ const Home: React.FC = () => {
                             className="flex-1 relative"
                           >
                             <img 
-                              src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                              src={getCardImageUrl(card.image)}
                               alt={allDecks[selectedDeckIndex].deck_name}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.parentElement?.classList.add('text-center', 'bg-gray-100');
-                              }}
+                              onError={handleCardImageError}
                             />
                           </div>
                       ))}
@@ -283,14 +279,10 @@ const Home: React.FC = () => {
                         {rideCards.map((card, cardIndex) => (
                           <div key={cardIndex} className="flex-1 relative">
                             <img 
-                              src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                              src={getCardImageUrl(card.image)}
                               alt={deck.deck_name}
                               className="w-full h-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                target.parentElement?.classList.add('text-center', 'bg-gray-100');
-                              }}
+                              onError={handleCardImageError}
                             />
                           </div>
                         ))}
@@ -478,14 +470,10 @@ const Home: React.FC = () => {
                     {rideCards.map((card, index) => (
                       <div key={index} className="flex-1 relative">
                         <img 
-                          src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                          src={getCardImageUrl(card.image)}
                           alt={deck.deck_name}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.parentElement?.classList.add('text-center');
-                          }}
+                          onError={handleCardImageError}
                         />
                       </div>
                     ))}
@@ -514,14 +502,10 @@ const Home: React.FC = () => {
                     .map((card, index) => (
                       <div key={index} className="flex-1 relative">
                         <img 
-                          src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                          src={getCardImageUrl(card.image)}
                           alt={allDecks[selectedDeckIndex].deck_name}
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            target.parentElement?.classList.add('text-center');
-                          }}
+                          onError={handleCardImageError}
                         />
                       </div>
                     ))}

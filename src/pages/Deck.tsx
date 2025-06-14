@@ -9,6 +9,7 @@ import { IMAGE_BASE_URL } from '../constants/api';
 import { getDecks, saveDeck, createDeck, deleteDeck, setDeckPreset, updateDeckInfo, copyDeck } from '../services/deckService';
 import type { Deck, DeckCard } from '../types/deck';
 import Toast from '../components/Toast';
+import { getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
@@ -549,20 +550,10 @@ const Deck: React.FC = () => {
                 className="relative border rounded-lg flex items-center justify-center text-gray-500 text-xs bg-white shadow"
               >
                 <img
-                  src={`${IMAGE_BASE_URL}/vg_image/${card.image}.jpg`}
+                  src={getCardImageUrl(card.image)}
                   alt={`Card ${card.card_id}`}
-                  className="w-full h-auto object-contain"
-                  onLoad={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    const ratio = img.naturalWidth / img.naturalHeight;
-                    img.parentElement!.style.aspectRatio = ratio.toString();
-                  }}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    target.parentElement?.classList.add('text-center');
-                    target.parentElement!.textContent = card.card_id;
-                  }}
+                  className="w-full h-full object-cover"
+                  onError={handleCardImageError}
                 />
                 {/* 白色半透明数量条 */}
                 <div className="absolute bottom-0 left-0 right-0 bg-white bg-opacity-80 py-0.5">

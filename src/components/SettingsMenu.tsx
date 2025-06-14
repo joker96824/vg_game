@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout, updateNickname, updateAvatar, resetPassword, resetPasswordByEmail, uploadAvatar } from '../services/authService';
 import { IMAGE_BASE_URL } from '../constants/api';
-import { getAvatarUrl, handleImageError } from '../utils/imageUtils';
+import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 
 interface SettingsMenuProps {
   isOpen: boolean;
