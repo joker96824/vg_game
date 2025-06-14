@@ -7,6 +7,7 @@ import { IMAGE_BASE_URL } from '../constants/api'
 import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
 import { getFriendRequests } from '../services/friendService'
+import { getAvatarUrl, handleImageError } from '../utils/imageUtils'
 
 interface Friend {
   id: number;
@@ -64,7 +65,7 @@ const Home: React.FC = () => {
       if (tempAvatarUrl) {
         setAvatar(tempAvatarUrl);
       } else if (user.avatar) {
-        setAvatar(`${IMAGE_BASE_URL}/avatars/${user.avatar}`);
+        setAvatar(getAvatarUrl(user.avatar));
       } else {
         setAvatar('');
       }
@@ -186,11 +187,7 @@ const Home: React.FC = () => {
               src={avatar}
               alt="用户头像"
               className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.parentElement?.classList.add('bg-gray-200');
-              }}
+              onError={handleImageError}
             />
           </div>
           <span className="font-bold text-lg">欢迎你，{nickName}</span>
@@ -455,11 +452,7 @@ const Home: React.FC = () => {
               src={avatar}
               alt="用户头像"
               className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                target.parentElement?.classList.add('bg-gray-200');
-              }}
+              onError={handleImageError}
             />
           </div>
           <span className="font-bold text-lg">欢迎你，{nickName}</span>

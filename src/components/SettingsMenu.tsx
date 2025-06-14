@@ -2,19 +2,33 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { logout, updateNickname, updateAvatar, resetPassword, resetPasswordByEmail, uploadAvatar } from '../services/authService';
 import { IMAGE_BASE_URL } from '../constants/api';
+import { getAvatarUrl, handleImageError } from '../utils/imageUtils';
 
 interface SettingsMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  position: { left: number; bottom: number } | null;
 }
 
-const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
+interface User {
+  id: number;
+  username: string;
+  nickname: string;
+  avatar: string;
+}
+
+const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose, position }) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [newNickname, setNewNickname] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
-  const [showProfile, setShowProfile] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [showAvatar, setShowAvatar] = useState(false);
-  
+
   // 个人信息状态
   const [nickname, setNickname] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,19 +43,21 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
 
   // 头像上传状态
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-  // 从 localStorage 获取用户信息
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     if (userStr) {
-      const user = JSON.parse(userStr);
-      setNickname(user.nickname || '');
-      // 优先使用临时 blob URL，如果不存在则使用服务器头像
-      const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
-      setPreviewUrl(tempAvatarUrl || (user.avatar ? `${IMAGE_BASE_URL}/avatars/${user.avatar}` : null));
+      try {
+        const userData = JSON.parse(userStr);
+        setUser(userData);
+        setNickname(userData.nickname || '');
+        // 优先使用临时 blob URL，如果不存在则使用服务器头像
+        const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
+        setPreviewUrl(tempAvatarUrl || (userData.avatar ? `${IMAGE_BASE_URL}/avatars/${userData.avatar}` : null));
+      } catch (error) {
+        console.error('解析用户信息失败:', error);
+      }
     }
   }, []);
 
@@ -76,7 +92,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
         user.nickname = response.data.nickname;
         localStorage.setItem('user', JSON.stringify(user));
       }
-      setShowProfile(false);
+      setIsNicknameModalOpen(false);
       // 重新加载页面以更新显示
       window.location.reload();
     } catch (error: any) {
@@ -109,7 +125,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
       const user = JSON.parse(userStr);
       
       await resetPasswordByEmail(user.email, oldPassword, newPassword);
-      setShowPassword(false);
+      setIsPasswordModalOpen(false);
       // 清空密码字段
       setOldPassword('');
       setNewPassword('');
@@ -143,7 +159,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
   };
 
   const handleUpload = async () => {
-    const file = fileInputRef.current?.files?.[0];
+    const file = selectedFile;
     if (!file) {
       setToastMessage({ type: 'error', message: '请先选择图片' });
       return;
@@ -167,10 +183,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
           detail: { avatarUrl: tempAvatarUrl }
         }));
       }
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      setShowAvatar(false);
+      setIsAvatarModalOpen(false);
     } catch (error) {
       console.error('上传头像失败:', error);
       setToastMessage({ 
@@ -201,25 +214,25 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
         <div className="py-1">
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100"
-            onClick={() => setShowProfile(true)}
+            onClick={() => setIsNicknameModalOpen(true)}
           >
             个人信息
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100"
-            onClick={() => setShowAvatar(true)}
+            onClick={() => setIsAvatarModalOpen(true)}
           >
             更换头像
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100"
-            onClick={() => setShowPassword(true)}
+            onClick={() => setIsPasswordModalOpen(true)}
           >
             修改密码
           </button>
           <button
             className="w-full px-4 py-2 text-left hover:bg-gray-100"
-            onClick={() => setShowAbout(true)}
+            onClick={() => setIsEmailModalOpen(true)}
           >
             关于
           </button>
@@ -233,7 +246,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
       </div>
 
       {/* 个人信息弹窗 */}
-      {showProfile && (
+      {isNicknameModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96">
             <h2 className="text-xl font-bold mb-4">个人信息</h2>
@@ -255,7 +268,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
               <div className="flex justify-end space-x-2">
                 <button
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
-                  onClick={() => setShowProfile(false)}
+                  onClick={() => setIsNicknameModalOpen(false)}
                   disabled={isLoading}
                 >
                   取消
@@ -274,7 +287,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
       )}
 
       {/* 修改密码弹窗 */}
-      {showPassword && (
+      {isPasswordModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96">
             <h2 className="text-xl font-bold mb-4">修改密码</h2>
@@ -319,7 +332,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
                 <button
                   className="px-4 py-2 border rounded hover:bg-gray-100 disabled:opacity-50"
                   onClick={() => {
-                    setShowPassword(false);
+                    setIsPasswordModalOpen(false);
                     setOldPassword('');
                     setNewPassword('');
                     setConfirmPassword('');
@@ -343,7 +356,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
       )}
 
       {/* 关于弹窗 */}
-      {showAbout && (
+      {isEmailModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96">
             <h2 className="text-xl font-bold mb-4">关于</h2>
@@ -356,7 +369,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
               <div className="flex justify-end">
                 <button
                   className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                  onClick={() => setShowAbout(false)}
+                  onClick={() => setIsEmailModalOpen(false)}
                 >
                   关闭
                 </button>
@@ -367,7 +380,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
       )}
 
       {/* 头像上传弹窗 */}
-      {showAvatar && (
+      {isAvatarModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96">
             <h2 className="text-xl font-bold mb-4">更换头像</h2>
@@ -375,17 +388,12 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
               {/* 头像预览 */}
               <div className="flex justify-center">
                 <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200">
-                  {previewUrl ? (
-                    <img
-                      src={previewUrl}
-                      alt="头像预览"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                      <span className="text-gray-400">暂无头像</span>
-                    </div>
-                  )}
+                  <img
+                    src={previewUrl || getAvatarUrl(user?.avatar)}
+                    alt="用户头像"
+                    className="w-full h-full object-cover"
+                    onError={handleImageError}
+                  />
                 </div>
               </div>
 
@@ -393,20 +401,27 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
               <div className="flex flex-col items-center space-y-2">
                 <input
                   type="file"
-                  ref={fileInputRef}
                   onChange={handleFileSelect}
                   accept="image/*"
                   className="hidden"
                 />
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    if (selectedFile) {
+                      handleUpload();
+                    }
+                  }}
+                  disabled={!previewUrl || isUploading}
                   className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   选择图片
                 </button>
                 <button
-                  onClick={handleUpload}
-                  disabled={!previewUrl || isUploading}
+                  onClick={() => {
+                    setIsAvatarModalOpen(false);
+                    setPreviewUrl(null);
+                  }}
+                  disabled={isUploading}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:bg-blue-300"
                 >
                   {isUploading ? '上传中...' : '上传头像'}
@@ -417,11 +432,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ isOpen, onClose }) => {
                 <button
                   className="px-4 py-2 border rounded hover:bg-gray-100"
                   onClick={() => {
-                    setShowAvatar(false);
+                    setIsAvatarModalOpen(false);
                     setPreviewUrl(null);
-                    if (fileInputRef.current) {
-                      fileInputRef.current.value = '';
-                    }
                   }}
                 >
                   取消

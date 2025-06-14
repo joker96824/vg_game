@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { searchUsers } from '../services/authService';
 import { sendFriendRequest, getFriendRequests, acceptFriendRequest, rejectFriendRequest, getFriends, deleteFriend } from '../services/friendService';
 import { useNavigate } from 'react-router-dom';
-import { IMAGE_BASE_URL } from '../constants/api';
+import { getAvatarUrl, handleImageError } from '../utils/imageUtils';
+import defaultAvatar from '../assets/default-avatar.png';
 
 interface FriendMenuProps {
   isOpen: boolean;
@@ -367,9 +368,10 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
                     >
                       <div className="flex items-center gap-2">
                         <img
-                          src={`${IMAGE_BASE_URL}/avatars/${user.avatar}`}
+                          src={getAvatarUrl(user.avatar)}
                           alt={user.nickname}
                           className="w-8 h-8 rounded-full"
+                          onError={handleImageError}
                         />
                         <div>
                           <div className="font-medium">{user.nickname}</div>
@@ -429,9 +431,10 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-4">
                 <img
-                  src={`${IMAGE_BASE_URL}/avatars/${selectedUser.avatar}`}
+                  src={getAvatarUrl(selectedUser.avatar)}
                   alt={selectedUser.nickname}
                   className="w-10 h-10 rounded-full"
+                  onError={handleImageError}
                 />
                 <div>
                   <div className="font-medium">{selectedUser.nickname}</div>
@@ -576,9 +579,10 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
                     >
                       <div className="flex items-center gap-2">
                         <img
-                          src={`${IMAGE_BASE_URL}/avatars/${friend.friend_avatar}`}
+                          src={getAvatarUrl(friend.friend_avatar)}
                           alt={friend.friend_nickname}
                           className="w-8 h-8 rounded-full"
+                          onError={handleImageError}
                         />
                         <div className="font-medium">{friend.friend_nickname}</div>
                       </div>
