@@ -57,7 +57,6 @@ const MobileLayout = React.memo(({
   setIsChatOpen,
   setIsFriendMenuOpen
 }: LayoutProps) => {
-  console.log('[Home] MobileLayout 渲染');
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
       {/* 移动端顶部栏 - 只显示欢迎文字 */}
@@ -237,7 +236,6 @@ const DesktopLayout = React.memo(({
   navigate,
   setIsFriendMenuOpen
 }: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
-  console.log('[Home] DesktopLayout 渲染');
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* 桌面版顶部栏 */}
@@ -365,8 +363,6 @@ const DesktopLayout = React.memo(({
 });
 
 const Home: React.FC = () => {
-  console.log('[Home] 渲染');
-
   const [nickName, setNickName] = useState('');
   const [avatar, setAvatar] = useState('');
   const [allDecks, setAllDecks] = useState<Deck[]>([]);
@@ -482,13 +478,11 @@ const Home: React.FC = () => {
   }, []);
 
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
-    console.log('[Home] 收到WebSocket消息:', message);
     // 处理不同类型的消息
     switch (message.type) {
       case 'chat':
         // 添加聊天消息到列表
         setChatMessages(prev => {
-          console.log('[Home] 当前消息数量:', prev.length);
           // 检查消息是否已存在
           const exists = prev.some(msg => 
             msg.sender_name === message.sender_name && 
@@ -496,10 +490,8 @@ const Home: React.FC = () => {
             msg.timestamp === message.timestamp
           );
           if (exists) {
-            console.log('[Home] 消息已存在，不更新');
             return prev;
           }
-          console.log('[Home] 添加新消息');
           return [...prev, message];
         });
         break;
@@ -513,17 +505,13 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log('[Home] chatMessages 更新:', chatMessages.length);
-  }, [chatMessages]);
-
-  useEffect(() => {
     // 设置WebSocket回调
     wsService.setConnectionChangeCallback((connected) => {
-      console.log('WebSocket连接状态:', connected ? '已连接' : '未连接');
+      // WebSocket连接状态变化
     });
 
     wsService.setAuthChangeCallback((authenticated) => {
-      console.log('WebSocket认证状态:', authenticated ? '已认证' : '未认证');
+      // WebSocket认证状态变化
     });
 
     wsService.setMessageCallback(handleWebSocketMessage);
@@ -553,7 +541,6 @@ const Home: React.FC = () => {
 
   // 使用 useMemo 缓存 ChatPanel 组件
   const chatPanel = useMemo(() => {
-    console.log('[Home] 重新创建 ChatPanel');
     return (
       <ChatPanel
         wsService={wsService}
