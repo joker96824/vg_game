@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomMenu from '../components/BottomMenu'
 import { getDecks } from '../services/deckService'
@@ -23,172 +23,42 @@ interface Friend {
   friend_avatar: string;
 }
 
-const Home: React.FC = () => {
-  const [nickName, setNickName] = useState('');
-  const [avatar, setAvatar] = useState('');
-  const [allDecks, setAllDecks] = useState<Deck[]>([]);
-  const [selectedDeckIndex, setSelectedDeckIndex] = useState(0);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
-  const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
-  const navigate = useNavigate();
-  const [wsService] = useState(() => new WebSocketService('ws://localhost:8000/api/v1'));
-  const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
+interface LayoutProps {
+  chatPanel: React.ReactNode;
+  isChatOpen?: boolean;
+  isFriendMenuOpen: boolean;
+  friendButtonPosition: { left: number; bottom: number } | null;
+  onFriendClick: (position: { left: number; bottom: number } | null) => void;
+  avatar: string;
+  nickName: string;
+  allDecks: Deck[];
+  selectedDeckIndex: number;
+  handleSelectedDeckClick: () => void;
+  handleDeckClick: (index: number) => void;
+  navigate: (path: string, options?: any) => void;
+  setIsChatOpen: (isOpen: boolean) => void;
+  setIsFriendMenuOpen: (isOpen: boolean) => void;
+}
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const user = JSON.parse(userStr);
-      setNickName(user.nickname || '');
-      // 优先使用临时 blob URL，如果不存在则使用服务器头像
-      const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
-      if (tempAvatarUrl) {
-        setAvatar(tempAvatarUrl);
-      } else if (user.avatar) {
-        setAvatar(getAvatarUrl(user.avatar));
-      } else {
-        setAvatar('');
-      }
-    } catch (error) {
-      console.error('解析用户信息失败:', error);
-      navigate('/login');
-    }
-  }, [navigate]);
-
-  // 添加头像更新事件监听
-  useEffect(() => {
-    const handleAvatarUpdate = (event: CustomEvent) => {
-      setAvatar(event.detail.avatarUrl);
-    };
-
-    window.addEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
-    return () => {
-      window.removeEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    // 加载所有卡组
-    const loadDecks = async () => {
-      try {
-        const decks = await getDecks(true);
-        // 将 preset=0 的卡组排在最前面
-        const sortedDecks = decks.sort((a, b) => {
-          if (a.preset === 0) return -1;
-          if (b.preset === 0) return 1;
-          return 0;
-        });
-        setAllDecks(sortedDecks);
-      } catch (error) {
-        console.error('加载卡组失败:', error);
-      }
-    };
-
-    loadDecks();
-  }, []);
-
-  useEffect(() => {
-    const checkUnauditedFiles = async () => {
-      try {
-        // 从 localStorage 获取用户信息
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-          const user = JSON.parse(userStr);
-          // 检查用户权限
-          if (user.level >= 5) {
-            const files = await getUnauditedFiles();
-            // 将未审核文件状态存储到 localStorage 中，供 AdminMenu 使用
-            localStorage.setItem('hasUnauditedFiles', files.items.length > 0 ? 'true' : 'false');
-          } else {
-            // 如果权限不足，确保状态为 false
-            localStorage.setItem('hasUnauditedFiles', 'false');
-          }
-        }
-      } catch (error) {
-        console.error('检查未审核文件失败:', error);
-      }
-    };
-
-    const checkFriendRequests = async () => {
-      try {
-        const requests = await getFriendRequests();
-        // 将好友请求状态存储到 localStorage 中，供 FriendMenu 使用
-        localStorage.setItem('hasFriendRequests', requests.length > 0 ? 'true' : 'false');
-      } catch (error) {
-        console.error('获取好友请求失败:', error);
-      }
-    };
-
-    checkUnauditedFiles();
-    checkFriendRequests();
-  }, []);
-
-  useEffect(() => {
-    // 设置WebSocket回调
-    wsService.setConnectionChangeCallback((connected) => {
-      console.log('WebSocket连接状态:', connected ? '已连接' : '未连接');
-    });
-
-    wsService.setAuthChangeCallback((authenticated) => {
-      console.log('WebSocket认证状态:', authenticated ? '已认证' : '未认证');
-    });
-
-    wsService.setMessageCallback((message) => {
-      console.log('收到WebSocket消息:', message);
-      // 处理不同类型的消息
-      switch (message.type) {
-        case 'chat':
-          // 添加聊天消息到列表
-          setChatMessages(prev => [...prev, message]);
-          break;
-        case 'notification':
-          // 处理通知消息
-          break;
-        case 'system_notification':
-          // 处理系统通知
-          break;
-      }
-    });
-
-    wsService.setErrorCallback((error) => {
-      console.error('WebSocket错误:', error);
-    });
-
-    // 连接WebSocket
-    wsService.connect();
-
-    // 清理函数
-    return () => {
-      wsService.disconnect();
-    };
-  }, [wsService]);
-
-  const handleDeckClick = (index: number) => {
-    setSelectedDeckIndex(index);
-  };
-
-  const handleSelectedDeckClick = () => {
-    if (allDecks[selectedDeckIndex]) {
-      navigate('/deck', { state: { deck: allDecks[selectedDeckIndex] } });
-    }
-  };
-
-  const MobileLayout = () => (
+// 将布局组件提取为独立的组件
+const MobileLayout = React.memo(({ 
+  chatPanel, 
+  isChatOpen,
+  isFriendMenuOpen,
+  friendButtonPosition,
+  onFriendClick,
+  avatar,
+  nickName,
+  allDecks,
+  selectedDeckIndex,
+  handleSelectedDeckClick,
+  handleDeckClick,
+  navigate,
+  setIsChatOpen,
+  setIsFriendMenuOpen
+}: LayoutProps) => {
+  console.log('[Home] MobileLayout 渲染');
+  return (
     <div className="min-h-screen bg-white flex flex-col relative">
       {/* 移动端顶部栏 - 只显示欢迎文字 */}
       <header className="w-full h-14 flex items-center justify-center px-4 border-b border-gray-200">
@@ -331,13 +201,7 @@ const Home: React.FC = () => {
       )}
 
       {/* 聊天框 */}
-      {isChatOpen && (
-        <ChatPanel
-          wsService={wsService}
-          chatMessages={chatMessages}
-          isMobile={true}
-        />
-      )}
+      {isChatOpen && chatPanel}
 
       {/* 好友菜单 */}
       <FriendMenu
@@ -352,14 +216,29 @@ const Home: React.FC = () => {
       {/* 底部菜单栏 */}
       <footer className="bg-white border-t border-gray-200">
         <BottomMenu onFriendClick={(position) => {
-          setFriendButtonPosition(position);
-          setIsFriendMenuOpen(true);
+          onFriendClick(position);
         }} />
       </footer>
     </div>
   );
+});
 
-  const DesktopLayout = () => (
+const DesktopLayout = React.memo(({ 
+  chatPanel,
+  isFriendMenuOpen,
+  friendButtonPosition,
+  onFriendClick,
+  avatar,
+  nickName,
+  allDecks,
+  selectedDeckIndex,
+  handleSelectedDeckClick,
+  handleDeckClick,
+  navigate,
+  setIsFriendMenuOpen
+}: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
+  console.log('[Home] DesktopLayout 渲染');
+  return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* 桌面版顶部栏 */}
       <header className="w-full h-14 flex items-center justify-between px-4 border-b border-gray-200">
@@ -462,11 +341,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* 右侧聊天区域 */}
-        <ChatPanel
-          wsService={wsService}
-          chatMessages={chatMessages}
-          isMobile={false}
-        />
+        {chatPanel}
       </main>
 
       {/* 好友菜单 */}
@@ -482,14 +357,274 @@ const Home: React.FC = () => {
       {/* 底部菜单栏 */}
       <footer className="bg-white border-t border-gray-200">
         <BottomMenu onFriendClick={(position) => {
-          setFriendButtonPosition(position);
-          setIsFriendMenuOpen(true);
+          onFriendClick(position);
         }} />
       </footer>
     </div>
   );
+});
 
-  return isMobile ? <MobileLayout /> : <DesktopLayout />;
+const Home: React.FC = () => {
+  console.log('[Home] 渲染');
+
+  const [nickName, setNickName] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [allDecks, setAllDecks] = useState<Deck[]>([]);
+  const [selectedDeckIndex, setSelectedDeckIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
+  const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
+  const navigate = useNavigate();
+  const [wsService] = useState(() => new WebSocketService('ws://localhost:8000/api/v1'));
+  const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userStr);
+      setNickName(user.nickname || '');
+      // 优先使用临时 blob URL，如果不存在则使用服务器头像
+      const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
+      if (tempAvatarUrl) {
+        setAvatar(tempAvatarUrl);
+      } else if (user.avatar) {
+        setAvatar(getAvatarUrl(user.avatar));
+      } else {
+        setAvatar('');
+      }
+    } catch (error) {
+      console.error('解析用户信息失败:', error);
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  // 添加头像更新事件监听
+  useEffect(() => {
+    const handleAvatarUpdate = (event: CustomEvent) => {
+      setAvatar(event.detail.avatarUrl);
+    };
+
+    window.addEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    return () => {
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 加载所有卡组
+    const loadDecks = async () => {
+      try {
+        const decks = await getDecks(true);
+        // 将 preset=0 的卡组排在最前面
+        const sortedDecks = decks.sort((a, b) => {
+          if (a.preset === 0) return -1;
+          if (b.preset === 0) return 1;
+          return 0;
+        });
+        setAllDecks(sortedDecks);
+      } catch (error) {
+        console.error('加载卡组失败:', error);
+      }
+    };
+
+    loadDecks();
+  }, []);
+
+  useEffect(() => {
+    const checkUnauditedFiles = async () => {
+      try {
+        // 从 localStorage 获取用户信息
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          // 检查用户权限
+          if (user.level >= 5) {
+            const files = await getUnauditedFiles();
+            // 将未审核文件状态存储到 localStorage 中，供 AdminMenu 使用
+            localStorage.setItem('hasUnauditedFiles', files.items.length > 0 ? 'true' : 'false');
+          } else {
+            // 如果权限不足，确保状态为 false
+            localStorage.setItem('hasUnauditedFiles', 'false');
+          }
+        }
+      } catch (error) {
+        console.error('检查未审核文件失败:', error);
+      }
+    };
+
+    const checkFriendRequests = async () => {
+      try {
+        const requests = await getFriendRequests();
+        // 将好友请求状态存储到 localStorage 中，供 FriendMenu 使用
+        localStorage.setItem('hasFriendRequests', requests.length > 0 ? 'true' : 'false');
+      } catch (error) {
+        console.error('获取好友请求失败:', error);
+      }
+    };
+
+    checkUnauditedFiles();
+    checkFriendRequests();
+  }, []);
+
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
+    console.log('[Home] 收到WebSocket消息:', message);
+    // 处理不同类型的消息
+    switch (message.type) {
+      case 'chat':
+        // 添加聊天消息到列表
+        setChatMessages(prev => {
+          console.log('[Home] 当前消息数量:', prev.length);
+          // 检查消息是否已存在
+          const exists = prev.some(msg => 
+            msg.sender_name === message.sender_name && 
+            msg.content === message.content &&
+            msg.timestamp === message.timestamp
+          );
+          if (exists) {
+            console.log('[Home] 消息已存在，不更新');
+            return prev;
+          }
+          console.log('[Home] 添加新消息');
+          return [...prev, message];
+        });
+        break;
+      case 'notification':
+        // 处理通知消息
+        break;
+      case 'system_notification':
+        // 处理系统通知
+        break;
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log('[Home] chatMessages 更新:', chatMessages.length);
+  }, [chatMessages]);
+
+  useEffect(() => {
+    // 设置WebSocket回调
+    wsService.setConnectionChangeCallback((connected) => {
+      console.log('WebSocket连接状态:', connected ? '已连接' : '未连接');
+    });
+
+    wsService.setAuthChangeCallback((authenticated) => {
+      console.log('WebSocket认证状态:', authenticated ? '已认证' : '未认证');
+    });
+
+    wsService.setMessageCallback(handleWebSocketMessage);
+
+    wsService.setErrorCallback((error) => {
+      console.error('WebSocket错误:', error);
+    });
+
+    // 连接WebSocket
+    wsService.connect();
+
+    // 清理函数
+    return () => {
+      wsService.disconnect();
+    };
+  }, [wsService, handleWebSocketMessage]);
+
+  const handleDeckClick = (index: number) => {
+    setSelectedDeckIndex(index);
+  };
+
+  const handleSelectedDeckClick = () => {
+    if (allDecks[selectedDeckIndex]) {
+      navigate('/deck', { state: { deck: allDecks[selectedDeckIndex] } });
+    }
+  };
+
+  // 使用 useMemo 缓存 ChatPanel 组件
+  const chatPanel = useMemo(() => {
+    console.log('[Home] 重新创建 ChatPanel');
+    return (
+      <ChatPanel
+        wsService={wsService}
+        chatMessages={chatMessages}
+        isMobile={isMobile}
+      />
+    );
+  }, [wsService, chatMessages, isMobile]);
+
+  // 使用 useMemo 缓存布局组件
+  const layout = useMemo(() => {
+    if (isMobile) {
+      return (
+        <MobileLayout
+          chatPanel={chatPanel}
+          isChatOpen={isChatOpen}
+          isFriendMenuOpen={isFriendMenuOpen}
+          friendButtonPosition={friendButtonPosition}
+          onFriendClick={(position) => {
+            setFriendButtonPosition(position);
+            setIsFriendMenuOpen(true);
+          }}
+          avatar={avatar}
+          nickName={nickName}
+          allDecks={allDecks}
+          selectedDeckIndex={selectedDeckIndex}
+          handleSelectedDeckClick={handleSelectedDeckClick}
+          handleDeckClick={handleDeckClick}
+          navigate={navigate}
+          setIsChatOpen={setIsChatOpen}
+          setIsFriendMenuOpen={setIsFriendMenuOpen}
+        />
+      );
+    }
+    return (
+      <DesktopLayout
+        chatPanel={chatPanel}
+        isFriendMenuOpen={isFriendMenuOpen}
+        friendButtonPosition={friendButtonPosition}
+        onFriendClick={(position) => {
+          setFriendButtonPosition(position);
+          setIsFriendMenuOpen(true);
+        }}
+        avatar={avatar}
+        nickName={nickName}
+        allDecks={allDecks}
+        selectedDeckIndex={selectedDeckIndex}
+        handleSelectedDeckClick={handleSelectedDeckClick}
+        handleDeckClick={handleDeckClick}
+        navigate={navigate}
+        setIsFriendMenuOpen={setIsFriendMenuOpen}
+      />
+    );
+  }, [
+    isMobile,
+    chatPanel,
+    isChatOpen,
+    isFriendMenuOpen,
+    friendButtonPosition,
+    avatar,
+    nickName,
+    allDecks,
+    selectedDeckIndex,
+    handleSelectedDeckClick,
+    handleDeckClick,
+    navigate,
+    setIsChatOpen,
+    setIsFriendMenuOpen
+  ]);
+
+  return layout;
 }
 
 export default Home 
