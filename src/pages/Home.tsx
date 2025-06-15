@@ -8,6 +8,7 @@ import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
 import { getFriendRequests } from '../services/friendService'
 import { getAvatarUrl, handleImageError, getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils'
+import { WebSocketService, WebSocketMessage } from '../services/websocketService'
 
 interface Friend {
   id: number;
@@ -40,6 +41,9 @@ const Home: React.FC = () => {
   const [chatTabs, setChatTabs] = useState<ChatTab[]>([{ type: 'world' }]);
   const [activeChatTab, setActiveChatTab] = useState<number>(0);
   const navigate = useNavigate();
+  const [wsService] = useState(() => new WebSocketService('ws://localhost:8000/api/v1'));
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -143,6 +147,46 @@ const Home: React.FC = () => {
     checkFriendRequests();
   }, []);
 
+  useEffect(() => {
+    // 设置WebSocket回调
+    wsService.setConnectionChangeCallback((connected) => {
+      console.log('WebSocket连接状态:', connected ? '已连接' : '未连接');
+    });
+
+    wsService.setAuthChangeCallback((authenticated) => {
+      console.log('WebSocket认证状态:', authenticated ? '已认证' : '未认证');
+    });
+
+    wsService.setMessageCallback((message) => {
+      console.log('收到WebSocket消息:', message);
+      // 处理不同类型的消息
+      switch (message.type) {
+        case 'chat':
+          // 添加聊天消息到列表
+          setChatMessages(prev => [...prev, message]);
+          break;
+        case 'notification':
+          // 处理通知消息
+          break;
+        case 'system_notification':
+          // 处理系统通知
+          break;
+      }
+    });
+
+    wsService.setErrorCallback((error) => {
+      console.error('WebSocket错误:', error);
+    });
+
+    // 连接WebSocket
+    wsService.connect();
+
+    // 清理函数
+    return () => {
+      wsService.disconnect();
+    };
+  }, [wsService]);
+
   const handleDeckClick = (index: number) => {
     setSelectedDeckIndex(index);
   };
@@ -174,6 +218,20 @@ const Home: React.FC = () => {
     setChatTabs(prev => prev.filter((_, i) => i !== index));
     if (activeChatTab >= index) {
       setActiveChatTab(Math.max(0, activeChatTab - 1));
+    }
+  };
+
+  const handleSendMessage = () => {
+    if (chatMessage.trim() && chatTabs[activeChatTab]?.type === 'world') {
+      wsService.sendMessage('chat', chatMessage);
+      setChatMessage('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
@@ -380,28 +438,10 @@ const Home: React.FC = () => {
 
           {/* 聊天内容区域 */}
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="text-gray-500 text-center">
-              {chatTabs[activeChatTab]?.type === 'world' 
-                ? '世界聊天内容' 
-                : `与 ${chatTabs[activeChatTab]?.friend?.friend_nickname} 的聊天内容`}
-            </div>
+            {renderChatContent()}
           </div>
 
-          {/* 聊天输入区域 */}
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                placeholder="输入消息..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-              />
-              <button className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          {renderMobileChatInput()}
         </div>
       </div>
 
@@ -565,28 +605,10 @@ const Home: React.FC = () => {
 
           {/* 聊天内容区域 */}
           <div className="flex-1 overflow-y-auto p-4">
-            <div className="text-gray-500 text-center">
-              {chatTabs[activeChatTab]?.type === 'world' 
-                ? '世界聊天内容' 
-                : `与 ${chatTabs[activeChatTab]?.friend?.friend_nickname} 的聊天内容`}
-            </div>
+            {renderChatContent()}
           </div>
 
-          {/* 聊天输入区域 */}
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                placeholder="输入消息..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
-              />
-              <button className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          {renderDesktopChatInput()}
         </div>
       </main>
 
@@ -605,6 +627,76 @@ const Home: React.FC = () => {
           setIsFriendMenuOpen(true);
         }} />
       </footer>
+    </div>
+  );
+
+  const renderChatContent = () => {
+    if (chatTabs[activeChatTab]?.type === 'world') {
+      return (
+        <div className="space-y-2">
+          {chatMessages.map((msg, index) => (
+            <div key={index} className="p-2 bg-gray-100 rounded-lg">
+              {msg.sender_name && (
+                <span className="font-bold text-blue-600 mr-2">{msg.sender_name}:</span>
+              )}
+              <span>{msg.content}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className="text-gray-500 text-center">
+        {`与 ${chatTabs[activeChatTab]?.friend?.friend_nickname} 的聊天内容`}
+      </div>
+    );
+  };
+
+  const renderMobileChatInput = () => (
+    <div className="border-t border-gray-200 p-4">
+      <div className="flex space-x-2">
+        <input
+          type="text"
+          value={chatMessage}
+          onChange={(e) => setChatMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="输入消息..."
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+        />
+        <button 
+          onClick={handleSendMessage}
+          disabled={!chatMessage.trim() || chatTabs[activeChatTab]?.type !== 'world'}
+          className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center disabled:bg-gray-300"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderDesktopChatInput = () => (
+    <div className="border-t border-gray-200 p-4">
+      <div className="flex space-x-2">
+        <input
+          type="text"
+          value={chatMessage}
+          onChange={(e) => setChatMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="输入消息..."
+          className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+        />
+        <button 
+          onClick={handleSendMessage}
+          disabled={!chatMessage.trim() || chatTabs[activeChatTab]?.type !== 'world'}
+          className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center disabled:bg-gray-300"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 
