@@ -33,11 +33,8 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    console.log('[ChatContent] 消息更新，数量:', messages.length);
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  console.log('[ChatContent] 渲染');
 
   const messageElements = useMemo(() => {
     if (chatType === 'world') {
@@ -73,13 +70,10 @@ const ChatInput = React.memo(({ onSendMessage, disabled }: {
   const [message, setMessage] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  console.log('[ChatInput] 渲染');
-
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (message.trim()) {
-        console.log('[ChatInput] 发送消息:', message);
         onSendMessage(message);
         setMessage('');
       }
@@ -87,13 +81,11 @@ const ChatInput = React.memo(({ onSendMessage, disabled }: {
   }, [message, onSendMessage]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('[ChatInput] 输入变化:', e.target.value);
     setMessage(e.target.value);
   }, []);
 
   const handleClick = useCallback(() => {
     if (message.trim()) {
-      console.log('[ChatInput] 点击发送消息:', message);
       onSendMessage(message);
       setMessage('');
     }
@@ -133,13 +125,11 @@ const ChatInput = React.memo(({ onSendMessage, disabled }: {
 });
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile = false }) => {
-  console.log('[ChatPanel] 渲染');
 
   const [chatTabs, setChatTabs] = useState<ChatTab[]>([{ type: 'world' }]);
   const [activeChatTab, setActiveChatTab] = useState<number>(0);
 
   const handleSendMessage = useCallback((message: string) => {
-    console.log('[ChatPanel] 处理发送消息:', message);
     if (chatTabs[activeChatTab]?.type === 'world') {
       wsService.sendMessage('chat', message);
     }
@@ -154,7 +144,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
   }, [activeChatTab]);
 
   const renderChatTabs = useCallback(() => {
-    console.log('[ChatPanel] 渲染标签页');
     return (
       <div className="flex border-b border-gray-200 bg-white overflow-x-auto">
         {chatTabs.map((tab, index) => (

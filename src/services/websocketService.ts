@@ -1,4 +1,4 @@
-export type MessageType = 'auth' | 'auth_success' | 'auth_error' | 'test' | 'ping' | 'chat' | 'notification' | 'system_notification' | 'error';
+export type MessageType = 'auth' | 'auth_success' | 'auth_error' | 'test' | 'ping' | 'pong' | 'chat' | 'notification' | 'system_notification' | 'error';
 
 export interface WebSocketMessage {
     type: MessageType;
@@ -112,6 +112,16 @@ export class WebSocketService {
                         this.onError?.(`认证失败: ${message.message}`);
                         break;
                         
+                    case 'ping':
+                        console.log('收到ping，发送pong响应');
+                        if (this.ws?.readyState === WebSocket.OPEN) {
+                            this.ws.send(JSON.stringify({
+                                type: 'pong',
+                                timestamp: new Date().toISOString()
+                            }));
+                        }
+                        break;
+                        
                     default:
                         this.handleMessage(message);
                         this.onMessage?.(message);
@@ -140,9 +150,6 @@ export class WebSocketService {
         switch (message.type) {
             case 'test':
                 console.log('收到测试消息:', message.content);
-                break;
-            case 'ping':
-                console.log('收到pong响应');
                 break;
             case 'chat':
                 console.log(`收到来自 ${message.sender_name} 的消息: ${message.content}`);
