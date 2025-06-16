@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { WebSocketService, WebSocketMessage } from '../services/websocketService';
 
 interface Friend {
@@ -129,9 +129,28 @@ const ChatInput = React.memo(({ onSendMessage, disabled }: {
 });
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile = false }) => {
-
   const [chatTabs, setChatTabs] = useState<ChatTab[]>([{ type: 'world' }]);
   const [activeChatTab, setActiveChatTab] = useState<number>(0);
+  const [chatPanelHeight, setChatPanelHeight] = useState<number>(0);
+  const chatPanelRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chatPanelRef.current) return;
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const height = entry.contentRect.height;
+        setChatPanelHeight(height);
+      }
+    });
+
+    resizeObserver.observe(chatPanelRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   const handleSendMessage = useCallback((message: string) => {
     if (chatTabs[activeChatTab]?.type === 'world') {
@@ -234,10 +253,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
   }
 
   return (
-    <div className="w-80 flex flex-col border-l border-gray-200">
+    <div ref={chatPanelRef} className="w-80 flex flex-col border-l border-gray-200">
       {renderChatTabs()}
 
-      <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
+      <div 
+        ref={contentRef}
+        className="overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+        style={{ 
+          height: chatPanelHeight ? `${chatPanelHeight - 120}px` : 'auto',
+          maxHeight: 'calc(100vh - 120px)'
+        }}
+      >
         {chatContent}
       </div>
 
