@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import BottomMenu from '../components/BottomMenu'
 import { getDecks } from '../services/deckService'
 import type { Deck } from '../types/deck'
-import { IMAGE_BASE_URL } from '../constants/api'
+import { IMAGE_BASE_URL, WS_BASE_URL } from '../constants/api'
 import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
 import { getFriendRequests } from '../services/friendService'
@@ -372,7 +372,7 @@ const Home: React.FC = () => {
   const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
   const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
   const navigate = useNavigate();
-  const [wsService] = useState(() => new WebSocketService('ws://localhost:8000/api/v1'));
+  const [wsService] = useState(() => new WebSocketService(WS_BASE_URL));
   const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
 
   useEffect(() => {
