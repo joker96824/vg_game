@@ -22,6 +22,10 @@ interface ChatPanelProps {
   wsService: WebSocketService;
   chatMessages: WebSocketMessage[];
   isMobile?: boolean;
+  chatTabs: { type: 'world' | 'friend'; friend?: Friend }[];
+  activeChatTab: number;
+  onTabChange: (index: number) => void;
+  onCloseTab: (index: number) => void;
 }
 
 // 聊天内容组件
@@ -37,21 +41,19 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
   }, [messages]);
 
   const messageElements = useMemo(() => {
-    if (chatType === 'world') {
-      return messages.map((msg, index) => (
-        <div key={index} className="p-2 bg-gray-100 rounded-lg">
-          {msg.sender_name && (
-            <span className="font-bold text-blue-600 mr-2">{msg.sender_name}:</span>
-          )}
-          <span>{msg.content}</span>
-        </div>
-      ));
-    }
-    return (
-      <div className="text-gray-500 text-center">
-        {`与 ${friendName} 的聊天内容`}
+    // 根据聊天类型过滤消息
+    const filteredMessages = chatType === 'world'
+      ? messages.filter(msg => !msg.target_user_id)  // 世界聊天：没有目标用户的消息
+      : messages.filter(msg => msg.target_user_id === friendName || msg.sender_name === friendName);  // 私聊：与特定好友相关的消息
+
+    return filteredMessages.map((msg, index) => (
+      <div key={index} className="p-2 bg-gray-100 rounded-lg">
+        {msg.sender_name && (
+          <span className="font-bold text-blue-600 mr-2">{msg.sender_name}:</span>
+        )}
+        <span>{msg.content}</span>
       </div>
-    );
+    ));
   }, [messages, chatType, friendName]);
 
   return (
@@ -128,9 +130,15 @@ const ChatInput = React.memo(({ onSendMessage, disabled }: {
   return inputElement;
 });
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile = false }) => {
-  const [chatTabs, setChatTabs] = useState<ChatTab[]>([{ type: 'world' }]);
-  const [activeChatTab, setActiveChatTab] = useState<number>(0);
+const ChatPanel: React.FC<ChatPanelProps> = ({ 
+  wsService, 
+  chatMessages, 
+  isMobile = false,
+  chatTabs,
+  activeChatTab,
+  onTabChange,
+  onCloseTab
+}) => {
   const [chatPanelHeight, setChatPanelHeight] = useState<number>(0);
   const chatPanelRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -153,18 +161,13 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
   }, []);
 
   const handleSendMessage = useCallback((message: string) => {
-    if (chatTabs[activeChatTab]?.type === 'world') {
+    const currentTab = chatTabs[activeChatTab];
+    if (currentTab.type === 'world') {
       wsService.sendMessage('chat', message);
+    } else if (currentTab.type === 'friend' && currentTab.friend) {
+      wsService.sendMessage('chat', message, currentTab.friend.friend_id.toString());
     }
   }, [chatTabs, activeChatTab, wsService]);
-
-  const handleCloseChatTab = useCallback((index: number) => {
-    console.log('[ChatPanel] 关闭标签页:', index);
-    setChatTabs(prev => prev.filter((_, i) => i !== index));
-    if (activeChatTab >= index) {
-      setActiveChatTab(Math.max(0, activeChatTab - 1));
-    }
-  }, [activeChatTab]);
 
   const renderChatTabs = useCallback(() => {
     return (
@@ -180,7 +183,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
           >
             <button
               className="flex items-center space-x-1"
-              onClick={() => setActiveChatTab(index)}
+              onClick={() => onTabChange(index)}
             >
               <span className="text-sm whitespace-nowrap">
                 {tab.type === 'world' ? '世界聊天' : tab.friend?.friend_nickname}
@@ -191,7 +194,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
                 className="ml-2 p-1 hover:bg-gray-100 rounded-full"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleCloseChatTab(index);
+                  onCloseTab(index);
                 }}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -203,7 +206,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
         ))}
       </div>
     );
-  }, [chatTabs, activeChatTab, handleCloseChatTab]);
+  }, [chatTabs, activeChatTab, onTabChange, onCloseTab]);
 
   const chatContent = useMemo(() => (
     <ChatContent
@@ -216,9 +219,28 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
   const chatInput = useMemo(() => (
     <ChatInput
       onSendMessage={handleSendMessage}
-      disabled={chatTabs[activeChatTab]?.type !== 'world'}
+      disabled={false}
     />
-  ), [handleSendMessage, chatTabs, activeChatTab]);
+  ), [handleSendMessage]);
+
+  const renderContent = () => (
+    <>
+      {renderChatTabs()}
+      <div 
+        ref={contentRef}
+        className="flex-1 overflow-y-auto p-4"
+        style={{ 
+          height: chatPanelHeight ? `${chatPanelHeight - 120}px` : 'auto',
+          maxHeight: 'calc(100vh - 120px)'
+        }}
+      >
+        {chatContent}
+      </div>
+      <div className="flex-shrink-0">
+        {chatInput}
+      </div>
+    </>
+  );
 
   if (isMobile) {
     return (
@@ -237,16 +259,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
               </svg>
             </button>
           </div>
-
-          {renderChatTabs()}
-
-          <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
-            {chatContent}
-          </div>
-
-          <div className="flex-shrink-0">
-            {chatInput}
-          </div>
+          {renderContent()}
         </div>
       </div>
     );
@@ -254,22 +267,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ wsService, chatMessages, isMobile
 
   return (
     <div ref={chatPanelRef} className="w-80 flex flex-col border-l border-gray-200">
-      {renderChatTabs()}
-
-      <div 
-        ref={contentRef}
-        className="overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
-        style={{ 
-          height: chatPanelHeight ? `${chatPanelHeight - 120}px` : 'auto',
-          maxHeight: 'calc(100vh - 120px)'
-        }}
-      >
-        {chatContent}
-      </div>
-
-      <div className="flex-shrink-0">
-        {chatInput}
-      </div>
+      {renderContent()}
     </div>
   );
 };

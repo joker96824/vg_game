@@ -374,6 +374,8 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
   const [wsService] = useState(() => new WebSocketService(WS_BASE_URL));
   const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
+  const [chatTabs, setChatTabs] = useState<{ type: 'world' | 'friend'; friend?: Friend }[]>([{ type: 'world' }]);
+  const [activeChatTab, setActiveChatTab] = useState<number>(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -504,6 +506,25 @@ const Home: React.FC = () => {
     }
   }, []);
 
+  const handleStartChat = useCallback((friend: Friend) => {
+    // 检查是否已经存在与该好友的聊天标签页
+    const existingTabIndex = chatTabs.findIndex(
+      tab => tab.type === 'friend' && tab.friend?.friend_id === friend.friend_id
+    );
+
+    if (existingTabIndex !== -1) {
+      // 如果已存在，切换到该标签页
+      setActiveChatTab(existingTabIndex);
+    } else {
+      // 如果不存在，添加新的标签页
+      setChatTabs(prev => [...prev, { type: 'friend', friend }]);
+      setActiveChatTab(chatTabs.length);
+    }
+
+    // 打开聊天面板
+    setIsChatOpen(true);
+  }, [chatTabs]);
+
   useEffect(() => {
     // 设置WebSocket回调
     wsService.setConnectionChangeCallback((connected) => {
@@ -546,9 +567,18 @@ const Home: React.FC = () => {
         wsService={wsService}
         chatMessages={chatMessages}
         isMobile={isMobile}
+        chatTabs={chatTabs}
+        activeChatTab={activeChatTab}
+        onTabChange={setActiveChatTab}
+        onCloseTab={(index) => {
+          setChatTabs(prev => prev.filter((_, i) => i !== index));
+          if (activeChatTab >= index) {
+            setActiveChatTab(Math.max(0, activeChatTab - 1));
+          }
+        }}
       />
     );
-  }, [wsService, chatMessages, isMobile]);
+  }, [wsService, chatMessages, isMobile, chatTabs, activeChatTab]);
 
   // 使用 useMemo 缓存布局组件
   const layout = useMemo(() => {
@@ -611,7 +641,19 @@ const Home: React.FC = () => {
     setIsFriendMenuOpen
   ]);
 
-  return layout;
+  return (
+    <>
+      {layout}
+
+      {/* 好友菜单 */}
+      <FriendMenu
+        isOpen={isFriendMenuOpen}
+        onClose={() => setIsFriendMenuOpen(false)}
+        position={friendButtonPosition}
+        onStartChat={handleStartChat}
+      />
+    </>
+  );
 }
 
 export default Home 
