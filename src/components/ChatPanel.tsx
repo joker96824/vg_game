@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
-import { WebSocketService, WebSocketMessage } from '../services/websocketService';
-import { IMAGE_BASE_URL } from '../constants/api';
+import { WebSocketMessage } from '../services/websocketService';
+import { websocketManager } from '../services/websocketManager';
 import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 
 interface Friend {
@@ -21,7 +21,7 @@ interface ChatTab {
 }
 
 interface ChatPanelProps {
-  wsService: WebSocketService;
+  wsService: typeof websocketManager;
   chatMessages: WebSocketMessage[];
   isMobile?: boolean;
   chatTabs: { type: 'world' | 'friend'; friend?: Friend }[];

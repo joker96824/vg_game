@@ -27,9 +27,26 @@ export class WebSocketService {
     private onAuthChange: ((authenticated: boolean) => void) | null = null;
     private lastPongTime: number = 0;
     private connectionStartTime: number = 0;
+    private static instance: WebSocketService | null = null;
 
     constructor(private baseUrl: string) {
         this.token = localStorage.getItem('token');
+    }
+
+    // 单例模式，确保全局只有一个 WebSocket 实例
+    public static getInstance(baseUrl: string): WebSocketService {
+        if (!WebSocketService.instance) {
+            WebSocketService.instance = new WebSocketService(baseUrl);
+        }
+        return WebSocketService.instance;
+    }
+
+    // 销毁实例（用于测试或重置）
+    public static destroyInstance(): void {
+        if (WebSocketService.instance) {
+            WebSocketService.instance.disconnect();
+            WebSocketService.instance = null;
+        }
     }
 
     public setConnectionChangeCallback(callback: (connected: boolean) => void) {
@@ -72,14 +89,16 @@ export class WebSocketService {
             this.reconnectAttempts = 0;
             this.onConnectionChange?.(true);
             
-            // 发送认证消息
-            if (this.token && this.ws) {
+            // 发送认证消息 - 添加状态检查
+            if (this.token && this.ws && this.ws.readyState === WebSocket.OPEN) {
                 this.ws.send(JSON.stringify({
                     type: 'auth',
                     token: this.token
                 }));
-            } else {
+            } else if (!this.token) {
                 console.error('[WebSocket] 无法发送认证消息：token不存在');
+            } else if (this.ws?.readyState !== WebSocket.OPEN) {
+                console.error('[WebSocket] 无法发送认证消息：WebSocket 未完全连接');
             }
         };
 

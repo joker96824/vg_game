@@ -13,6 +13,11 @@ import Skills from './pages/admin/Skills'
 import PrivateRoute from './components/PrivateRoute'
 import './styles/global.css'
 import AvatarAudit from './pages/admin/AvatarAudit'
+import { websocketManager } from './services/websocketManager'
+
+// 初始化 WebSocket 管理器
+console.log('初始化 WebSocket 管理器...');
+websocketManager.connect();
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);

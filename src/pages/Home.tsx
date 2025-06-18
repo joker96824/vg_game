@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import BottomMenu from '../components/BottomMenu'
 import { getDecks } from '../services/deckService'
 import type { Deck } from '../types/deck'
-import { IMAGE_BASE_URL, WS_BASE_URL } from '../constants/api'
 import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
 import { getFriendRequests } from '../services/friendService'
 import { getAvatarUrl, handleImageError, getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils'
-import { WebSocketService, WebSocketMessage } from '../services/websocketService'
+import { WebSocketMessage } from '../services/websocketService'
 import ChatPanel from '../components/ChatPanel'
+import { websocketManager } from '../services/websocketManager'
 
 interface Friend {
   id: string;
@@ -372,7 +372,6 @@ const Home: React.FC = () => {
   const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
   const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
   const navigate = useNavigate();
-  const [wsService] = useState(() => new WebSocketService(WS_BASE_URL));
   const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
   const [chatTabs, setChatTabs] = useState<{ type: 'world' | 'friend'; friend?: Friend }[]>([{ type: 'world' }]);
   const [activeChatTab, setActiveChatTab] = useState<number>(0);
@@ -608,28 +607,32 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     // 设置WebSocket回调
-    wsService.setConnectionChangeCallback((connected) => {
+    const connectionListener = (connected: boolean) => {
       // WebSocket连接状态变化
-    });
-
-    wsService.setAuthChangeCallback((authenticated) => {
+    };
+    const authListener = (authenticated: boolean) => {
       // WebSocket认证状态变化
-    });
-
-    wsService.setMessageCallback(handleWebSocketMessage);
-
-    wsService.setErrorCallback((error) => {
+    };
+    const errorListener = (error: string) => {
       console.error('WebSocket错误:', error);
-    });
+    };
+    websocketManager.addConnectionListener(connectionListener);
+    websocketManager.addAuthListener(authListener);
+    websocketManager.addMessageListener(handleWebSocketMessage);
+    websocketManager.addErrorListener(errorListener);
 
     // 连接WebSocket
-    wsService.connect();
+    websocketManager.connect();
 
-    // 清理函数
+    // 清理函数 - 只移除监听器，不断开连接
     return () => {
-      wsService.disconnect();
+      websocketManager.removeConnectionListener(connectionListener);
+      websocketManager.removeAuthListener(authListener);
+      websocketManager.removeMessageListener(handleWebSocketMessage);
+      websocketManager.removeErrorListener(errorListener);
+      // 移除 websocketManager.disconnect() 调用，保持连接持久
     };
-  }, [wsService]); // 只依赖 wsService，移除 handleWebSocketMessage
+  }, [handleWebSocketMessage]);
 
   const handleDeckClick = (index: number) => {
     setSelectedDeckIndex(index);
@@ -645,7 +648,7 @@ const Home: React.FC = () => {
   const chatPanel = useMemo(() => {
     return (
       <ChatPanel
-        wsService={wsService}
+        wsService={websocketManager}
         chatMessages={chatMessages}
         isMobile={isMobile}
         chatTabs={chatTabs}
@@ -666,7 +669,7 @@ const Home: React.FC = () => {
         unreadTabs={unreadTabs}
       />
     );
-  }, [wsService, chatMessages, isMobile, chatTabs, activeChatTab, handleTabChange, unreadTabs]);
+  }, [websocketManager, chatMessages, isMobile, chatTabs, activeChatTab, handleTabChange, unreadTabs]);
 
   // 使用 useMemo 缓存布局组件
   const layout = useMemo(() => {
