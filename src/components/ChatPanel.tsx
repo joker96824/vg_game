@@ -1,5 +1,7 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { WebSocketService, WebSocketMessage } from '../services/websocketService';
+import { IMAGE_BASE_URL } from '../constants/api';
+import { getAvatarUrl } from '../utils/image/imageUtils';
 
 interface Friend {
   id: number;
@@ -46,18 +48,63 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
       ? messages.filter(msg => !msg.receiver_id)  // 世界聊天：没有接收者的消息
       : messages.filter(msg => msg.receiver_id === friendName || msg.sender_name === friendName);  // 私聊：与特定好友相关的消息
 
-    return filteredMessages.map((msg, index) => (
-      <div key={index} className="p-2 bg-gray-100 rounded-lg">
-        {msg.sender_name && (
-          <span className="font-bold text-blue-600 mr-2">{msg.sender_name}:</span>
-        )}
-        <span>{msg.content}</span>
-      </div>
-    ));
+    return filteredMessages.map((msg, index) => {
+      const isCurrentUser = msg.sender_name === localStorage.getItem('nickname');
+      const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : '';
+
+      return (
+        <div key={index} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}>
+          {!isCurrentUser && (
+            <div className="w-10 h-10 rounded-full overflow-hidden mr-2 flex-shrink-0">
+              <img
+                src={msg.sender_avatar ? getAvatarUrl(msg.sender_avatar) : '/images/default-avatar.png'}
+                alt="头像"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/images/default-avatar.png';
+                }}
+              />
+            </div>
+          )}
+          <div className={`flex flex-col ${isCurrentUser ? 'items-end' : 'items-start'} max-w-[70%]`}>
+            <div className="flex items-center mb-1">
+              {!isCurrentUser && (
+                <span className="text-sm text-gray-600 mr-2">{msg.sender_name}</span>
+              )}
+              <span className="text-xs text-gray-400">{timestamp}</span>
+            </div>
+            <div className={`rounded-lg px-4 py-2 ${
+              isCurrentUser 
+                ? 'bg-blue-500 text-white rounded-tr-none' 
+                : 'bg-gray-100 text-gray-800 rounded-tl-none'
+            }`}>
+              {msg.content}
+            </div>
+          </div>
+          {isCurrentUser && (
+            <div className="w-10 h-10 rounded-full overflow-hidden ml-2 flex-shrink-0">
+              <img
+                src={localStorage.getItem('avatar') || '/images/default-avatar.png'}
+                alt="我的头像"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/images/default-avatar.png';
+                }}
+              />
+            </div>
+          )}
+        </div>
+      );
+    });
   }, [messages, chatType, friendName]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 p-4">
       {messageElements}
       <div ref={messagesEndRef} />
     </div>

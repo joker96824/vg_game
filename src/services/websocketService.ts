@@ -6,6 +6,7 @@ export interface WebSocketMessage {
     receiver_id?: string;
     level?: 'info' | 'warning' | 'error';
     sender_name?: string;
+    sender_avatar?: string;
     message?: string;
     token?: string;
     timestamp?: string;
