@@ -447,7 +447,7 @@ export const updateUserLevel = async (userId: string, newLevel: number) => {
 };
 
 export interface FriendSearchResult {
-    id: number;
+    id: string;
     username: string;
     nickname: string;
     avatar: string;

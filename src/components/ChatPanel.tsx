@@ -1,15 +1,15 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { WebSocketService, WebSocketMessage } from '../services/websocketService';
 import { IMAGE_BASE_URL } from '../constants/api';
-import { getAvatarUrl } from '../utils/image/imageUtils';
+import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 
 interface Friend {
-  id: number;
+  id: string;
   username: string;
   nickname: string;
   avatar: string;
   is_blocked: boolean;
-  friend_id: number;
+  friend_id: string;
   friend_username: string;
   friend_nickname: string;
   friend_avatar: string;
@@ -32,10 +32,10 @@ interface ChatPanelProps {
 }
 
 // 聊天内容组件
-const ChatContent = React.memo(({ messages, chatType, friendName }: {
+const ChatContent = React.memo(({ messages, chatType, friendId }: {
   messages: WebSocketMessage[];
   chatType: 'world' | 'friend';
-  friendName?: string;
+  friendId?: string;
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -44,34 +44,65 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
   }, [messages]);
 
   const messageElements = useMemo(() => {
+    // 获取当前用户信息
+    const userStr = localStorage.getItem('user');
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const currentUserId = currentUser?.id;
+
     // 根据聊天类型过滤消息
     const filteredMessages = chatType === 'world'
       ? messages.filter(msg => !msg.receiver_id)  // 世界聊天：没有接收者的消息
       : messages.filter(msg => {
-          // 私聊：必须是有接收者的消息，且接收者ID匹配当前好友
+          // 私聊：必须是有接收者的消息
           if (!msg.receiver_id) return false; // 排除世界聊天消息
-          return msg.receiver_id === friendName || msg.sender_name === friendName;
+          
+          // 检查消息是否与当前好友相关
+          // 情况1：好友发送消息给我 - sender_id 是好友ID，receiver_id 是我的ID
+          if (msg.sender_id && msg.sender_id !== currentUserId) {
+            // 由于ID可能是UUID格式，我们直接比较字符串
+            return msg.sender_id === friendId;
+          }
+          
+          // 情况2：我发送消息给好友 - sender_id 是我的ID，receiver_id 是好友ID
+          if (msg.sender_id === currentUserId && msg.receiver_id) {
+            // 检查 receiver_id 是否对应当前好友
+            return msg.receiver_id === friendId;
+          }
+          
+          return false;
         });
 
     return filteredMessages.map((msg, index) => {
-      const isCurrentUser = msg.sender_name === localStorage.getItem('nickname');
+      // 判断是否为当前用户发送的消息
+      const isCurrentUser = currentUser && msg.sender_id === currentUser.id;
+      
+      // 获取当前用户头像
+      const getCurrentUserAvatar = () => {
+        // 优先使用临时 blob URL，如果不存在则使用服务器头像
+        const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
+        if (tempAvatarUrl) {
+          return tempAvatarUrl;
+        } else if (currentUser?.avatar) {
+          return getAvatarUrl(currentUser.avatar);
+        } else {
+          return '/images/default-avatar.png';
+        }
+      };
+      
       const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('zh-CN', {
         hour: '2-digit',
         minute: '2-digit'
       }) : '';
 
       return (
-        <div key={index} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div key={index} className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-2`}>
           {!isCurrentUser && (
             <div className="w-10 h-10 rounded-full overflow-hidden mr-2 flex-shrink-0">
               <img
                 src={msg.sender_avatar ? getAvatarUrl(msg.sender_avatar) : '/images/default-avatar.png'}
                 alt="头像"
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/images/default-avatar.png';
-                }}
+                onError={handleImageError}
               />
             </div>
           )}
@@ -82,7 +113,7 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
               )}
               <span className="text-xs text-gray-400">{timestamp}</span>
             </div>
-            <div className={`rounded-lg px-4 py-2 ${
+            <div className={`rounded-lg px-3 py-1 ${
               isCurrentUser 
                 ? 'bg-blue-500 text-white rounded-tr-none' 
                 : 'bg-gray-100 text-gray-800 rounded-tl-none'
@@ -93,20 +124,17 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
           {isCurrentUser && (
             <div className="w-10 h-10 rounded-full overflow-hidden ml-2 flex-shrink-0">
               <img
-                src={localStorage.getItem('avatar') || '/images/default-avatar.png'}
+                src={getCurrentUserAvatar()}
                 alt="我的头像"
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = '/images/default-avatar.png';
-                }}
+                onError={handleImageError}
               />
             </div>
           )}
         </div>
       );
     });
-  }, [messages, chatType, friendName]);
+  }, [messages, chatType, friendId]);
 
   return (
     <div className="space-y-2 p-4">
@@ -268,7 +296,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
     <ChatContent
       messages={chatMessages}
       chatType={chatTabs[activeChatTab]?.type || 'world'}
-      friendName={chatTabs[activeChatTab]?.friend?.friend_nickname}
+      friendId={chatTabs[activeChatTab]?.friend?.friend_id}
     />
   ), [chatMessages, chatTabs, activeChatTab]);
 
