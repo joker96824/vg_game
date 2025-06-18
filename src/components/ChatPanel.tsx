@@ -28,6 +28,7 @@ interface ChatPanelProps {
   activeChatTab: number;
   onTabChange: (index: number) => void;
   onCloseTab: (index: number) => void;
+  unreadTabs?: Set<number>;
 }
 
 // 聊天内容组件
@@ -46,7 +47,11 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
     // 根据聊天类型过滤消息
     const filteredMessages = chatType === 'world'
       ? messages.filter(msg => !msg.receiver_id)  // 世界聊天：没有接收者的消息
-      : messages.filter(msg => msg.receiver_id === friendName || msg.sender_name === friendName);  // 私聊：与特定好友相关的消息
+      : messages.filter(msg => {
+          // 私聊：必须是有接收者的消息，且接收者ID匹配当前好友
+          if (!msg.receiver_id) return false; // 排除世界聊天消息
+          return msg.receiver_id === friendName || msg.sender_name === friendName;
+        });
 
     return filteredMessages.map((msg, index) => {
       const isCurrentUser = msg.sender_name === localStorage.getItem('nickname');
@@ -184,7 +189,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   chatTabs,
   activeChatTab,
   onTabChange,
-  onCloseTab
+  onCloseTab,
+  unreadTabs = new Set()
 }) => {
   const [chatPanelHeight, setChatPanelHeight] = useState<number>(0);
   const chatPanelRef = useRef<HTMLDivElement>(null);
@@ -222,7 +228,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         {chatTabs.map((tab, index) => (
           <div
             key={index}
-            className={`flex items-center px-3 py-2 border-b-2 ${
+            className={`flex items-center px-3 py-2 border-b-2 relative ${
               activeChatTab === index
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-600'
@@ -249,11 +255,14 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                 </svg>
               </button>
             )}
+            {unreadTabs.has(index) && (
+              <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full z-100"></div>
+            )}
           </div>
         ))}
       </div>
     );
-  }, [chatTabs, activeChatTab, onTabChange, onCloseTab]);
+  }, [chatTabs, activeChatTab, onTabChange, onCloseTab, unreadTabs]);
 
   const chatContent = useMemo(() => (
     <ChatContent

@@ -376,6 +376,7 @@ const Home: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
   const [chatTabs, setChatTabs] = useState<{ type: 'world' | 'friend'; friend?: Friend }[]>([{ type: 'world' }]);
   const [activeChatTab, setActiveChatTab] = useState<number>(0);
+  const [unreadTabs, setUnreadTabs] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const handleResize = () => {
@@ -483,6 +484,14 @@ const Home: React.FC = () => {
     // 处理不同类型的消息
     switch (message.type) {
       case 'chat':
+        console.log('[调试] 收到聊天消息:', {
+          type: message.type,
+          sender: message.sender_name,
+          content: message.content,
+          receiver_id: message.receiver_id,
+          isPrivate: !!message.receiver_id
+        });
+        
         // 添加聊天消息到列表
         setChatMessages(prev => {
           // 检查消息是否已存在
@@ -496,6 +505,68 @@ const Home: React.FC = () => {
           }
           return [...prev, message];
         });
+
+        // 如果是私聊消息，处理私聊窗口
+        if (message.receiver_id) {
+          console.log('[调试] 处理私聊消息，receiver_id:', message.receiver_id);
+          console.log('[调试] 当前聊天标签页:', chatTabs.map((tab, index) => ({
+            index,
+            type: tab.type,
+            userId: tab.friend?.id,
+            friendId: tab.friend?.friend_id,
+            friendName: tab.friend?.friend_nickname
+          })));
+          
+          // 检查是否已经存在与该用户的聊天标签页
+          // 使用 user_id (id字段) 作为唯一标识
+          const receiverIdNum = parseInt(message.receiver_id);
+          const existingTabIndex = chatTabs.findIndex(
+            tab => tab.type === 'friend' && tab.friend?.id === receiverIdNum
+          );
+
+          console.log('[调试] 查找现有标签页结果:', {
+            existingTabIndex,
+            receiver_id: message.receiver_id,
+            receiverIdNum,
+            currentActiveTab: activeChatTab,
+            searchCondition: `user_id === ${receiverIdNum}`
+          });
+
+          if (existingTabIndex !== -1) {
+            // 如果已存在，检查当前是否在该标签页
+            if (activeChatTab !== existingTabIndex) {
+              // 如果不在该标签页，添加未读标记
+              console.log('[调试] 添加未读标记到标签页:', existingTabIndex);
+              setUnreadTabs(prev => new Set(prev).add(existingTabIndex));
+            } else {
+              console.log('[调试] 当前已在对应标签页，无需添加未读标记');
+            }
+            // 不自动切换标签页，只添加未读标记
+          } else {
+            // 如果不存在，创建新的标签页
+            console.log('[调试] 创建新的私聊标签页');
+            const newFriend: Friend = {
+              id: receiverIdNum, // 使用 receiver_id 作为 user_id
+              username: message.sender_name || '',
+              nickname: message.sender_name || '',
+              avatar: message.sender_avatar || '',
+              is_blocked: false,
+              friend_id: receiverIdNum,
+              friend_username: message.sender_name || '',
+              friend_nickname: message.sender_name || '',
+              friend_avatar: message.sender_avatar || ''
+            };
+            
+            setChatTabs(prev => [...prev, { type: 'friend', friend: newFriend }]);
+            const newTabIndex = chatTabs.length;
+            // 新创建的标签页自动添加未读标记
+            setUnreadTabs(prev => new Set(prev).add(newTabIndex));
+            console.log('[调试] 新标签页索引:', newTabIndex);
+          }
+
+          // 打开聊天面板
+          setIsChatOpen(true);
+        }
         break;
       case 'notification':
         // 处理通知消息
@@ -504,19 +575,47 @@ const Home: React.FC = () => {
         // 处理系统通知
         break;
     }
-  }, []);
+  }, [chatTabs, activeChatTab, setIsChatOpen]);
+
+  // 当切换标签页时，清除未读标记
+  const handleTabChange = useCallback((index: number) => {
+    console.log('[调试] 切换到聊天标签页:', {
+      index,
+      tabType: chatTabs[index]?.type,
+      userId: chatTabs[index]?.friend?.id,
+      friendId: chatTabs[index]?.friend?.friend_id,
+      friendName: chatTabs[index]?.friend?.friend_nickname,
+      uniqueId: chatTabs[index]?.type === 'friend' ? `user_${chatTabs[index]?.friend?.id}` : 'world'
+    });
+    
+    setActiveChatTab(index);
+    setUnreadTabs(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
+  }, [chatTabs]);
 
   const handleStartChat = useCallback((friend: Friend) => {
+    console.log('[调试] 开始与好友聊天:', {
+      userId: friend.id,
+      friendId: friend.friend_id,
+      friendName: friend.friend_nickname,
+      uniqueId: `user_${friend.id}`
+    });
+    
     // 检查是否已经存在与该好友的聊天标签页
     const existingTabIndex = chatTabs.findIndex(
-      tab => tab.type === 'friend' && tab.friend?.friend_id === friend.friend_id
+      tab => tab.type === 'friend' && tab.friend?.id === friend.id
     );
 
     if (existingTabIndex !== -1) {
       // 如果已存在，切换到该标签页
+      console.log('[调试] 找到现有标签页，切换到:', existingTabIndex);
       setActiveChatTab(existingTabIndex);
     } else {
       // 如果不存在，添加新的标签页
+      console.log('[调试] 创建新标签页');
       setChatTabs(prev => [...prev, { type: 'friend', friend }]);
       setActiveChatTab(chatTabs.length);
     }
@@ -569,16 +668,23 @@ const Home: React.FC = () => {
         isMobile={isMobile}
         chatTabs={chatTabs}
         activeChatTab={activeChatTab}
-        onTabChange={setActiveChatTab}
+        onTabChange={handleTabChange}
         onCloseTab={(index) => {
           setChatTabs(prev => prev.filter((_, i) => i !== index));
           if (activeChatTab >= index) {
             setActiveChatTab(Math.max(0, activeChatTab - 1));
           }
+          // 清除被关闭标签页的未读标记
+          setUnreadTabs(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(index);
+            return newSet;
+          });
         }}
+        unreadTabs={unreadTabs}
       />
     );
-  }, [wsService, chatMessages, isMobile, chatTabs, activeChatTab]);
+  }, [wsService, chatMessages, isMobile, chatTabs, activeChatTab, handleTabChange, unreadTabs]);
 
   // 使用 useMemo 缓存布局组件
   const layout = useMemo(() => {
