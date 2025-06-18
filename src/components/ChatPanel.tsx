@@ -29,6 +29,7 @@ interface ChatPanelProps {
   onTabChange: (index: number) => void;
   onCloseTab: (index: number) => void;
   unreadTabs?: Set<number>;
+  onClose?: () => void;
 }
 
 // 聊天内容组件
@@ -218,7 +219,8 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   activeChatTab,
   onTabChange,
   onCloseTab,
-  unreadTabs = new Set()
+  unreadTabs = new Set(),
+  onClose
 }) => {
   const [chatPanelHeight, setChatPanelHeight] = useState<number>(0);
   const chatPanelRef = useRef<HTMLDivElement>(null);
@@ -335,9 +337,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
             <span className="font-bold">聊天</span>
             <button 
               className="p-2 hover:bg-gray-100 rounded-full"
-              onClick={() => {
-                // 这里需要添加关闭聊天框的回调
-              }}
+              onClick={onClose}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

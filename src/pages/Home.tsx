@@ -38,6 +38,7 @@ interface LayoutProps {
   navigate: (path: string, options?: any) => void;
   setIsChatOpen: (isOpen: boolean) => void;
   setIsFriendMenuOpen: (isOpen: boolean) => void;
+  handleStartChat: (friend: Friend) => void;
 }
 
 // 将布局组件提取为独立的组件
@@ -55,7 +56,8 @@ const MobileLayout = React.memo(({
   handleDeckClick,
   navigate,
   setIsChatOpen,
-  setIsFriendMenuOpen
+  setIsFriendMenuOpen,
+  handleStartChat
 }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -207,9 +209,7 @@ const MobileLayout = React.memo(({
         isOpen={isFriendMenuOpen}
         onClose={() => setIsFriendMenuOpen(false)}
         position={friendButtonPosition}
-        onStartChat={(friend) => {
-          // 这里需要实现好友聊天的功能
-        }}
+        onStartChat={handleStartChat}
       />
 
       {/* 底部菜单栏 */}
@@ -234,7 +234,8 @@ const DesktopLayout = React.memo(({
   handleSelectedDeckClick,
   handleDeckClick,
   navigate,
-  setIsFriendMenuOpen
+  setIsFriendMenuOpen,
+  handleStartChat
 }: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -347,9 +348,7 @@ const DesktopLayout = React.memo(({
         isOpen={isFriendMenuOpen}
         onClose={() => setIsFriendMenuOpen(false)}
         position={friendButtonPosition}
-        onStartChat={(friend) => {
-          // 这里需要实现好友聊天的功能
-        }}
+        onStartChat={handleStartChat}
       />
 
       {/* 底部菜单栏 */}
@@ -603,7 +602,11 @@ const Home: React.FC = () => {
 
     // 打开聊天面板
     setIsChatOpenRef.current(true);
-  }, []); // 空依赖数组
+    
+    // 关闭好友菜单 - 同时重置位置
+    setIsFriendMenuOpen(false);
+    setFriendButtonPosition(null);
+  }, [friendButtonPosition]); // 添加 friendButtonPosition 依赖
 
   useEffect(() => {
     // 设置WebSocket回调
@@ -667,9 +670,10 @@ const Home: React.FC = () => {
           });
         }}
         unreadTabs={unreadTabs}
+        onClose={() => setIsChatOpen(false)}
       />
     );
-  }, [websocketManager, chatMessages, isMobile, chatTabs, activeChatTab, handleTabChange, unreadTabs]);
+  }, [websocketManager, chatMessages, isMobile, chatTabs, activeChatTab, handleTabChange, unreadTabs, setIsChatOpen]);
 
   // 使用 useMemo 缓存布局组件
   const layout = useMemo(() => {
@@ -693,6 +697,7 @@ const Home: React.FC = () => {
           navigate={navigate}
           setIsChatOpen={setIsChatOpen}
           setIsFriendMenuOpen={setIsFriendMenuOpen}
+          handleStartChat={handleStartChat}
         />
       );
     }
@@ -713,6 +718,7 @@ const Home: React.FC = () => {
         handleDeckClick={handleDeckClick}
         navigate={navigate}
         setIsFriendMenuOpen={setIsFriendMenuOpen}
+        handleStartChat={handleStartChat}
       />
     );
   }, [
@@ -729,7 +735,8 @@ const Home: React.FC = () => {
     handleDeckClick,
     navigate,
     setIsChatOpen,
-    setIsFriendMenuOpen
+    setIsFriendMenuOpen,
+    handleStartChat
   ]);
 
   return (

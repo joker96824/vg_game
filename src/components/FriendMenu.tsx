@@ -3,7 +3,6 @@ import { searchUsers } from '../services/authService';
 import { sendFriendRequest, getFriendRequests, acceptFriendRequest, rejectFriendRequest, getFriends, deleteFriend } from '../services/friendService';
 import { useNavigate } from 'react-router-dom';
 import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
-import defaultAvatar from '../assets/default-avatar.png';
 
 interface FriendMenuProps {
   isOpen: boolean;
@@ -588,10 +587,11 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (onStartChat) {
                               onStartChat(friend);
-                              onClose();
                               setIsFriendListOpen(false);
                             }
                           }}

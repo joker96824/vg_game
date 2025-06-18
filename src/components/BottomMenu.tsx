@@ -7,7 +7,6 @@ import adminIcon from '../assets/admin.svg'
 import settingsIcon from '../assets/settings.svg'
 import SettingsMenu from './SettingsMenu'
 import AdminMenu from './AdminMenu'
-import FriendMenu from './FriendMenu'
 import { APP_VERSION } from '../constants/version'
 
 interface MenuItem {
@@ -26,9 +25,7 @@ const BottomMenu: React.FC<BottomMenuProps> = ({ onFriendClick }) => {
   const navigate = useNavigate();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [isFriendOpen, setIsFriendOpen] = useState(false);
   const [userLevel, setUserLevel] = useState<number>(0);
-  const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
   const friendButtonRef = useRef<HTMLButtonElement>(null);
 
   // 从 localStorage 获取用户信息
@@ -53,18 +50,14 @@ const BottomMenu: React.FC<BottomMenuProps> = ({ onFriendClick }) => {
       label: '好友',
       icon: friendIcon,
       onClick: () => {
-        if (friendButtonRef.current) {
+        if (friendButtonRef.current && onFriendClick) {
           const rect = friendButtonRef.current.getBoundingClientRect();
           const position = {
             left: rect.left,
             bottom: window.innerHeight - rect.top
           };
-          setFriendButtonPosition(position);
-          if (onFriendClick) {
-            onFriendClick(position);
-          }
+          onFriendClick(position);
         }
-        setIsFriendOpen(true);
       }
     },
     { 
@@ -133,13 +126,6 @@ const BottomMenu: React.FC<BottomMenuProps> = ({ onFriendClick }) => {
       <AdminMenu
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
-      />
-
-      {/* 好友菜单 */}
-      <FriendMenu
-        isOpen={isFriendOpen}
-        onClose={() => setIsFriendOpen(false)}
-        position={friendButtonPosition}
       />
     </>
   )
