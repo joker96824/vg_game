@@ -149,7 +149,7 @@ const ChatInput = React.memo(({ onSendMessage, disabled }: {
   }, []);
 
   const inputElement = useMemo(() => (
-    <div className="border-t border-gray-200 p-4">
+    <div className="border-t border-gray-200 p-3">
       <div className="flex items-center space-x-2">
         <input
           ref={inputRef}
@@ -158,15 +158,15 @@ const ChatInput = React.memo(({ onSendMessage, disabled }: {
           onChange={handleChange}
           onKeyPress={handleKeyPress}
           placeholder="输入消息..."
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-full focus:outline-none focus:border-blue-500 text-sm"
         />
         <button 
           onClick={handleClick}
           onMouseDown={handleMouseDown}
           disabled={!message.trim() || disabled}
-          className="w-12 h-12 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center disabled:bg-gray-300 flex-shrink-0"
+          className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors flex items-center justify-center disabled:bg-gray-300 flex-shrink-0"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
           </svg>
         </button>
@@ -275,10 +275,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
       {renderChatTabs()}
       <div 
         ref={contentRef}
-        className="flex-1 overflow-y-auto p-4"
+        className="overflow-y-auto"
         style={{ 
-          height: chatPanelHeight ? `${chatPanelHeight - 120}px` : 'auto',
-          maxHeight: 'calc(100vh - 120px)'
+          height: 'calc(100vh - 250px)',
+          minHeight: '300px',
+          maxHeight: 'calc(100vh - 250px)'
         }}
       >
         {chatContent}
