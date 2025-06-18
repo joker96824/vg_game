@@ -3,7 +3,7 @@ export type MessageType = 'auth' | 'auth_success' | 'auth_error' | 'test' | 'pin
 export interface WebSocketMessage {
     type: MessageType;
     content?: string;
-    target_user_id?: string;
+    receiver_id?: string;
     level?: 'info' | 'warning' | 'error';
     sender_name?: string;
     message?: string;
@@ -268,19 +268,19 @@ export class WebSocketService {
         }
     }
 
-    public sendMessage(type: MessageType, content: string, targetUserId?: string) {
+    public sendMessage(type: MessageType, content: string, receiverId?: string) {
         const message: WebSocketMessage = {
             type,
             content,
             timestamp: new Date().toISOString(),
-            ...(targetUserId && { target_user_id: targetUserId })
+            ...(receiverId && { receiver_id: receiverId })
         };
 
         if (this.isAuthenticated && this.ws?.readyState === WebSocket.OPEN) {
             console.log('[WebSocket] 发送消息:', {
                 type,
                 content,
-                targetUserId,
+                receiverId,
                 timestamp: new Date().toISOString(),
                 readyState: this.ws?.readyState
             });
@@ -289,7 +289,7 @@ export class WebSocketService {
             console.log('[WebSocket] 消息已加入队列:', {
                 type,
                 content,
-                targetUserId,
+                receiverId,
                 timestamp: new Date().toISOString(),
                 readyState: this.ws?.readyState,
                 isAuthenticated: this.isAuthenticated
@@ -306,12 +306,12 @@ export class WebSocketService {
         this.sendMessage('ping', '');
     }
 
-    public sendChat(content: string, targetUserId?: string) {
-        this.sendMessage('chat', content, targetUserId);
+    public sendChat(content: string, receiverId?: string) {
+        this.sendMessage('chat', content, receiverId);
     }
 
-    public sendNotification(content: string, level: 'info' | 'warning' | 'error' = 'info', targetUserId?: string) {
-        this.sendMessage('notification', content, targetUserId);
+    public sendNotification(content: string, level: 'info' | 'warning' | 'error' = 'info', receiverId?: string) {
+        this.sendMessage('notification', content, receiverId);
     }
 
     public disconnect() {

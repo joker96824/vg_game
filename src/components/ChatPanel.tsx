@@ -43,8 +43,8 @@ const ChatContent = React.memo(({ messages, chatType, friendName }: {
   const messageElements = useMemo(() => {
     // 根据聊天类型过滤消息
     const filteredMessages = chatType === 'world'
-      ? messages.filter(msg => !msg.target_user_id)  // 世界聊天：没有目标用户的消息
-      : messages.filter(msg => msg.target_user_id === friendName || msg.sender_name === friendName);  // 私聊：与特定好友相关的消息
+      ? messages.filter(msg => !msg.receiver_id)  // 世界聊天：没有接收者的消息
+      : messages.filter(msg => msg.receiver_id === friendName || msg.sender_name === friendName);  // 私聊：与特定好友相关的消息
 
     return filteredMessages.map((msg, index) => (
       <div key={index} className="p-2 bg-gray-100 rounded-lg">
