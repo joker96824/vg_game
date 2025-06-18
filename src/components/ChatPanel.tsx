@@ -277,9 +277,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
         ref={contentRef}
         className="overflow-y-auto"
         style={{ 
-          height: 'calc(100vh - 250px)',
+          height: isMobile ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)',
           minHeight: '300px',
-          maxHeight: 'calc(100vh - 250px)'
+          maxHeight: isMobile ? 'calc(100vh - 180px)' : 'calc(100vh - 250px)'
         }}
       >
         {chatContent}
@@ -292,9 +292,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   if (isMobile) {
     return (
-      <div className="fixed top-0 right-0 h-full w-[70%] bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-40">
+      <div className="fixed top-0 right-0 h-full w-[70%] bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-50">
         <div className="h-full flex flex-col">
-          <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200">
+          <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200 flex-shrink-0">
             <span className="font-bold">聊天</span>
             <button 
               className="p-2 hover:bg-gray-100 rounded-full"
