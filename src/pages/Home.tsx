@@ -764,10 +764,13 @@ const Home: React.FC = () => {
     try {
       const room = await createRoom(roomInfo);
       console.log('房间创建成功:', room);
-      // TODO: 处理创建房间成功后的逻辑，比如跳转到房间页面
+      // 跳转到房间页面
+      if (room && room.id) {
+        navigate(`/room/${room.id}`);
+      }
     } catch (error) {
       console.error('创建房间失败:', error);
-      // TODO: 显示错误提示
+      alert('创建房间失败');
     }
   };
 

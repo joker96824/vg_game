@@ -1,4 +1,4 @@
-export type MessageType = 'auth' | 'auth_success' | 'auth_error' | 'test' | 'ping' | 'pong' | 'chat' | 'notification' | 'system_notification' | 'error';
+export type MessageType = 'auth' | 'auth_success' | 'auth_error' | 'test' | 'ping' | 'pong' | 'chat' | 'notification' | 'system_notification' | 'error' | 'room_user_update' | 'room_info_update' | 'room_dissolved';
 
 export interface WebSocketMessage {
     type: MessageType;
