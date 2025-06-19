@@ -10,6 +10,8 @@ import { getAvatarUrl, handleImageError, getCardImageUrl, handleCardImageError }
 import { WebSocketMessage } from '../services/websocketService'
 import ChatPanel from '../components/ChatPanel'
 import { websocketManager } from '../services/websocketManager'
+import { createRoom } from '../services/roomService'
+import CreateRoomModal from '../components/CreateRoomModal'
 
 interface Friend {
   id: string;
@@ -39,6 +41,7 @@ interface LayoutProps {
   setIsChatOpen: (isOpen: boolean) => void;
   setIsFriendMenuOpen: (isOpen: boolean) => void;
   handleStartChat: (friend: Friend) => void;
+  onOpenCreateRoomModal: () => void;
 }
 
 // 将布局组件提取为独立的组件
@@ -57,7 +60,8 @@ const MobileLayout = React.memo(({
   navigate,
   setIsChatOpen,
   setIsFriendMenuOpen,
-  handleStartChat
+  handleStartChat,
+  onOpenCreateRoomModal
 }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -86,7 +90,10 @@ const MobileLayout = React.memo(({
           <button className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors">
             加入房间
           </button>
-          <button className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors">
+          <button 
+            className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
+            onClick={onOpenCreateRoomModal}
+          >
             创建房间
           </button>
         </div>
@@ -235,7 +242,8 @@ const DesktopLayout = React.memo(({
   handleDeckClick,
   navigate,
   setIsFriendMenuOpen,
-  handleStartChat
+  handleStartChat,
+  onOpenCreateRoomModal
 }: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -248,7 +256,10 @@ const DesktopLayout = React.memo(({
           <button className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors text-sm">
             加入房间
           </button>
-          <button className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors text-sm">
+          <button 
+            className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors text-sm"
+            onClick={onOpenCreateRoomModal}
+          >
             创建房间
           </button>
         </div>
@@ -370,6 +381,7 @@ const Home: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
   const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
+  const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
   const navigate = useNavigate();
   const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
   const [chatTabs, setChatTabs] = useState<{ type: 'world' | 'friend'; friend?: Friend }[]>([{ type: 'world' }]);
@@ -698,6 +710,7 @@ const Home: React.FC = () => {
           setIsChatOpen={setIsChatOpen}
           setIsFriendMenuOpen={setIsFriendMenuOpen}
           handleStartChat={handleStartChat}
+          onOpenCreateRoomModal={() => setIsCreateRoomModalOpen(true)}
         />
       );
     }
@@ -719,6 +732,7 @@ const Home: React.FC = () => {
         navigate={navigate}
         setIsFriendMenuOpen={setIsFriendMenuOpen}
         handleStartChat={handleStartChat}
+        onOpenCreateRoomModal={() => setIsCreateRoomModalOpen(true)}
       />
     );
   }, [
@@ -739,6 +753,24 @@ const Home: React.FC = () => {
     handleStartChat
   ]);
 
+  // 处理创建房间
+  const handleCreateRoom = async (roomInfo: {
+    room_name: string;
+    room_type: string;
+    game_settings: Record<string, any>;
+    password: string;
+    remark: string;
+  }) => {
+    try {
+      const room = await createRoom(roomInfo);
+      console.log('房间创建成功:', room);
+      // TODO: 处理创建房间成功后的逻辑，比如跳转到房间页面
+    } catch (error) {
+      console.error('创建房间失败:', error);
+      // TODO: 显示错误提示
+    }
+  };
+
   return (
     <>
       {layout}
@@ -749,6 +781,13 @@ const Home: React.FC = () => {
         onClose={() => setIsFriendMenuOpen(false)}
         position={friendButtonPosition}
         onStartChat={handleStartChat}
+      />
+
+      {/* 创建房间弹窗 */}
+      <CreateRoomModal
+        isOpen={isCreateRoomModalOpen}
+        onClose={() => setIsCreateRoomModalOpen(false)}
+        onCreateRoom={handleCreateRoom}
       />
     </>
   );
