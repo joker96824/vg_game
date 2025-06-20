@@ -100,10 +100,14 @@ const Room: React.FC = () => {
 
   // 检查是否为房主
   useEffect(() => {
-    if (roomInfo && currentUser) {
-      setIsHost(roomInfo.host_id === currentUser.id);
+    if (roomPlayers && currentUser) {
+      // 从 players 数组中找到 player_order 为 1 的用户作为房主
+      const hostPlayer = roomPlayers.players.find(player => player.player_order === 1);
+      const hostId = hostPlayer?.user_id;
+      const isUserHost = hostId === currentUser.id;
+      setIsHost(isUserHost);
     }
-  }, [roomInfo, currentUser]);
+  }, [roomPlayers, currentUser]);
 
   // 初始化数据
   useEffect(() => {
@@ -220,6 +224,7 @@ const Room: React.FC = () => {
           返回
         </button>
         <div>{roomInfo.room_name}</div>
+        
         <div className="absolute right-4 flex gap-2">
           {isHost && (
             <button
@@ -234,7 +239,7 @@ const Room: React.FC = () => {
               className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
               onClick={handleDissolveRoom}
             >
-              关闭房间
+              解散房间
             </button>
           )}
           <button
