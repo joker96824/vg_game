@@ -55,6 +55,15 @@ interface RoomDetail {
   create_time: string;
 }
 
+interface UserRoomStatus {
+  in_room: boolean;
+  room_id: string | null;
+  room_name: string | null;
+  player_order: number | null;
+  status: string | null;
+  join_time: string | null;
+}
+
 // 创建房间
 export const createRoom = async (roomInfo: RoomInfo) => {
   try {
@@ -163,6 +172,23 @@ export const startGame = async (roomId: string): Promise<void> => {
     }
   } catch (error) {
     console.error('开始游戏失败:', error);
+    throw error;
+  }
+};
+
+// 获取用户房间状态
+export const getUserRoomStatus = async (): Promise<UserRoomStatus> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.ROOMS}/my-status`);
+    const data: ApiResponse<UserRoomStatus> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取用户房间状态失败');
+    }
+
+    return data.data!;
+  } catch (error) {
+    console.error('获取用户房间状态失败:', error);
     throw error;
   }
 }; 

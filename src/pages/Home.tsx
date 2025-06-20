@@ -10,7 +10,7 @@ import { getAvatarUrl, handleImageError, getCardImageUrl, handleCardImageError }
 import { WebSocketMessage } from '../services/websocketService'
 import ChatPanel from '../components/ChatPanel'
 import { websocketManager } from '../services/websocketManager'
-import { createRoom } from '../services/roomService'
+import { createRoom, getUserRoomStatus } from '../services/roomService'
 import CreateRoomModal from '../components/CreateRoomModal'
 
 interface Friend {
@@ -42,6 +42,15 @@ interface LayoutProps {
   setIsFriendMenuOpen: (isOpen: boolean) => void;
   handleStartChat: (friend: Friend) => void;
   onOpenCreateRoomModal: () => void;
+  userRoomStatus: {
+    in_room: boolean;
+    room_id: string | null;
+    room_name: string | null;
+    player_order: number | null;
+    status: string | null;
+    join_time: string | null;
+  } | null;
+  onEnterRoom: () => void;
 }
 
 // 将布局组件提取为独立的组件
@@ -61,7 +70,9 @@ const MobileLayout = React.memo(({
   setIsChatOpen,
   setIsFriendMenuOpen,
   handleStartChat,
-  onOpenCreateRoomModal
+  onOpenCreateRoomModal,
+  userRoomStatus,
+  onEnterRoom
 }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -84,9 +95,18 @@ const MobileLayout = React.memo(({
       <main className="flex-1 flex flex-col p-4">
         {/* 上半部分 - 三个按钮 */}
         <div className="grid grid-cols-1 gap-4 mb-4">
-          <button className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
-            匹配对战
-          </button>
+          {userRoomStatus?.in_room ? (
+            <button 
+              className="w-full py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+              onClick={onEnterRoom}
+            >
+              进入房间
+            </button>
+          ) : (
+            <button className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+              匹配对战
+            </button>
+          )}
           <button className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors">
             加入房间
           </button>
@@ -243,16 +263,27 @@ const DesktopLayout = React.memo(({
   navigate,
   setIsFriendMenuOpen,
   handleStartChat,
-  onOpenCreateRoomModal
+  onOpenCreateRoomModal,
+  userRoomStatus,
+  onEnterRoom
 }: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* 桌面版顶部栏 */}
       <header className="w-full h-14 flex items-center justify-between px-4 border-b border-gray-200">
         <div className="flex space-x-4">
-          <button className="px-4 py-1.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm">
-            匹配对战
-          </button>
+          {userRoomStatus?.in_room ? (
+            <button 
+              className="px-4 py-1.5 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors text-sm"
+              onClick={onEnterRoom}
+            >
+              进入房间
+            </button>
+          ) : (
+            <button className="px-4 py-1.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm">
+              匹配对战
+            </button>
+          )}
           <button className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors text-sm">
             加入房间
           </button>
@@ -382,6 +413,14 @@ const Home: React.FC = () => {
   const [isFriendMenuOpen, setIsFriendMenuOpen] = useState(false);
   const [friendButtonPosition, setFriendButtonPosition] = useState<{ left: number; bottom: number } | null>(null);
   const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
+  const [userRoomStatus, setUserRoomStatus] = useState<{
+    in_room: boolean;
+    room_id: string | null;
+    room_name: string | null;
+    player_order: number | null;
+    status: string | null;
+    join_time: string | null;
+  } | null>(null);
   const navigate = useNavigate();
   const [chatMessages, setChatMessages] = useState<WebSocketMessage[]>([]);
   const [chatTabs, setChatTabs] = useState<{ type: 'world' | 'friend'; friend?: Friend }[]>([{ type: 'world' }]);
@@ -417,25 +456,24 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     const userStr = localStorage.getItem('user');
-    if (!userStr) {
-      navigate('/login');
-      return;
-    }
-
-    try {
-      const user = JSON.parse(userStr);
-      setNickName(user.nickname || '');
-      // 优先使用临时 blob URL，如果不存在则使用服务器头像
-      const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
-      if (tempAvatarUrl) {
-        setAvatar(tempAvatarUrl);
-      } else if (user.avatar) {
-        setAvatar(getAvatarUrl(user.avatar));
-      } else {
-        setAvatar('');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setNickName(user.nickname || '');
+        // 优先使用临时 blob URL，如果不存在则使用服务器头像
+        const tempAvatarUrl = localStorage.getItem('tempAvatarUrl');
+        if (tempAvatarUrl) {
+          setAvatar(tempAvatarUrl);
+        } else if (user.avatar) {
+          setAvatar(getAvatarUrl(user.avatar));
+        } else {
+          setAvatar('');
+        }
+      } catch (error) {
+        console.error('解析用户信息失败:', error);
+        navigate('/login');
       }
-    } catch (error) {
-      console.error('解析用户信息失败:', error);
+    } else {
       navigate('/login');
     }
   }, [navigate]);
@@ -450,6 +488,16 @@ const Home: React.FC = () => {
     return () => {
       window.removeEventListener('avatarUpdated', handleAvatarUpdate as EventListener);
     };
+  }, []);
+
+  // 获取用户房间状态
+  const fetchUserRoomStatus = useCallback(async () => {
+    try {
+      const status = await getUserRoomStatus();
+      setUserRoomStatus(status);
+    } catch (error) {
+      console.error('获取用户房间状态失败:', error);
+    }
   }, []);
 
   useEffect(() => {
@@ -470,7 +518,8 @@ const Home: React.FC = () => {
     };
 
     loadDecks();
-  }, []);
+    fetchUserRoomStatus(); // 添加获取用户房间状态
+  }, [fetchUserRoomStatus]);
 
   useEffect(() => {
     const checkUnauditedFiles = async () => {
@@ -659,6 +708,13 @@ const Home: React.FC = () => {
     }
   };
 
+  // 处理进入房间
+  const handleEnterRoom = () => {
+    if (userRoomStatus?.in_room && userRoomStatus?.room_id) {
+      navigate(`/room/${userRoomStatus.room_id}`);
+    }
+  };
+
   // 使用 useMemo 缓存 ChatPanel 组件
   const chatPanel = useMemo(() => {
     return (
@@ -711,6 +767,8 @@ const Home: React.FC = () => {
           setIsFriendMenuOpen={setIsFriendMenuOpen}
           handleStartChat={handleStartChat}
           onOpenCreateRoomModal={() => setIsCreateRoomModalOpen(true)}
+          userRoomStatus={userRoomStatus}
+          onEnterRoom={handleEnterRoom}
         />
       );
     }
@@ -733,6 +791,8 @@ const Home: React.FC = () => {
         setIsFriendMenuOpen={setIsFriendMenuOpen}
         handleStartChat={handleStartChat}
         onOpenCreateRoomModal={() => setIsCreateRoomModalOpen(true)}
+        userRoomStatus={userRoomStatus}
+        onEnterRoom={handleEnterRoom}
       />
     );
   }, [
@@ -750,7 +810,9 @@ const Home: React.FC = () => {
     navigate,
     setIsChatOpen,
     setIsFriendMenuOpen,
-    handleStartChat
+    handleStartChat,
+    userRoomStatus,
+    handleEnterRoom
   ]);
 
   // 处理创建房间
