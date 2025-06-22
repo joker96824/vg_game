@@ -14,6 +14,7 @@ import PrivateRoute from './components/PrivateRoute'
 import './styles/global.css'
 import AvatarAudit from './pages/admin/AvatarAudit'
 import Room from './pages/Room'
+import RoomList from './pages/RoomList'
 import { websocketManager } from './services/websocketManager'
 
 // 初始化 WebSocket 管理器
@@ -45,6 +46,11 @@ root.render(
         <Route path="/room/:roomId" element={
           <PrivateRoute>
             <Room />
+          </PrivateRoute>
+        } />
+        <Route path="/room-list" element={
+          <PrivateRoute>
+            <RoomList />
           </PrivateRoute>
         } />
         <Route path="/admin/permissions" element={

@@ -7,7 +7,7 @@ interface CreateRoomModalProps {
     room_name: string;
     room_type: string;
     game_settings: Record<string, any>;
-    password: string;
+    pass_word: string;
     remark: string;
   }) => void;
 }
@@ -62,7 +62,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose, onCr
         room_name: roomName.trim(),
         room_type: roomType,
         game_settings: {},
-        password: password.trim(),
+        pass_word: password.trim(),
         remark: remark.trim()
       });
       onClose();

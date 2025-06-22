@@ -12,7 +12,7 @@ interface RoomInfo {
   room_name: string;
   room_type?: string;
   game_settings?: Record<string, any>;
-  password?: string;
+  pass_word?: string;
   remark?: string;
 }
 
@@ -48,7 +48,7 @@ interface RoomDetail {
   room_name: string;
   room_type: string;
   game_settings: Record<string, any>;
-  password?: string;
+  pass_word?: string;
   remark?: string;
   host_id: string;
   status: string;
@@ -62,6 +62,36 @@ interface UserRoomStatus {
   player_order: number | null;
   status: string | null;
   join_time: string | null;
+}
+
+interface Room {
+  id: string;
+  room_name: string;
+  room_type: string;
+  status: string;
+  max_players: number;
+  current_players: number;
+  game_mode: string;
+  game_settings: Record<string, any>;
+  pass_word?: string;
+  created_by: string;
+  create_time: string;
+  update_time: string;
+  is_deleted: boolean;
+  remark: string;
+  room_players: any[];
+}
+
+interface RoomListParams {
+  key_word?: string;
+  friend_room?: boolean;
+  page?: number;
+  page_size?: number;
+}
+
+interface RoomListResponse {
+  total: number;
+  items: Room[];
 }
 
 // 创建房间
@@ -135,6 +165,66 @@ export const getUserRoomStatus = async (): Promise<UserRoomStatus> => {
     return data.data!;
   } catch (error) {
     console.error('获取用户房间状态失败:', error);
+    throw error;
+  }
+};
+
+// 获取房间列表
+export const getRoomList = async (params?: RoomListParams): Promise<RoomListResponse> => {
+  try {
+    // 构建查询参数
+    const queryParams = new URLSearchParams();
+    if (params?.key_word) {
+      queryParams.append('key_word', params.key_word);
+    }
+    if (params?.friend_room !== undefined) {
+      queryParams.append('friend_room', params.friend_room.toString());
+    }
+    if (params?.page) {
+      queryParams.append('page', params.page.toString());
+    }
+    if (params?.page_size) {
+      queryParams.append('page_size', params.page_size.toString());
+    }
+
+    const url = queryParams.toString() ? `${API_ENDPOINTS.ROOMS}?${queryParams.toString()}` : API_ENDPOINTS.ROOMS;
+    const response = await createAuthenticatedRequest(url);
+    const data: ApiResponse<RoomListResponse> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '获取房间列表失败');
+    }
+
+    return data.data!;
+  } catch (error) {
+    console.error('获取房间列表失败:', error);
+    throw error;
+  }
+};
+
+// 加入房间
+export const joinRoom = async (roomId: string, pass_word?: string): Promise<void> => {
+  try {
+    const body: any = {};
+    if (pass_word) {
+      body.pass_word = pass_word;
+    }
+
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.ROOMS}/${roomId}/join`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data: ApiResponse<void> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '加入房间失败');
+    }
+  } catch (error) {
+    console.error('加入房间失败:', error);
     throw error;
   }
 };

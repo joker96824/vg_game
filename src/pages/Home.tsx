@@ -51,6 +51,7 @@ interface LayoutProps {
     join_time: string | null;
   } | null;
   onEnterRoom: () => void;
+  onJoinRoom: () => void;
 }
 
 // 将布局组件提取为独立的组件
@@ -72,7 +73,8 @@ const MobileLayout = React.memo(({
   handleStartChat,
   onOpenCreateRoomModal,
   userRoomStatus,
-  onEnterRoom
+  onEnterRoom,
+  onJoinRoom
 }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -107,7 +109,10 @@ const MobileLayout = React.memo(({
               匹配对战
             </button>
           )}
-          <button className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors">
+          <button 
+            className="w-full py-3 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors"
+            onClick={onJoinRoom}
+          >
             加入房间
           </button>
           <button 
@@ -265,7 +270,8 @@ const DesktopLayout = React.memo(({
   handleStartChat,
   onOpenCreateRoomModal,
   userRoomStatus,
-  onEnterRoom
+  onEnterRoom,
+  onJoinRoom
 }: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -284,7 +290,10 @@ const DesktopLayout = React.memo(({
               匹配对战
             </button>
           )}
-          <button className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors text-sm">
+          <button 
+            className="px-4 py-1.5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-colors text-sm"
+            onClick={onJoinRoom}
+          >
             加入房间
           </button>
           <button 
@@ -715,6 +724,11 @@ const Home: React.FC = () => {
     }
   };
 
+  // 处理加入房间
+  const handleJoinRoom = () => {
+    navigate('/room-list');
+  };
+
   // 使用 useMemo 缓存 ChatPanel 组件
   const chatPanel = useMemo(() => {
     return (
@@ -769,6 +783,7 @@ const Home: React.FC = () => {
           onOpenCreateRoomModal={() => setIsCreateRoomModalOpen(true)}
           userRoomStatus={userRoomStatus}
           onEnterRoom={handleEnterRoom}
+          onJoinRoom={handleJoinRoom}
         />
       );
     }
@@ -793,6 +808,7 @@ const Home: React.FC = () => {
         onOpenCreateRoomModal={() => setIsCreateRoomModalOpen(true)}
         userRoomStatus={userRoomStatus}
         onEnterRoom={handleEnterRoom}
+        onJoinRoom={handleJoinRoom}
       />
     );
   }, [
@@ -812,7 +828,8 @@ const Home: React.FC = () => {
     setIsFriendMenuOpen,
     handleStartChat,
     userRoomStatus,
-    handleEnterRoom
+    handleEnterRoom,
+    handleJoinRoom
   ]);
 
   // 处理创建房间
@@ -820,7 +837,7 @@ const Home: React.FC = () => {
     room_name: string;
     room_type: string;
     game_settings: Record<string, any>;
-    password: string;
+    pass_word: string;
     remark: string;
   }) => {
     try {

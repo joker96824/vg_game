@@ -37,7 +37,7 @@ interface RoomInfo {
   room_name: string;
   room_type: string;
   game_settings: Record<string, any>;
-  password?: string;
+  pass_word?: string;
   remark?: string;
   host_id: string;
   status: string;
