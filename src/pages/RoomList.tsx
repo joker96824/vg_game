@@ -88,23 +88,24 @@ const RoomList: React.FC = () => {
   const handleJoinRoom = async (room: Room) => {
     try {
       let pass_word: string | undefined;
+      
+      // 如果是私密房间，提示用户输入密码
       if (room.pass_word) {
         pass_word = prompt('请输入房间密码:') || undefined;
-        if (!pass_word) return;
-        
-        if (pass_word !== room.pass_word) {
-          alert('密码错误');
-          return;
-        }
+        if (!pass_word) return; // 用户取消输入
       }
       
+      // 调用后端接口，密码验证完全由后端处理
       await joinRoom(room.id, pass_word);
       
       alert('加入房间成功');
       navigate(`/room/${room.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('加入房间失败:', error);
-      alert('加入房间失败');
+      
+      // 显示具体的错误信息
+      const errorMessage = error.message || '加入房间失败';
+      alert(errorMessage);
     }
   };
 

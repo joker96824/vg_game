@@ -218,14 +218,27 @@ export const joinRoom = async (roomId: string, pass_word?: string): Promise<void
       body: JSON.stringify(body)
     });
 
+    // 检查响应状态
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `加入房间失败 (${response.status})`);
+    }
+
     const data: ApiResponse<void> = await response.json();
     
     if (!data.success) {
       throw new Error(data.message || '加入房间失败');
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('加入房间失败:', error);
-    throw error;
+    
+    // 如果已经是 Error 对象，直接抛出
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    // 处理其他类型的错误
+    throw new Error('加入房间失败');
   }
 };
 
