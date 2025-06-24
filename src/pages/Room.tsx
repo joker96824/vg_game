@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 import { websocketManager } from '../services/websocketManager';
 import { WebSocketMessage } from '../services/websocketService';
-import { getRoomInfo, getRoomUsers, dissolveRoom, toggleReady, startGame } from '../services/roomService';
+import { getRoomInfo, getRoomUsers, dissolveRoom, toggleReady, startGame, kickPlayer } from '../services/roomService';
 
 interface RoomUser {
   id: string;
@@ -135,6 +135,11 @@ const Room: React.FC = () => {
         alert('房间已被解散');
         navigate('/');
         break;
+      case 'room_kicked':
+        // 被踢出房间
+        alert('您已被踢出房间');
+        navigate('/');
+        break;
       default:
         break;
     }
@@ -196,6 +201,24 @@ const Room: React.FC = () => {
     } catch (error) {
       console.error('开始游戏失败:', error);
       alert('开始游戏失败');
+    }
+  };
+
+  // 踢出玩家
+  const handleKickPlayer = async (targetUserId: string, targetUserName: string) => {
+    if (!isHost || !roomId) return;
+    
+    if (!confirm(`确定要踢出玩家 "${targetUserName}" 吗？`)) return;
+    
+    try {
+      await kickPlayer(roomId, targetUserId);
+      alert(`已踢出玩家 "${targetUserName}"`);
+      // 重新获取用户列表以更新显示
+      fetchRoomUsers();
+    } catch (error: any) {
+      console.error('踢出玩家失败:', error);
+      const errorMessage = error.message || '踢出玩家失败';
+      alert(errorMessage);
     }
   };
 
@@ -295,16 +318,13 @@ const Room: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* 如果是房主且不是自己，显示删除按钮 */}
+                  {/* 如果是房主且不是自己，显示踢出按钮 */}
                   {isHost && player.user_id !== currentUser?.id && (
                     <button
-                      onClick={() => {
-                        // TODO: 实现踢出玩家功能
-                        console.log('踢出玩家:', player.user_info.nickname);
-                      }}
+                      onClick={() => handleKickPlayer(player.user_id, player.user_info.nickname)}
                       className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
                     >
-                      删除
+                      踢出
                     </button>
                   )}
                 </div>

@@ -294,4 +294,41 @@ export const startGame = async (roomId: string): Promise<void> => {
     console.error('开始游戏失败:', error);
     throw error;
   }
+};
+
+// 踢出玩家
+export const kickPlayer = async (roomId: string, targetUserId: string): Promise<void> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.ROOMS}/${roomId}/kick`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        target_user_id: targetUserId
+      })
+    });
+
+    // 检查响应状态
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `踢出玩家失败 (${response.status})`);
+    }
+
+    const data: ApiResponse<void> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '踢出玩家失败');
+    }
+  } catch (error: any) {
+    console.error('踢出玩家失败:', error);
+    
+    // 如果已经是 Error 对象，直接抛出
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    // 处理其他类型的错误
+    throw new Error('踢出玩家失败');
+  }
 }; 
