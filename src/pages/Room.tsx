@@ -123,10 +123,12 @@ const Room: React.FC = () => {
       case 'room_user_update':
         // 房间用户更新，重新获取用户列表
         fetchRoomUsers();
+        console.log('房间用户更新', message);
         break;
       case 'room_info_update':
         // 房间信息更新，重新获取房间信息
         fetchRoomInfo();
+        console.log('房间信息更新', message);
         break;
       case 'room_dissolved':
         // 房间被解散
