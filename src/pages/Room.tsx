@@ -4,7 +4,7 @@ import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 import { websocketManager } from '../services/websocketManager';
 import { WebSocketMessage } from '../services/websocketService';
 import { getRoomInfo, getRoomUsers, dissolveRoom, toggleReady, startGame, kickPlayer, leaveRoom, updatePlayerStatus } from '../services/roomService';
-import { getDecks } from '../services/deckService';
+import { getDecks, setDeckPreset } from '../services/deckService';
 import { Deck } from '../types/deck';
 import { getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils';
 
@@ -254,6 +254,16 @@ const Room: React.FC = () => {
       const currentStatus = currentPlayer?.status || 'waiting';
       const newStatus = currentStatus === 'ready' ? 'waiting' : 'ready';
       
+      // 如果是准备状态，设置卡组预设
+      if (newStatus === 'ready' && selectedDeck) {
+        try {
+          await setDeckPreset(selectedDeck.id, 0);
+          console.log('设置准备卡组成功');
+        } catch (error) {
+          console.error('设置准备卡组失败:', error);
+        }
+      }
+      
       await updatePlayerStatus(roomId, newStatus);
       // 重新获取用户列表以更新准备状态
       fetchRoomUsers();
@@ -268,6 +278,16 @@ const Room: React.FC = () => {
     if (!isHost || !roomId) return;
     
     try {
+      // 设置房主的卡组预设
+      if (selectedDeck) {
+        try {
+          await setDeckPreset(selectedDeck.id, 0);
+          console.log('设置房主卡组成功');
+        } catch (error) {
+          console.error('设置房主卡组失败:', error);
+        }
+      }
+      
       await startGame(roomId);
       alert('游戏开始');
       // TODO: 跳转到游戏页面

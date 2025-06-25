@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import BottomMenu from '../components/BottomMenu'
-import { getDecks } from '../services/deckService'
+import { getDecks, setDeckPreset } from '../services/deckService'
 import type { Deck } from '../types/deck'
 import FriendMenu from '../components/FriendMenu'
 import { getUnauditedFiles } from '../services/authService'
@@ -52,6 +52,7 @@ interface LayoutProps {
   } | null;
   onEnterRoom: () => void;
   onJoinRoom: () => void;
+  onMatchGame: () => void;
 }
 
 // 将布局组件提取为独立的组件
@@ -74,7 +75,8 @@ const MobileLayout = React.memo(({
   onOpenCreateRoomModal,
   userRoomStatus,
   onEnterRoom,
-  onJoinRoom
+  onJoinRoom,
+  onMatchGame
 }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -105,7 +107,10 @@ const MobileLayout = React.memo(({
               进入房间
             </button>
           ) : (
-            <button className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors">
+            <button 
+              className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+              onClick={onMatchGame}
+            >
               匹配对战
             </button>
           )}
@@ -271,7 +276,8 @@ const DesktopLayout = React.memo(({
   onOpenCreateRoomModal,
   userRoomStatus,
   onEnterRoom,
-  onJoinRoom
+  onJoinRoom,
+  onMatchGame
 }: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -286,7 +292,10 @@ const DesktopLayout = React.memo(({
               进入房间
             </button>
           ) : (
-            <button className="px-4 py-1.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm">
+            <button 
+              className="px-4 py-1.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm"
+              onClick={onMatchGame}
+            >
               匹配对战
             </button>
           )}
@@ -729,6 +738,19 @@ const Home: React.FC = () => {
     navigate('/room-list');
   };
 
+  // 处理匹配对战
+  const handleMatchGame = async () => {
+    if (allDecks.length > 0 && allDecks[selectedDeckIndex]) {
+      try {
+        await setDeckPreset(allDecks[selectedDeckIndex].id, 0);
+        console.log('设置匹配对战卡组成功');
+        // TODO: 这里可以添加匹配对战的逻辑
+      } catch (error) {
+        console.error('设置匹配对战卡组失败:', error);
+      }
+    }
+  };
+
   // 使用 useMemo 缓存 ChatPanel 组件
   const chatPanel = useMemo(() => {
     return (
@@ -784,6 +806,7 @@ const Home: React.FC = () => {
           userRoomStatus={userRoomStatus}
           onEnterRoom={handleEnterRoom}
           onJoinRoom={handleJoinRoom}
+          onMatchGame={handleMatchGame}
         />
       );
     }
@@ -809,6 +832,7 @@ const Home: React.FC = () => {
         userRoomStatus={userRoomStatus}
         onEnterRoom={handleEnterRoom}
         onJoinRoom={handleJoinRoom}
+        onMatchGame={handleMatchGame}
       />
     );
   }, [
@@ -829,7 +853,8 @@ const Home: React.FC = () => {
     handleStartChat,
     userRoomStatus,
     handleEnterRoom,
-    handleJoinRoom
+    handleJoinRoom,
+    handleMatchGame
   ]);
 
   // 处理创建房间
