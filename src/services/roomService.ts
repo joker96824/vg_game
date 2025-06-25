@@ -331,4 +331,72 @@ export const kickPlayer = async (roomId: string, targetUserId: string): Promise<
     // 处理其他类型的错误
     throw new Error('踢出玩家失败');
   }
+};
+
+// 退出房间
+export const leaveRoom = async (roomId: string): Promise<void> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.ROOMS}/${roomId}/leave`, {
+      method: 'POST'
+    });
+
+    // 检查响应状态
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `退出房间失败 (${response.status})`);
+    }
+
+    const data: ApiResponse<void> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '退出房间失败');
+    }
+  } catch (error: any) {
+    console.error('退出房间失败:', error);
+    
+    // 如果已经是 Error 对象，直接抛出
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    // 处理其他类型的错误
+    throw new Error('退出房间失败');
+  }
+};
+
+// 更新玩家状态（准备/取消准备）
+export const updatePlayerStatus = async (roomId: string, status: 'ready' | 'waiting'): Promise<void> => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.ROOMS}/${roomId}/player/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        status: status
+      })
+    });
+
+    // 检查响应状态
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `更新状态失败 (${response.status})`);
+    }
+
+    const data: ApiResponse<void> = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '更新状态失败');
+    }
+  } catch (error: any) {
+    console.error('更新状态失败:', error);
+    
+    // 如果已经是 Error 对象，直接抛出
+    if (error instanceof Error) {
+      throw error;
+    }
+    
+    // 处理其他类型的错误
+    throw new Error('更新状态失败');
+  }
 }; 

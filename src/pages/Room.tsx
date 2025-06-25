@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 import { websocketManager } from '../services/websocketManager';
 import { WebSocketMessage } from '../services/websocketService';
-import { getRoomInfo, getRoomUsers, dissolveRoom, toggleReady, startGame, kickPlayer } from '../services/roomService';
+import { getRoomInfo, getRoomUsers, dissolveRoom, toggleReady, startGame, kickPlayer, leaveRoom, updatePlayerStatus } from '../services/roomService';
 
 interface RoomUser {
   id: string;
@@ -181,7 +181,12 @@ const Room: React.FC = () => {
     if (!roomId) return;
     
     try {
-      await toggleReady(roomId);
+      // 获取当前用户的准备状态
+      const currentPlayer = roomPlayers?.players.find(p => p.user_id === currentUser?.id);
+      const currentStatus = currentPlayer?.status || 'waiting';
+      const newStatus = currentStatus === 'ready' ? 'waiting' : 'ready';
+      
+      await updatePlayerStatus(roomId, newStatus);
       // 重新获取用户列表以更新准备状态
       fetchRoomUsers();
     } catch (error) {
@@ -222,6 +227,23 @@ const Room: React.FC = () => {
     }
   };
 
+  // 退出房间
+  const handleLeaveRoom = async () => {
+    if (!roomId) return;
+    
+    if (!confirm('确定要退出房间吗？')) return;
+    
+    try {
+      await leaveRoom(roomId);
+      alert('已退出房间');
+      navigate('/');
+    } catch (error: any) {
+      console.error('退出房间失败:', error);
+      const errorMessage = error.message || '退出房间失败';
+      alert(errorMessage);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -251,28 +273,31 @@ const Room: React.FC = () => {
         <div>{roomInfo.room_name}</div>
         
         <div className="absolute right-4 flex gap-2">
-          {isHost && (
-            <button
-              className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
-              onClick={handleRoomSettings}
-            >
-              设置
-            </button>
-          )}
-          {isHost && (
+          {isHost ? (
+            // 房主按钮
+            <>
+              <button
+                className="px-2 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                onClick={handleRoomSettings}
+              >
+                设置
+              </button>
+              <button
+                className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                onClick={handleDissolveRoom}
+              >
+                解散房间
+              </button>
+            </>
+          ) : (
+            // 普通用户按钮
             <button
               className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-              onClick={handleDissolveRoom}
+              onClick={handleLeaveRoom}
             >
-              解散房间
+              退出房间
             </button>
           )}
-          <button
-            className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
-            onClick={handleStartGame}
-          >
-            开始对局
-          </button>
         </div>
       </div>
 
@@ -304,7 +329,7 @@ const Room: React.FC = () => {
                           <span className="text-xs text-white">主</span>
                         </div>
                       )}
-                      {player.status === 'ready' && (
+                      {player.player_order !== 1 && player.status === 'ready' && (
                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full flex items-center justify-center">
                           <span className="text-xs text-white">✓</span>
                         </div>
@@ -312,9 +337,11 @@ const Room: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">{player.user_info.nickname}</p>
-                      <p className="text-sm text-gray-500">
-                        {player.status === 'ready' ? '已准备' : '未准备'}
-                      </p>
+                      {player.player_order !== 1 && (
+                        <p className="text-sm text-gray-500">
+                          {player.status === 'ready' ? '已准备' : '未准备'}
+                        </p>
+                      )}
                     </div>
                   </div>
                   
@@ -336,12 +363,32 @@ const Room: React.FC = () => {
         {/* 底部操作按钮 */}
         <div className="mt-6 bg-white rounded-lg shadow p-6">
           <div className="flex justify-center space-x-4">
-            <button
-              onClick={handleToggleReady}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-            >
-              准备
-            </button>
+            {isHost ? (
+              // 房主显示开始对局按钮
+              <button
+                onClick={handleStartGame}
+                disabled={!roomPlayers?.players || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')}
+                className={`px-6 py-3 rounded-lg text-white ${
+                  !roomPlayers?.players || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
+              >
+                开始对局
+              </button>
+            ) : (
+              // 普通用户显示准备按钮
+              <button
+                onClick={handleToggleReady}
+                className={`px-6 py-3 rounded-lg text-white ${
+                  roomPlayers?.players.find(p => p.user_id === currentUser?.id)?.status === 'ready'
+                    ? 'bg-orange-500 hover:bg-orange-600'
+                    : 'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                {roomPlayers?.players.find(p => p.user_id === currentUser?.id)?.status === 'ready' ? '取消准备' : '准备'}
+              </button>
+            )}
           </div>
         </div>
       </div>
