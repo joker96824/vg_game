@@ -4,6 +4,9 @@ import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 import { websocketManager } from '../services/websocketManager';
 import { WebSocketMessage } from '../services/websocketService';
 import { getRoomInfo, getRoomUsers, dissolveRoom, toggleReady, startGame, kickPlayer, leaveRoom, updatePlayerStatus } from '../services/roomService';
+import { getDecks } from '../services/deckService';
+import { Deck } from '../types/deck';
+import { getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils';
 
 interface RoomUser {
   id: string;
@@ -52,6 +55,12 @@ const Room: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isHost, setIsHost] = useState(false);
+  
+  // 卡组相关状态
+  const [decks, setDecks] = useState<Deck[]>([]);
+  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
+  const [selectedDeckIndex, setSelectedDeckIndex] = useState(0);
+  const [isDeckLoading, setIsDeckLoading] = useState(false);
 
   // 获取当前用户信息
   useEffect(() => {
@@ -98,6 +107,64 @@ const Room: React.FC = () => {
     }
   }, [roomId]);
 
+  // 获取卡组列表
+  const fetchDecks = useCallback(async () => {
+    try {
+      setIsDeckLoading(true);
+      const decksList = await getDecks(true); // 只获取合格卡组
+      
+      // 将 preset=0 的卡组排在最前面
+      const sortedDecks = decksList.sort((a, b) => {
+        if (a.preset === 0) return -1;
+        if (b.preset === 0) return 1;
+        return 0;
+      });
+      
+      setDecks(sortedDecks);
+      
+      // 如果有卡组，默认选择第一个有效的卡组
+      if (sortedDecks.length > 0) {
+        const validDeckIndex = sortedDecks.findIndex(deck => deck.is_valid);
+        if (validDeckIndex !== -1) {
+          setSelectedDeckIndex(validDeckIndex);
+          setSelectedDeck(sortedDecks[validDeckIndex]);
+        }
+      }
+    } catch (error) {
+      console.error('获取卡组列表失败:', error);
+    } finally {
+      setIsDeckLoading(false);
+    }
+  }, []);
+
+  // 处理卡组点击
+  const handleDeckClick = useCallback((index: number) => {
+    if (isHost) return; // 房主不能选择卡组
+    
+    const currentPlayer = roomPlayers?.players.find(p => p.user_id === currentUser?.id);
+    if (currentPlayer?.status === 'ready') {
+      alert('请取消准备后再切换卡组');
+      return; // 准备后不能切换卡组
+    }
+    
+    setSelectedDeckIndex(index);
+    setSelectedDeck(decks[index]);
+  }, [isHost, roomPlayers, currentUser, decks]);
+
+  // 处理选中卡组点击
+  const handleSelectedDeckClick = useCallback(() => {
+    if (isHost) return; // 房主不能选择卡组
+    
+    const currentPlayer = roomPlayers?.players.find(p => p.user_id === currentUser?.id);
+    if (currentPlayer?.status === 'ready') {
+      alert('请取消准备后再切换卡组');
+      return; // 准备后不能切换卡组
+    }
+    
+    // 可以在这里添加卡组详情查看功能
+    console.log('查看卡组详情:', selectedDeck);
+  }, [isHost, roomPlayers, currentUser, selectedDeck]);
+
   // 检查是否为房主
   useEffect(() => {
     if (roomPlayers && currentUser) {
@@ -114,8 +181,9 @@ const Room: React.FC = () => {
     if (currentUser) {
       fetchRoomInfo();
       fetchRoomUsers();
+      fetchDecks();
     }
-  }, [currentUser, fetchRoomInfo, fetchRoomUsers]);
+  }, [currentUser, fetchRoomInfo, fetchRoomUsers, fetchDecks]);
 
   // WebSocket 消息处理
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
@@ -360,36 +428,132 @@ const Room: React.FC = () => {
           </div>
         </div>
 
-        {/* 底部操作按钮 */}
-        <div className="mt-6 bg-white rounded-lg shadow p-6">
-          <div className="flex justify-center space-x-4">
-            {isHost ? (
-              // 房主显示开始对局按钮
-              <button
-                onClick={handleStartGame}
-                disabled={!roomPlayers?.players || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')}
-                className={`px-6 py-3 rounded-lg text-white ${
-                  !roomPlayers?.players || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-500 hover:bg-green-600'
-                }`}
-              >
-                开始对局
-              </button>
-            ) : (
-              // 普通用户显示准备按钮
-              <button
-                onClick={handleToggleReady}
-                className={`px-6 py-3 rounded-lg text-white ${
-                  roomPlayers?.players.find(p => p.user_id === currentUser?.id)?.status === 'ready'
+        {/* 卡组展示区域 - 只有非房主时显示 */}
+        {!isHost && (
+          <div className="mt-6 bg-white rounded-lg shadow p-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">选择卡组</h3>
+            </div>
+            
+            <div className="h-[300px] flex flex-col">
+              {/* 选中卡组展示区域 - 80%高度 */}
+              <div className="h-[80%] mb-4">
+                {decks.length > 0 && decks[selectedDeckIndex] ? (
+                  <div 
+                    className="w-full h-full border-2 border-blue-500 rounded-2xl overflow-hidden cursor-pointer"
+                    onClick={handleSelectedDeckClick}
+                  >
+                    <div className="w-full h-full relative flex">
+                      {/* 卡组图片展示 */}
+                      <div className="absolute inset-0 flex">
+                        {decks[selectedDeckIndex].deck_cards
+                          .filter(card => card.deck_zone === 'ride')
+                          .slice(0, 4)
+                          .map((card, index) => (
+                            <div 
+                              key={index} 
+                              className="flex-1 relative"
+                            >
+                              <img 
+                                src={getCardImageUrl(card.image)}
+                                alt={decks[selectedDeckIndex].deck_name}
+                                className="w-full h-full object-cover"
+                                onError={handleCardImageError}
+                              />
+                            </div>
+                          ))}
+                      </div>
+                      {/* 卡组名称 */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
+                        {decks[selectedDeckIndex].deck_name}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full h-full border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400">
+                    <span className="text-xl">暂无卡组</span>
+                  </div>
+                )}
+              </div>
+
+              {/* 卡组列表区域 - 20%高度 */}
+              <div className="h-[20%] overflow-x-auto">
+                <div className="flex gap-3 h-full pb-2 px-2">
+                  {decks.map((deck, index) => {
+                    const isSelected = index === selectedDeckIndex;
+                    const rideCards = deck.deck_cards.filter(card => card.deck_zone === 'ride').slice(0, 4);
+                    
+                    return (
+                      <div
+                        key={deck.id}
+                        className={`shrink-0 transition-all duration-300 h-full w-[calc(25%-12px)] min-w-[200px] cursor-pointer`}
+                        onClick={() => handleDeckClick(index)}
+                      >
+                        <div className={`h-full relative border rounded-2xl overflow-hidden ${
+                          isSelected ? 'border-blue-500 border-2 scale-100' : 'border-gray-200 scale-90'
+                        } transition-all duration-300`}>
+                          <div className="absolute inset-0 flex">
+                            {rideCards.map((card, cardIndex) => (
+                              <div key={cardIndex} className="flex-1 relative">
+                                <img 
+                                  src={getCardImageUrl(card.image)}
+                                  alt={deck.deck_name}
+                                  className="w-full h-full object-cover"
+                                  onError={handleCardImageError}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
+                            {deck.deck_name}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 右下角固定按钮 */}
+        <div className="fixed bottom-6 right-6 flex flex-col gap-3">
+          {/* 准备/开始对局按钮 */}
+          {isHost ? (
+            // 房主显示开始对局按钮
+            <button
+              onClick={handleStartGame}
+              disabled={!roomPlayers?.players || roomPlayers.players.length <= 1 || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')}
+              className={`px-6 py-3 rounded-lg text-white shadow-lg ${
+                !roomPlayers?.players || roomPlayers.players.length <= 1 || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-green-500 hover:bg-green-600'
+              }`}
+            >
+              开始对局
+            </button>
+          ) : (
+            // 普通用户显示准备按钮
+            <button
+              onClick={handleToggleReady}
+              disabled={decks.length === 0}
+              className={`px-6 py-3 rounded-lg text-white shadow-lg ${
+                decks.length === 0
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : roomPlayers?.players.find(p => p.user_id === currentUser?.id)?.status === 'ready'
                     ? 'bg-orange-500 hover:bg-orange-600'
                     : 'bg-blue-500 hover:bg-blue-600'
-                }`}
-              >
-                {roomPlayers?.players.find(p => p.user_id === currentUser?.id)?.status === 'ready' ? '取消准备' : '准备'}
-              </button>
-            )}
-          </div>
+              }`}
+            >
+              {decks.length === 0 
+                ? '无可用卡组' 
+                : roomPlayers?.players.find(p => p.user_id === currentUser?.id)?.status === 'ready' 
+                  ? '取消准备' 
+                  : '准备'
+              }
+            </button>
+          )}
         </div>
       </div>
     </div>
