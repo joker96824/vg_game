@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import type { Card, ShowCard, RarityInfo } from '../types/card';
@@ -15,6 +15,7 @@ import { saveDeck, validateDeckValidity } from '../services/deckService';
 import { validateCards } from '../utils/deck/deckValidator';
 import warningIcon from '../assets/warning.svg';
 import { initDeckCards } from '../utils/card/initUtils';
+import { error, success, confirm } from '../utils/notification';
 
 // 扩展 RarityInfo 类型
 interface ExtendedRarityInfo extends RarityInfo {
@@ -271,9 +272,10 @@ const CardBrowser: React.FC = () => {
   };
 
   // 处理返回按钮点击
-  const handleBackClick = () => {
+  const handleBackClick = async () => {
     if (mainCards.length > 0) {
-      if (window.confirm('是否保存当前卡组？')) {
+      const confirmed = await confirm('保存卡组', '是否保存当前卡组？');
+      if (confirmed) {
         handleSaveDeck();
       } else {
         navigate('/deck');
@@ -796,7 +798,7 @@ const CardBrowser: React.FC = () => {
   // 修改保存卡组函数
   const handleSaveDeck = async () => {
     if (!deckData?.id) {
-      alert('卡组ID不存在');
+      error('卡组ID不存在');
       return;
     }
 
@@ -836,12 +838,12 @@ const CardBrowser: React.FC = () => {
       // 调用保存接口
       await saveDeck(deckData.id, requestData);
       
-      alert('保存成功');
+      success('保存成功');
       await validateDeckValidity(deckData.id)
       navigate('/deck');
-    } catch (error) {
-      console.error('保存卡组失败:', error);
-      alert('保存失败，请重试');
+    } catch (err) {
+      console.error('保存卡组失败:', err);
+      error('保存失败，请重试');
     } finally {
       setSaving(false);
     }

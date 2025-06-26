@@ -11,6 +11,7 @@ import InitAccount from './pages/InitAccount'
 import Permissions from './pages/admin/Permissions'
 import Skills from './pages/admin/Skills'
 import PrivateRoute from './components/PrivateRoute'
+import NotificationProvider from './components/NotificationProvider'
 import './styles/global.css'
 import AvatarAudit from './pages/admin/AvatarAudit'
 import Room from './pages/Room'
@@ -26,53 +27,55 @@ const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={
-          <PrivateRoute>
-            <Home />
-          </PrivateRoute>
-        } />
-        <Route path="/cards" element={
-          <PrivateRoute>
-            <CardBrowser />
-          </PrivateRoute>
-        } />
-        <Route path="/deck" element={
-          <PrivateRoute>
-            <Deck />
-          </PrivateRoute>
-        } />
-        <Route path="/room/:roomId" element={
-          <PrivateRoute>
-            <Room />
-          </PrivateRoute>
-        } />
-        <Route path="/room-list" element={
-          <PrivateRoute>
-            <RoomList />
-          </PrivateRoute>
-        } />
-        <Route path="/admin/permissions" element={
-          <PrivateRoute>
-            <Permissions />
-          </PrivateRoute>
-        } />
-        <Route path="/admin/skills" element={
-          <PrivateRoute>
-            <Skills />
-          </PrivateRoute>
-        } />
-        <Route path="/admin/avatar-audit" element={
-          <PrivateRoute>
-            <AvatarAudit />
-          </PrivateRoute>
-        } />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/init-account" element={<InitAccount />} />
-      </Routes>
-    </Router>
+    <NotificationProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          } />
+          <Route path="/cards" element={
+            <PrivateRoute>
+              <CardBrowser />
+            </PrivateRoute>
+          } />
+          <Route path="/deck" element={
+            <PrivateRoute>
+              <Deck />
+            </PrivateRoute>
+          } />
+          <Route path="/room/:roomId" element={
+            <PrivateRoute>
+              <Room />
+            </PrivateRoute>
+          } />
+          <Route path="/room-list" element={
+            <PrivateRoute>
+              <RoomList />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/permissions" element={
+            <PrivateRoute>
+              <Permissions />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/skills" element={
+            <PrivateRoute>
+              <Skills />
+            </PrivateRoute>
+          } />
+          <Route path="/admin/avatar-audit" element={
+            <PrivateRoute>
+              <AvatarAudit />
+            </PrivateRoute>
+          } />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/init-account" element={<InitAccount />} />
+        </Routes>
+      </Router>
+    </NotificationProvider>
   </React.StrictMode>
 )

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { error } from '../utils/notification';
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -48,29 +49,28 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose, onCr
     }
   }, [isOpen]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!roomName.trim()) {
-      alert('请输入房间名称');
+      error('请输入房间名称');
       return;
     }
-
-    setIsCreating(true);
-    try {
-      await onCreateRoom({
-        room_name: roomName.trim(),
-        room_type: roomType,
-        game_settings: {},
-        pass_word: password.trim(),
-        remark: remark.trim()
-      });
-      onClose();
-    } catch (error) {
-      console.error('创建房间失败:', error);
-    } finally {
-      setIsCreating(false);
-    }
+    
+    onCreateRoom({
+      room_name: roomName,
+      room_type: roomType,
+      game_settings: {},
+      pass_word: password,
+      remark: remark
+    });
+    
+    // 重置表单
+    setRoomName('');
+    setRoomType('public');
+    setPassword('');
+    setRemark('');
+    onClose();
   };
 
   if (!isOpen) return null;

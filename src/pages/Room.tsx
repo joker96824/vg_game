@@ -7,6 +7,7 @@ import { getRoomInfo, getRoomUsers, dissolveRoom, toggleReady, startGame, kickPl
 import { getDecks, setDeckPreset } from '../services/deckService';
 import { Deck } from '../types/deck';
 import { getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils';
+import { success, error, confirm, alert } from '../utils/notification';
 
 interface RoomUser {
   id: string;
@@ -143,7 +144,7 @@ const Room: React.FC = () => {
     
     const currentPlayer = roomPlayers?.players.find(p => p.user_id === currentUser?.id);
     if (currentPlayer?.status === 'ready') {
-      alert('请取消准备后再切换卡组');
+      error('请取消准备后再切换卡组');
       return; // 准备后不能切换卡组
     }
     
@@ -157,7 +158,7 @@ const Room: React.FC = () => {
     
     const currentPlayer = roomPlayers?.players.find(p => p.user_id === currentUser?.id);
     if (currentPlayer?.status === 'ready') {
-      alert('请取消准备后再切换卡组');
+      error('请取消准备后再切换卡组');
       return; // 准备后不能切换卡组
     }
     
@@ -200,12 +201,12 @@ const Room: React.FC = () => {
         break;
       case 'room_dissolved':
         // 房间被解散
-        alert('房间已被解散');
+        alert('房间状态', '房间已被解散');
         navigate('/');
         break;
       case 'room_kicked':
         // 被踢出房间
-        alert('您已被踢出房间');
+        alert('房间状态', '您已被踢出房间');
         navigate('/');
         break;
       default:
@@ -226,22 +227,23 @@ const Room: React.FC = () => {
   const handleDissolveRoom = async () => {
     if (!isHost || !roomId) return;
     
-    if (!confirm('确定要解散房间吗？')) return;
+    const confirmed = await confirm('解散房间', '确定要解散房间吗？', { type: 'danger' });
+    if (!confirmed) return;
     
     try {
       await dissolveRoom(roomId);
-      alert('房间已解散');
+      success('房间已解散');
       navigate('/');
-    } catch (error) {
-      console.error('解散房间失败:', error);
-      alert('解散房间失败');
+    } catch (err) {
+      console.error('解散房间失败:', err);
+      error('解散房间失败');
     }
   };
 
   // 设置房间
   const handleRoomSettings = () => {
     // TODO: 实现房间设置功能
-    alert('房间设置功能待实现');
+    alert('功能提示', '房间设置功能待实现');
   };
 
   // 准备/取消准备
@@ -259,17 +261,17 @@ const Room: React.FC = () => {
         try {
           await setDeckPreset(selectedDeck.id, 0);
           console.log('设置准备卡组成功');
-        } catch (error) {
-          console.error('设置准备卡组失败:', error);
+        } catch (err) {
+          console.error('设置准备卡组失败:', err);
         }
       }
       
       await updatePlayerStatus(roomId, newStatus);
       // 重新获取用户列表以更新准备状态
       fetchRoomUsers();
-    } catch (error) {
-      console.error('切换准备状态失败:', error);
-      alert('切换准备状态失败');
+    } catch (err) {
+      console.error('切换准备状态失败:', err);
+      error('切换准备状态失败');
     }
   };
 
@@ -283,17 +285,17 @@ const Room: React.FC = () => {
         try {
           await setDeckPreset(selectedDeck.id, 0);
           console.log('设置房主卡组成功');
-        } catch (error) {
-          console.error('设置房主卡组失败:', error);
+        } catch (err) {
+          console.error('设置房主卡组失败:', err);
         }
       }
       
       await startGame(roomId);
-      alert('游戏开始');
+      success('游戏开始');
       // TODO: 跳转到游戏页面
-    } catch (error) {
-      console.error('开始游戏失败:', error);
-      alert('开始游戏失败');
+    } catch (err) {
+      console.error('开始游戏失败:', err);
+      error('开始游戏失败');
     }
   };
 
@@ -301,17 +303,18 @@ const Room: React.FC = () => {
   const handleKickPlayer = async (targetUserId: string, targetUserName: string) => {
     if (!isHost || !roomId) return;
     
-    if (!confirm(`确定要踢出玩家 "${targetUserName}" 吗？`)) return;
+    const confirmed = await confirm('踢出玩家', `确定要踢出玩家 "${targetUserName}" 吗？`, { type: 'danger' });
+    if (!confirmed) return;
     
     try {
       await kickPlayer(roomId, targetUserId);
-      alert(`已踢出玩家 "${targetUserName}"`);
+      success(`已踢出玩家 "${targetUserName}"`);
       // 重新获取用户列表以更新显示
       fetchRoomUsers();
     } catch (error: any) {
       console.error('踢出玩家失败:', error);
       const errorMessage = error.message || '踢出玩家失败';
-      alert(errorMessage);
+      error(errorMessage);
     }
   };
 
@@ -319,16 +322,17 @@ const Room: React.FC = () => {
   const handleLeaveRoom = async () => {
     if (!roomId) return;
     
-    if (!confirm('确定要退出房间吗？')) return;
+    const confirmed = await confirm('退出房间', '确定要退出房间吗？', { type: 'warning' });
+    if (!confirmed) return;
     
     try {
       await leaveRoom(roomId);
-      alert('已退出房间');
+      success('已退出房间');
       navigate('/');
     } catch (error: any) {
       console.error('退出房间失败:', error);
       const errorMessage = error.message || '退出房间失败';
-      alert(errorMessage);
+      error(errorMessage);
     }
   };
 

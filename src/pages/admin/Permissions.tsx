@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUsers, updateUserLevel } from '../../services/authService';
+import { success, error } from '../../utils/notification';
 import Toast from '../../components/Toast';
 
 interface User {
@@ -119,8 +120,10 @@ const Permissions: React.FC = () => {
         user.id === selectedUser.id ? { ...user, level: newLevel } : user
       ));
       setIsModalOpen(false);
+      success('用户等级修改成功');
     } catch (error: any) {
       console.error('修改用户等级失败:', error);
+      error('修改用户等级失败');
       setToastMessage(error.message || '修改用户等级失败');
     }
   };

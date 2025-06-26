@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 import { getRoomList, joinRoom } from '../services/roomService';
+import { success, error } from '../utils/notification';
 
 interface Room {
   id: string;
@@ -98,14 +99,14 @@ const RoomList: React.FC = () => {
       // 调用后端接口，密码验证完全由后端处理
       await joinRoom(room.id, pass_word);
       
-      alert('加入房间成功');
+      success('加入房间成功');
       navigate(`/room/${room.id}`);
     } catch (error: any) {
       console.error('加入房间失败:', error);
       
       // 显示具体的错误信息
       const errorMessage = error.message || '加入房间失败';
-      alert(errorMessage);
+      error(errorMessage);
     }
   };
 

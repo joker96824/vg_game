@@ -12,6 +12,7 @@ import ChatPanel from '../components/ChatPanel'
 import { websocketManager } from '../services/websocketManager'
 import { createRoom, getUserRoomStatus } from '../services/roomService'
 import CreateRoomModal from '../components/CreateRoomModal'
+import { error } from '../utils/notification'
 
 interface Friend {
   id: string;
@@ -872,9 +873,9 @@ const Home: React.FC = () => {
       if (room && room.id) {
         navigate(`/room/${room.id}`);
       }
-    } catch (error) {
-      console.error('创建房间失败:', error);
-      alert('创建房间失败');
+    } catch (err) {
+      console.error('创建房间失败:', err);
+      error('创建房间失败');
     }
   };
 
