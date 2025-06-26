@@ -140,8 +140,6 @@ const Room: React.FC = () => {
 
   // 处理卡组点击
   const handleDeckClick = useCallback((index: number) => {
-    if (isHost) return; // 房主不能选择卡组
-    
     const currentPlayer = roomPlayers?.players.find(p => p.user_id === currentUser?.id);
     if (currentPlayer?.status === 'ready') {
       error('请取消准备后再切换卡组');
@@ -150,12 +148,10 @@ const Room: React.FC = () => {
     
     setSelectedDeckIndex(index);
     setSelectedDeck(decks[index]);
-  }, [isHost, roomPlayers, currentUser, decks]);
+  }, [roomPlayers, currentUser, decks]);
 
   // 处理选中卡组点击
   const handleSelectedDeckClick = useCallback(() => {
-    if (isHost) return; // 房主不能选择卡组
-    
     const currentPlayer = roomPlayers?.players.find(p => p.user_id === currentUser?.id);
     if (currentPlayer?.status === 'ready') {
       error('请取消准备后再切换卡组');
@@ -164,7 +160,7 @@ const Room: React.FC = () => {
     
     // 可以在这里添加卡组详情查看功能
     console.log('查看卡组详情:', selectedDeck);
-  }, [isHost, roomPlayers, currentUser, selectedDeck]);
+  }, [roomPlayers, currentUser, selectedDeck]);
 
   // 检查是否为房主
   useEffect(() => {
@@ -452,94 +448,92 @@ const Room: React.FC = () => {
           </div>
         </div>
 
-        {/* 卡组展示区域 - 只有非房主时显示 */}
-        {!isHost && (
-          <div className="mt-6 bg-white rounded-lg shadow p-4">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold">选择卡组</h3>
+        {/* 卡组展示区域 */}
+        <div className="mt-6 bg-white rounded-lg shadow p-4">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold">选择卡组</h3>
+          </div>
+          
+          <div className="h-[300px] flex flex-col">
+            {/* 选中卡组展示区域 - 80%高度 */}
+            <div className="h-[80%] mb-4">
+              {decks.length > 0 && decks[selectedDeckIndex] ? (
+                <div 
+                  className="w-full h-full border-2 border-blue-500 rounded-2xl overflow-hidden cursor-pointer"
+                  onClick={handleSelectedDeckClick}
+                >
+                  <div className="w-full h-full relative flex">
+                    {/* 卡组图片展示 */}
+                    <div className="absolute inset-0 flex">
+                      {decks[selectedDeckIndex].deck_cards
+                        .filter(card => card.deck_zone === 'ride')
+                        .slice(0, 4)
+                        .map((card, index) => (
+                          <div 
+                            key={index} 
+                            className="flex-1 relative"
+                          >
+                            <img 
+                              src={getCardImageUrl(card.image)}
+                              alt={decks[selectedDeckIndex].deck_name}
+                              className="w-full h-full object-cover"
+                              onError={handleCardImageError}
+                            />
+                          </div>
+                        ))}
+                    </div>
+                    {/* 卡组名称 */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
+                      {decks[selectedDeckIndex].deck_name}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="w-full h-full border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400">
+                  <span className="text-xl">暂无卡组</span>
+                </div>
+              )}
             </div>
-            
-            <div className="h-[300px] flex flex-col">
-              {/* 选中卡组展示区域 - 80%高度 */}
-              <div className="h-[80%] mb-4">
-                {decks.length > 0 && decks[selectedDeckIndex] ? (
-                  <div 
-                    className="w-full h-full border-2 border-blue-500 rounded-2xl overflow-hidden cursor-pointer"
-                    onClick={handleSelectedDeckClick}
-                  >
-                    <div className="w-full h-full relative flex">
-                      {/* 卡组图片展示 */}
-                      <div className="absolute inset-0 flex">
-                        {decks[selectedDeckIndex].deck_cards
-                          .filter(card => card.deck_zone === 'ride')
-                          .slice(0, 4)
-                          .map((card, index) => (
-                            <div 
-                              key={index} 
-                              className="flex-1 relative"
-                            >
+
+            {/* 卡组列表区域 - 20%高度 */}
+            <div className="h-[20%] overflow-x-auto">
+              <div className="flex gap-3 h-full pb-2 px-2">
+                {decks.map((deck, index) => {
+                  const isSelected = index === selectedDeckIndex;
+                  const rideCards = deck.deck_cards.filter(card => card.deck_zone === 'ride').slice(0, 4);
+                  
+                  return (
+                    <div
+                      key={deck.id}
+                      className={`shrink-0 transition-all duration-300 h-full w-[calc(25%-12px)] min-w-[200px] cursor-pointer`}
+                      onClick={() => handleDeckClick(index)}
+                    >
+                      <div className={`h-full relative border rounded-2xl overflow-hidden ${
+                        isSelected ? 'border-blue-500 border-2 scale-100' : 'border-gray-200 scale-90'
+                      } transition-all duration-300`}>
+                        <div className="absolute inset-0 flex">
+                          {rideCards.map((card, cardIndex) => (
+                            <div key={cardIndex} className="flex-1 relative">
                               <img 
                                 src={getCardImageUrl(card.image)}
-                                alt={decks[selectedDeckIndex].deck_name}
+                                alt={deck.deck_name}
                                 className="w-full h-full object-cover"
                                 onError={handleCardImageError}
                               />
                             </div>
                           ))}
-                      </div>
-                      {/* 卡组名称 */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
-                        {decks[selectedDeckIndex].deck_name}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full h-full border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400">
-                    <span className="text-xl">暂无卡组</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 卡组列表区域 - 20%高度 */}
-              <div className="h-[20%] overflow-x-auto">
-                <div className="flex gap-3 h-full pb-2 px-2">
-                  {decks.map((deck, index) => {
-                    const isSelected = index === selectedDeckIndex;
-                    const rideCards = deck.deck_cards.filter(card => card.deck_zone === 'ride').slice(0, 4);
-                    
-                    return (
-                      <div
-                        key={deck.id}
-                        className={`shrink-0 transition-all duration-300 h-full w-[calc(25%-12px)] min-w-[200px] cursor-pointer`}
-                        onClick={() => handleDeckClick(index)}
-                      >
-                        <div className={`h-full relative border rounded-2xl overflow-hidden ${
-                          isSelected ? 'border-blue-500 border-2 scale-100' : 'border-gray-200 scale-90'
-                        } transition-all duration-300`}>
-                          <div className="absolute inset-0 flex">
-                            {rideCards.map((card, cardIndex) => (
-                              <div key={cardIndex} className="flex-1 relative">
-                                <img 
-                                  src={getCardImageUrl(card.image)}
-                                  alt={deck.deck_name}
-                                  className="w-full h-full object-cover"
-                                  onError={handleCardImageError}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
-                            {deck.deck_name}
-                          </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 bg-white/80 text-center px-2 py-1 text-sm">
+                          {deck.deck_name}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* 右下角固定按钮 */}
         <div className="fixed bottom-6 right-6 flex flex-col gap-3">
