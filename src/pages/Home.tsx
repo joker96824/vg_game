@@ -465,7 +465,7 @@ const Home: React.FC = () => {
     isOpen: boolean;
     matchId: string;
     players: Array<{
-      id: string;
+      user_id: string;
       nickname: string;
       avatar: string;
     }>;
@@ -475,10 +475,24 @@ const Home: React.FC = () => {
     players: []
   });
 
+  // 添加匹配确认状态跟踪
+  const [matchConfirmationState, setMatchConfirmationState] = useState<{
+    isProcessing: boolean;
+    currentMatchId: string | null;
+    confirmedAt: string | null;
+  }>({
+    isProcessing: false,
+    currentMatchId: null,
+    confirmedAt: null
+  });
+
   // 使用 useRef 存储最新的状态，避免闭包问题
   const chatTabsRef = useRef(chatTabs);
   const activeChatTabRef = useRef(activeChatTab);
   const setIsChatOpenRef = useRef(setIsChatOpen);
+  const matchConfirmationStateRef = useRef(matchConfirmationState);
+  const isMatchingRef = useRef(isMatching);
+  const userRoomStatusRef = useRef(userRoomStatus);
 
   // 更新 ref 值
   useEffect(() => {
@@ -492,6 +506,18 @@ const Home: React.FC = () => {
   useEffect(() => {
     setIsChatOpenRef.current = setIsChatOpen;
   }, [setIsChatOpen]);
+
+  useEffect(() => {
+    matchConfirmationStateRef.current = matchConfirmationState;
+  }, [matchConfirmationState]);
+
+  useEffect(() => {
+    isMatchingRef.current = isMatching;
+  }, [isMatching]);
+
+  useEffect(() => {
+    userRoomStatusRef.current = userRoomStatus;
+  }, [userRoomStatus]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -619,107 +645,6 @@ const Home: React.FC = () => {
     checkFriendRequests();
   }, []);
 
-  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
-    // 处理不同类型的消息
-    switch (message.type) {
-      case 'chat':
-        // 获取当前用户信息
-        const userStr = localStorage.getItem('user');
-        const currentUser = userStr ? JSON.parse(userStr) : null;
-        const isCurrentUserMessage = currentUser && message.sender_id === currentUser.id;
-
-        // 添加聊天消息到列表
-        setChatMessages(prev => {
-          // 检查消息是否已存在
-          const exists = prev.some(msg => 
-            msg.sender_name === message.sender_name && 
-            msg.content === message.content &&
-            msg.timestamp === message.timestamp
-          );
-          if (exists) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-
-        // 如果是私聊消息，处理私聊窗口
-        if (message.receiver_id) {
-          // 如果是自己发送的消息回显，不需要创建新窗口，只需要确保消息显示在正确的聊天窗口中
-          if (isCurrentUserMessage) {
-            // 自己发送的私聊消息回显，不需要特殊处理
-            // 消息会自动显示在对应的聊天窗口中
-            return;
-          }
-
-          // 检查是否已经存在与该用户的聊天标签页
-          // 使用 sender_id 来查找对应的好友标签页
-          const existingTabIndex = chatTabsRef.current.findIndex(
-            tab => tab.type === 'friend' && tab.friend?.friend_id?.toString() === message.sender_id
-          );
-
-          if (existingTabIndex !== -1) {
-            // 如果已存在，检查当前是否在该标签页
-            if (activeChatTabRef.current !== existingTabIndex) {
-              // 如果不在该标签页，添加未读标记
-              setUnreadTabs(prev => new Set(prev).add(existingTabIndex));
-            }
-            // 不自动切换标签页，只添加未读标记
-          } else {
-            // 如果不存在，创建新的标签页
-            // 使用 sender_id 作为 friend_id 来创建好友对象
-            const newFriend: Friend = {
-              id: message.sender_id || '',
-              username: message.sender_name || '',
-              nickname: message.sender_name || '',
-              avatar: message.sender_avatar || '',
-              is_blocked: false,
-              friend_id: message.sender_id || '',
-              friend_username: message.sender_name || '',
-              friend_nickname: message.sender_name || '',
-              friend_avatar: message.sender_avatar || ''
-            };
-            
-            setChatTabs(prev => [...prev, { type: 'friend', friend: newFriend }]);
-            const newTabIndex = chatTabsRef.current.length;
-            // 新创建的标签页自动添加未读标记
-            setUnreadTabs(prev => new Set(prev).add(newTabIndex));
-          }
-
-          // 打开聊天面板
-          setIsChatOpenRef.current(true);
-        }
-        break;
-      case 'match_confirmation':
-        // 处理匹配确认消息
-        console.log('收到匹配确认消息:', message);
-        setMatchSuccessModal({
-          isOpen: true,
-          matchId: message.data?.match_id || '',
-          players: message.data?.matched_users || []
-        });
-        // 停止匹配状态
-        setIsMatching(false);
-        break;
-      case 'match_success':
-        // 处理匹配成功消息
-        console.log('收到匹配成功消息:', message);
-        setMatchSuccessModal({
-          isOpen: true,
-          matchId: message.data?.match_id || '',
-          players: message.data?.matched_users || []
-        });
-        // 停止匹配状态
-        setIsMatching(false);
-        break;
-      case 'notification':
-        // 处理通知消息
-        break;
-      case 'system_notification':
-        // 处理系统通知
-        break;
-    }
-  }, []); // 空依赖数组，函数不会重新创建
-
   // 当切换标签页时，清除未读标记
   const handleTabChange = useCallback((index: number) => {
     setActiveChatTab(index);
@@ -753,6 +678,263 @@ const Home: React.FC = () => {
     setFriendButtonPosition(null);
   }, [friendButtonPosition]); // 添加 friendButtonPosition 依赖
 
+  // 将handleWebSocketMessage移回外部，使用useCallback包装
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
+    // 处理不同类型的消息
+    switch (message.type) {
+      case 'chat':
+        // 获取当前用户信息
+        const userStr = localStorage.getItem('user');
+        const currentUser = userStr ? JSON.parse(userStr) : null;
+        const isCurrentUserMessage = currentUser && message.sender_id === currentUser.id;
+
+        // 添加聊天消息到列表
+        setChatMessages(prev => {
+          // 检查消息是否已存在
+          const exists = prev.some(msg => 
+            msg.sender_name === message.sender_name && 
+            msg.content === message.content &&
+            msg.timestamp === message.timestamp
+          );
+          if (exists) {
+            return prev;
+          }
+          return [...prev, message];
+        });
+
+        // 如果是好友消息，自动打开聊天面板
+        if (!isCurrentUserMessage && message.sender_id) {
+          // 检查是否已经存在与该好友的聊天标签页
+          const existingTabIndex = chatTabsRef.current.findIndex(
+            tab => tab.type === 'friend' && tab.friend?.friend_id === message.sender_id
+          );
+
+          if (existingTabIndex !== -1) {
+            // 如果已存在，切换到该标签页
+            setActiveChatTab(existingTabIndex);
+          } else {
+            // 如果不存在，创建新的标签页
+            // 使用 sender_id 作为 friend_id 来创建好友对象
+            const newFriend: Friend = {
+              id: message.sender_id || '',
+              username: message.sender_name || '',
+              nickname: message.sender_name || '',
+              avatar: message.sender_avatar || '',
+              is_blocked: false,
+              friend_id: message.sender_id || '',
+              friend_username: message.sender_name || '',
+              friend_nickname: message.sender_name || '',
+              friend_avatar: message.sender_avatar || ''
+            };
+            
+            setChatTabs(prev => [...prev, { type: 'friend', friend: newFriend }]);
+            const newTabIndex = chatTabsRef.current.length;
+            // 新创建的标签页自动添加未读标记
+            setUnreadTabs(prev => new Set(prev).add(newTabIndex));
+          }
+
+          // 打开聊天面板
+          setIsChatOpenRef.current(true);
+        }
+        break;
+      case 'match_confirmation':
+        // 处理匹配确认消息
+        console.log('=== 匹配确认消息处理开始 ===');
+        console.log('收到匹配确认消息:', message);
+        console.log('消息完整内容:', JSON.stringify(message, null, 2));
+        console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
+        console.log('当前匹配状态:', isMatchingRef.current);
+        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        
+        const matchId = message.data?.match_id || '';
+        const matchedUsers = message.data?.matched_users || [];
+        
+        console.log('匹配ID:', matchId);
+        console.log('匹配用户:', matchedUsers);
+        console.log('匹配用户数量:', matchedUsers.length);
+        console.log('匹配用户详情:', JSON.stringify(matchedUsers, null, 2));
+        
+        // 检查用户是否已经在房间中
+        if (userRoomStatusRef.current?.in_room) {
+          console.log('⚠️ 警告：用户已在房间中，忽略匹配确认消息');
+          console.log('当前房间ID:', userRoomStatusRef.current.room_id);
+          return;
+        }
+        
+        // 检查是否已经在处理这个匹配
+        if (matchConfirmationStateRef.current.isProcessing && matchConfirmationStateRef.current.currentMatchId === matchId) {
+          console.log('⚠️ 警告：正在处理相同的匹配ID，忽略重复消息');
+          return;
+        }
+        
+        // 检查是否已经确认过这个匹配
+        if (matchConfirmationStateRef.current.confirmedAt && matchConfirmationStateRef.current.currentMatchId === matchId) {
+          console.log('⚠️ 警告：已经确认过这个匹配，忽略重复消息');
+          return;
+        }
+        
+        // 检查匹配用户信息是否完整
+        if (!matchedUsers || matchedUsers.length === 0) {
+          console.log('⚠️ 警告：匹配用户信息为空，忽略消息');
+          return;
+        }
+        
+        // 检查用户信息是否完整
+        const hasIncompleteUserInfoConfirmation = matchedUsers.some(user => 
+          !user.user_id || !user.nickname || !user.avatar
+        );
+        
+        if (hasIncompleteUserInfoConfirmation) {
+          console.log('⚠️ 警告：匹配用户信息不完整，忽略消息');
+          console.log('不完整的用户信息:', matchedUsers);
+          return;
+        }
+        
+        // 设置匹配确认状态（不设置isProcessing为true，让用户点击按钮时设置）
+        setMatchConfirmationState(prev => ({
+          ...prev,
+          currentMatchId: matchId,
+          confirmedAt: null
+        }));
+        
+        console.log('✅ 匹配用户信息完整，显示弹窗');
+        setMatchSuccessModal({
+          isOpen: true,
+          matchId: matchId,
+          players: matchedUsers
+        });
+        
+        // 停止匹配状态
+        setIsMatching(false);
+        console.log('=== 匹配确认消息处理完成 ===');
+        break;
+      case 'match_success':
+        // 处理匹配成功消息
+        console.log('=== 匹配成功消息处理开始 ===');
+        console.log('收到匹配成功消息:', message);
+        console.log('消息完整内容:', JSON.stringify(message, null, 2));
+        console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
+        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        
+        const successMatchId = message.data?.match_id || '';
+        const successRoomId = message.data?.room_id || '';
+        const successRoomName = message.data?.room_name || '';
+        const successMatchedUsers = message.data?.matched_users || [];
+        
+        console.log('成功匹配ID:', successMatchId);
+        console.log('房间ID:', successRoomId);
+        console.log('房间名称:', successRoomName);
+        console.log('匹配用户数量:', successMatchedUsers.length);
+        
+        // 检查用户是否已经在房间中
+        if (userRoomStatusRef.current?.in_room) {
+          console.log('⚠️ 警告：用户已在房间中，忽略匹配成功消息');
+          console.log('当前房间ID:', userRoomStatusRef.current.room_id);
+          return;
+        }
+        
+        // 如果match_success消息的match_id为空，使用当前处理的匹配ID
+        const effectiveMatchId = successMatchId || matchConfirmationStateRef.current.currentMatchId || '';
+        
+        // 检查是否与当前处理的匹配一致
+        if (matchConfirmationStateRef.current.currentMatchId === effectiveMatchId) {
+          console.log('✅ 匹配成功消息与当前处理的匹配一致');
+        } else {
+          console.log('⚠️ 警告：匹配成功消息与当前处理的匹配不一致');
+          console.log('当前处理匹配ID:', matchConfirmationStateRef.current.currentMatchId);
+          console.log('有效匹配ID:', effectiveMatchId);
+        }
+        
+        // 如果已经确认过这个匹配，忽略消息
+        if (matchConfirmationStateRef.current.confirmedAt && matchConfirmationStateRef.current.currentMatchId === effectiveMatchId) {
+          console.log('⚠️ 警告：已经确认过这个匹配，忽略匹配成功消息');
+          return;
+        }
+        
+        // 检查房间信息是否完整
+        if (!successRoomId) {
+          console.log('⚠️ 警告：房间ID为空，忽略消息');
+          return;
+        }
+        
+        console.log('✅ 匹配成功，直接跳转到房间页面');
+        
+        // 清理匹配确认状态
+        setMatchConfirmationState(prev => ({
+          isProcessing: false,
+          currentMatchId: null,
+          confirmedAt: null
+        }));
+        
+        // 关闭匹配成功弹窗（如果还在显示）
+        setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
+        
+        // 停止匹配状态
+        setIsMatching(false);
+        
+        // 直接跳转到房间页面
+        console.log('跳转到房间页面:', successRoomId);
+        navigate(`/room/${successRoomId}`);
+        
+        console.log('=== 匹配成功消息处理完成 ===');
+        break;
+      case 'notification':
+        // 处理通知消息
+        break;
+      case 'system_notification':
+        // 处理系统通知
+        break;
+      case 'room_dissolved':
+        // 处理房间解散消息
+        console.log('=== 房间解散消息处理开始 ===');
+        console.log('收到房间解散消息:', message);
+        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        
+        // 如果用户当前在房间中，更新状态为不在房间
+        if (userRoomStatusRef.current?.in_room) {
+          console.log('✅ 用户当前在房间中，更新状态为不在房间');
+          setUserRoomStatus({
+            in_room: false,
+            room_id: null,
+            room_name: null,
+            player_order: null,
+            status: null,
+            join_time: null
+          });
+          console.log('用户房间状态已更新');
+        } else {
+          console.log('⚠️ 用户当前不在房间中，无需更新状态');
+        }
+        
+        console.log('=== 房间解散消息处理完成 ===');
+        break;
+      case 'room_kicked':
+        // 处理被踢出房间消息
+        console.log('=== 被踢出房间消息处理开始 ===');
+        console.log('收到被踢出房间消息:', message);
+        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        
+        // 如果用户当前在房间中，更新状态为不在房间
+        if (userRoomStatusRef.current?.in_room) {
+          console.log('✅ 用户当前在房间中，更新状态为不在房间');
+          setUserRoomStatus({
+            in_room: false,
+            room_id: null,
+            room_name: null,
+            player_order: null,
+            status: null,
+            join_time: null
+          });
+          console.log('用户房间状态已更新');
+        } else {
+          console.log('⚠️ 用户当前不在房间中，无需更新状态');
+        }
+        
+        console.log('=== 被踢出房间消息处理完成 ===');
+        break;
+    }
+  }, []); // 空依赖数组，使用ref访问最新状态
+
   useEffect(() => {
     // 设置WebSocket回调
     const connectionListener = (connected: boolean) => {
@@ -764,6 +946,7 @@ const Home: React.FC = () => {
     const errorListener = (error: string) => {
       console.error('WebSocket错误:', error);
     };
+
     websocketManager.addConnectionListener(connectionListener);
     websocketManager.addAuthListener(authListener);
     websocketManager.addMessageListener(handleWebSocketMessage);
@@ -778,9 +961,18 @@ const Home: React.FC = () => {
       websocketManager.removeAuthListener(authListener);
       websocketManager.removeMessageListener(handleWebSocketMessage);
       websocketManager.removeErrorListener(errorListener);
+      
+      // 清理匹配确认状态
+      setMatchConfirmationState(prev => ({
+        isProcessing: false,
+        currentMatchId: null,
+        confirmedAt: null
+      }));
+      console.log('页面卸载时已清理匹配确认状态');
+      
       // 移除 websocketManager.disconnect() 调用，保持连接持久
     };
-  }, [handleWebSocketMessage]);
+  }, [handleWebSocketMessage]); // 依赖handleWebSocketMessage
 
   const handleDeckClick = (index: number) => {
     setSelectedDeckIndex(index);
@@ -950,10 +1142,28 @@ const Home: React.FC = () => {
 
   // 处理匹配成功弹窗的接受
   const handleMatchAccept = async () => {
+    console.log('=== 开始处理匹配接受 ===');
+    console.log('当前匹配ID:', matchSuccessModal.matchId);
+    console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
+    
     try {
+      // 设置处理状态，防止重复点击
+      setMatchConfirmationState(prev => ({
+        ...prev,
+        isProcessing: true
+      }));
+      
       // 调用确认匹配API
+      console.log('调用确认匹配API...');
       const result = await confirmMatch(matchSuccessModal.matchId, true);
-      console.log('确认匹配成功:', result);
+      console.log('确认匹配API返回结果:', result);
+      
+      // 立即清理匹配确认状态，防止后续消息干扰
+      setMatchConfirmationState(prev => ({
+        isProcessing: false,
+        currentMatchId: null,
+        confirmedAt: null
+      }));
       
       setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
       setIsMatching(false); // 确认匹配后不再处于匹配状态
@@ -961,29 +1171,68 @@ const Home: React.FC = () => {
       
       // 跳转到房间页面
       if (result.room_id) {
+        console.log('跳转到房间页面:', result.room_id);
         navigate(`/room/${result.room_id}`);
+      } else {
+        console.log('⚠️ 警告：API返回的room_id为空，可能需要等待match_success消息');
+        // 如果room_id为空，可能需要等待match_success消息
+        // 但我们已经清理了状态，所以不会重复处理
       }
+      
+      console.log('=== 匹配接受处理完成 ===');
     } catch (err) {
       console.error('确认匹配失败:', err);
       error('确认匹配失败');
+      
+      // 重置处理状态
+      setMatchConfirmationState(prev => ({
+        ...prev,
+        isProcessing: false
+      }));
     }
   };
 
   // 处理匹配成功弹窗的拒绝
   const handleMatchReject = async () => {
+    console.log('=== 开始处理匹配拒绝 ===');
+    console.log('当前匹配ID:', matchSuccessModal.matchId);
+    console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
+    
     try {
+      // 设置处理状态，防止重复点击
+      setMatchConfirmationState(prev => ({
+        ...prev,
+        isProcessing: true
+      }));
+      
       // 调用拒绝匹配API
+      console.log('调用拒绝匹配API...');
       await confirmMatch(matchSuccessModal.matchId, false);
-      console.log('拒绝匹配成功');
+      console.log('拒绝匹配API调用成功');
+      
+      // 立即清理匹配确认状态，防止后续消息干扰
+      setMatchConfirmationState(prev => ({
+        isProcessing: false,
+        currentMatchId: null,
+        confirmedAt: null
+      }));
       
       setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
       setIsMatching(false); // 拒绝匹配后不再处于匹配状态
       success('已拒绝匹配');
       
+      console.log('=== 匹配拒绝处理完成 ===');
+      
       // TODO: 可以选择是否重新进入匹配队列
     } catch (err) {
       console.error('拒绝匹配失败:', err);
       error('拒绝匹配失败');
+      
+      // 重置处理状态
+      setMatchConfirmationState(prev => ({
+        ...prev,
+        isProcessing: false
+      }));
     }
   };
 

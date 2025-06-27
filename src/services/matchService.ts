@@ -3,7 +3,7 @@ import { API_ENDPOINTS } from '../constants/api';
 
 // 匹配相关类型定义
 export interface MatchedUser {
-  id: string;
+  user_id: string;
   nickname: string;
   avatar: string;
 }

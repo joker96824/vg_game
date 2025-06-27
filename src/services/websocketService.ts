@@ -13,7 +13,7 @@ export interface WebSocketMessage {
     timestamp?: string;
     match_id?: string;
     players?: Array<{
-        id: string;
+        user_id: string;
         nickname: string;
         avatar: string;
     }>;
@@ -22,7 +22,7 @@ export interface WebSocketMessage {
         room_id?: string;
         room_name?: string;
         matched_users?: Array<{
-            id: string;
+            user_id: string;
             nickname: string;
             avatar: string;
         }>;
