@@ -739,43 +739,28 @@ const Home: React.FC = () => {
         break;
       case 'match_confirmation':
         // 处理匹配确认消息
-        console.log('=== 匹配确认消息处理开始 ===');
-        console.log('收到匹配确认消息:', message);
-        console.log('消息完整内容:', JSON.stringify(message, null, 2));
-        console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
-        console.log('当前匹配状态:', isMatchingRef.current);
-        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        logWebSocketMessage(message);
         
         const matchId = message.data?.match_id || '';
         const matchedUsers = message.data?.matched_users || [];
         
-        console.log('匹配ID:', matchId);
-        console.log('匹配用户:', matchedUsers);
-        console.log('匹配用户数量:', matchedUsers.length);
-        console.log('匹配用户详情:', JSON.stringify(matchedUsers, null, 2));
-        
         // 检查用户是否已经在房间中
         if (userRoomStatusRef.current?.in_room) {
-          console.log('⚠️ 警告：用户已在房间中，忽略匹配确认消息');
-          console.log('当前房间ID:', userRoomStatusRef.current.room_id);
           return;
         }
         
         // 检查是否已经在处理这个匹配
         if (matchConfirmationStateRef.current.isProcessing && matchConfirmationStateRef.current.currentMatchId === matchId) {
-          console.log('⚠️ 警告：正在处理相同的匹配ID，忽略重复消息');
           return;
         }
         
         // 检查是否已经确认过这个匹配
         if (matchConfirmationStateRef.current.confirmedAt && matchConfirmationStateRef.current.currentMatchId === matchId) {
-          console.log('⚠️ 警告：已经确认过这个匹配，忽略重复消息');
           return;
         }
         
         // 检查匹配用户信息是否完整
         if (!matchedUsers || matchedUsers.length === 0) {
-          console.log('⚠️ 警告：匹配用户信息为空，忽略消息');
           return;
         }
         
@@ -785,8 +770,6 @@ const Home: React.FC = () => {
         );
         
         if (hasIncompleteUserInfoConfirmation) {
-          console.log('⚠️ 警告：匹配用户信息不完整，忽略消息');
-          console.log('不完整的用户信息:', matchedUsers);
           return;
         }
         
@@ -797,7 +780,6 @@ const Home: React.FC = () => {
           confirmedAt: null
         }));
         
-        console.log('✅ 匹配用户信息完整，显示弹窗');
         setMatchSuccessModal({
           isOpen: true,
           matchId: matchId,
@@ -806,58 +788,33 @@ const Home: React.FC = () => {
         
         // 停止匹配状态
         setIsMatching(false);
-        console.log('=== 匹配确认消息处理完成 ===');
         break;
       case 'match_success':
         // 处理匹配成功消息
-        console.log('=== 匹配成功消息处理开始 ===');
-        console.log('收到匹配成功消息:', message);
-        console.log('消息完整内容:', JSON.stringify(message, null, 2));
-        console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
-        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        logWebSocketMessage(message);
         
         const successMatchId = message.data?.match_id || '';
         const successRoomId = message.data?.room_id || '';
         const successRoomName = message.data?.room_name || '';
         const successMatchedUsers = message.data?.matched_users || [];
         
-        console.log('成功匹配ID:', successMatchId);
-        console.log('房间ID:', successRoomId);
-        console.log('房间名称:', successRoomName);
-        console.log('匹配用户数量:', successMatchedUsers.length);
-        
         // 检查用户是否已经在房间中
         if (userRoomStatusRef.current?.in_room) {
-          console.log('⚠️ 警告：用户已在房间中，忽略匹配成功消息');
-          console.log('当前房间ID:', userRoomStatusRef.current.room_id);
           return;
         }
         
         // 如果match_success消息的match_id为空，使用当前处理的匹配ID
         const effectiveMatchId = successMatchId || matchConfirmationStateRef.current.currentMatchId || '';
         
-        // 检查是否与当前处理的匹配一致
-        if (matchConfirmationStateRef.current.currentMatchId === effectiveMatchId) {
-          console.log('✅ 匹配成功消息与当前处理的匹配一致');
-        } else {
-          console.log('⚠️ 警告：匹配成功消息与当前处理的匹配不一致');
-          console.log('当前处理匹配ID:', matchConfirmationStateRef.current.currentMatchId);
-          console.log('有效匹配ID:', effectiveMatchId);
-        }
-        
         // 如果已经确认过这个匹配，忽略消息
         if (matchConfirmationStateRef.current.confirmedAt && matchConfirmationStateRef.current.currentMatchId === effectiveMatchId) {
-          console.log('⚠️ 警告：已经确认过这个匹配，忽略匹配成功消息');
           return;
         }
         
         // 检查房间信息是否完整
         if (!successRoomId) {
-          console.log('⚠️ 警告：房间ID为空，忽略消息');
           return;
         }
-        
-        console.log('✅ 匹配成功，直接跳转到房间页面');
         
         // 清理匹配确认状态
         setMatchConfirmationState(prev => ({
@@ -873,10 +830,7 @@ const Home: React.FC = () => {
         setIsMatching(false);
         
         // 直接跳转到房间页面
-        console.log('跳转到房间页面:', successRoomId);
         navigate(`/room/${successRoomId}`);
-        
-        console.log('=== 匹配成功消息处理完成 ===');
         break;
       case 'notification':
         // 处理通知消息
@@ -886,13 +840,10 @@ const Home: React.FC = () => {
         break;
       case 'room_dissolved':
         // 处理房间解散消息
-        console.log('=== 房间解散消息处理开始 ===');
-        console.log('收到房间解散消息:', message);
-        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        logWebSocketMessage(message);
         
         // 如果用户当前在房间中，更新状态为不在房间
         if (userRoomStatusRef.current?.in_room) {
-          console.log('✅ 用户当前在房间中，更新状态为不在房间');
           setUserRoomStatus({
             in_room: false,
             room_id: null,
@@ -901,22 +852,14 @@ const Home: React.FC = () => {
             status: null,
             join_time: null
           });
-          console.log('用户房间状态已更新');
-        } else {
-          console.log('⚠️ 用户当前不在房间中，无需更新状态');
         }
-        
-        console.log('=== 房间解散消息处理完成 ===');
         break;
       case 'room_kicked':
         // 处理被踢出房间消息
-        console.log('=== 被踢出房间消息处理开始 ===');
-        console.log('收到被踢出房间消息:', message);
-        console.log('当前用户房间状态:', userRoomStatusRef.current);
+        logWebSocketMessage(message);
         
         // 如果用户当前在房间中，更新状态为不在房间
         if (userRoomStatusRef.current?.in_room) {
-          console.log('✅ 用户当前在房间中，更新状态为不在房间');
           setUserRoomStatus({
             in_room: false,
             room_id: null,
@@ -925,12 +868,7 @@ const Home: React.FC = () => {
             status: null,
             join_time: null
           });
-          console.log('用户房间状态已更新');
-        } else {
-          console.log('⚠️ 用户当前不在房间中，无需更新状态');
         }
-        
-        console.log('=== 被踢出房间消息处理完成 ===');
         break;
     }
   }, []); // 空依赖数组，使用ref访问最新状态
@@ -968,7 +906,6 @@ const Home: React.FC = () => {
         currentMatchId: null,
         confirmedAt: null
       }));
-      console.log('页面卸载时已清理匹配确认状态');
       
       // 移除 websocketManager.disconnect() 调用，保持连接持久
     };
@@ -1142,10 +1079,6 @@ const Home: React.FC = () => {
 
   // 处理匹配成功弹窗的接受
   const handleMatchAccept = async () => {
-    console.log('=== 开始处理匹配接受 ===');
-    console.log('当前匹配ID:', matchSuccessModal.matchId);
-    console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
-    
     try {
       // 设置处理状态，防止重复点击
       setMatchConfirmationState(prev => ({
@@ -1154,9 +1087,7 @@ const Home: React.FC = () => {
       }));
       
       // 调用确认匹配API
-      console.log('调用确认匹配API...');
       const result = await confirmMatch(matchSuccessModal.matchId, true);
-      console.log('确认匹配API返回结果:', result);
       
       // 立即清理匹配确认状态，防止后续消息干扰
       setMatchConfirmationState(prev => ({
@@ -1171,15 +1102,8 @@ const Home: React.FC = () => {
       
       // 跳转到房间页面
       if (result.room_id) {
-        console.log('跳转到房间页面:', result.room_id);
         navigate(`/room/${result.room_id}`);
-      } else {
-        console.log('⚠️ 警告：API返回的room_id为空，可能需要等待match_success消息');
-        // 如果room_id为空，可能需要等待match_success消息
-        // 但我们已经清理了状态，所以不会重复处理
       }
-      
-      console.log('=== 匹配接受处理完成 ===');
     } catch (err) {
       console.error('确认匹配失败:', err);
       error('确认匹配失败');
@@ -1194,10 +1118,6 @@ const Home: React.FC = () => {
 
   // 处理匹配成功弹窗的拒绝
   const handleMatchReject = async () => {
-    console.log('=== 开始处理匹配拒绝 ===');
-    console.log('当前匹配ID:', matchSuccessModal.matchId);
-    console.log('当前匹配确认状态:', matchConfirmationStateRef.current);
-    
     try {
       // 设置处理状态，防止重复点击
       setMatchConfirmationState(prev => ({
@@ -1206,9 +1126,7 @@ const Home: React.FC = () => {
       }));
       
       // 调用拒绝匹配API
-      console.log('调用拒绝匹配API...');
       await confirmMatch(matchSuccessModal.matchId, false);
-      console.log('拒绝匹配API调用成功');
       
       // 立即清理匹配确认状态，防止后续消息干扰
       setMatchConfirmationState(prev => ({
@@ -1220,8 +1138,6 @@ const Home: React.FC = () => {
       setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
       setIsMatching(false); // 拒绝匹配后不再处于匹配状态
       success('已拒绝匹配');
-      
-      console.log('=== 匹配拒绝处理完成 ===');
       
       // TODO: 可以选择是否重新进入匹配队列
     } catch (err) {
@@ -1255,6 +1171,15 @@ const Home: React.FC = () => {
       console.error('创建房间失败:', err);
       error('创建房间失败');
     }
+  };
+
+  // WebSocket消息调试方法
+  const logWebSocketMessage = (message: WebSocketMessage) => {
+    // 不输出ping和pong消息
+    if (message.type === 'ping' || message.type === 'pong') {
+      return;
+    }
+    console.log('[WebSocket] 收到消息:', message);
   };
 
   return (
