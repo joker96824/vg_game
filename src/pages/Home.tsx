@@ -12,7 +12,9 @@ import ChatPanel from '../components/ChatPanel'
 import { websocketManager } from '../services/websocketManager'
 import { createRoom, getUserRoomStatus } from '../services/roomService'
 import CreateRoomModal from '../components/CreateRoomModal'
-import { error } from '../utils/notification'
+import MatchSuccessModal from '../components/MatchSuccessModal'
+import { error, success } from '../utils/notification'
+import { joinMatch, confirmMatch, leaveMatch, getMatchStatus } from '../services/matchService'
 
 interface Friend {
   id: string;
@@ -54,6 +56,7 @@ interface LayoutProps {
   onEnterRoom: () => void;
   onJoinRoom: () => void;
   onMatchGame: () => void;
+  isMatching: boolean;
 }
 
 // 将布局组件提取为独立的组件
@@ -77,7 +80,8 @@ const MobileLayout = React.memo(({
   userRoomStatus,
   onEnterRoom,
   onJoinRoom,
-  onMatchGame
+  onMatchGame,
+  isMatching
 }: LayoutProps) => {
   return (
     <div className="min-h-screen bg-white flex flex-col relative">
@@ -106,13 +110,17 @@ const MobileLayout = React.memo(({
               onClick={onEnterRoom}
             >
               进入房间
-            </button>
+          </button>
           ) : (
             <button 
-              className="w-full py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors"
+              className={`w-full py-3 rounded-xl transition-colors ${
+                isMatching 
+                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
               onClick={onMatchGame}
             >
-              匹配对战
+              {isMatching ? '取消匹配' : '匹配对战'}
             </button>
           )}
           <button 
@@ -278,7 +286,8 @@ const DesktopLayout = React.memo(({
   userRoomStatus,
   onEnterRoom,
   onJoinRoom,
-  onMatchGame
+  onMatchGame,
+  isMatching
 }: Omit<LayoutProps, 'isChatOpen' | 'setIsChatOpen'>) => {
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -291,13 +300,17 @@ const DesktopLayout = React.memo(({
               onClick={onEnterRoom}
             >
               进入房间
-            </button>
+          </button>
           ) : (
             <button 
-              className="px-4 py-1.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm"
+              className={`px-4 py-1.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors text-sm ${
+                isMatching 
+                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
               onClick={onMatchGame}
             >
-              匹配对战
+              {isMatching ? '取消匹配' : '匹配对战'}
             </button>
           )}
           <button 
@@ -445,6 +458,22 @@ const Home: React.FC = () => {
   const [chatTabs, setChatTabs] = useState<{ type: 'world' | 'friend'; friend?: Friend }[]>([{ type: 'world' }]);
   const [activeChatTab, setActiveChatTab] = useState<number>(0);
   const [unreadTabs, setUnreadTabs] = useState<Set<number>>(new Set());
+  
+  // 匹配相关状态
+  const [isMatching, setIsMatching] = useState(false);
+  const [matchSuccessModal, setMatchSuccessModal] = useState<{
+    isOpen: boolean;
+    matchId: string;
+    players: Array<{
+      id: string;
+      nickname: string;
+      avatar: string;
+    }>;
+  }>({
+    isOpen: false,
+    matchId: '',
+    players: []
+  });
 
   // 使用 useRef 存储最新的状态，避免闭包问题
   const chatTabsRef = useRef(chatTabs);
@@ -519,6 +548,19 @@ const Home: React.FC = () => {
     }
   }, []);
 
+  // 获取匹配状态
+  const fetchMatchStatus = useCallback(async () => {
+    try {
+      const matchStatus = await getMatchStatus();
+      setIsMatching(matchStatus.in_queue);
+      console.log('获取匹配状态成功:', matchStatus);
+    } catch (error) {
+      console.error('获取匹配状态失败:', error);
+      // 如果获取失败，默认不在匹配状态
+      setIsMatching(false);
+    }
+  }, []);
+
   useEffect(() => {
     // 加载所有卡组
     const loadDecks = async () => {
@@ -538,7 +580,8 @@ const Home: React.FC = () => {
 
     loadDecks();
     fetchUserRoomStatus(); // 添加获取用户房间状态
-  }, [fetchUserRoomStatus]);
+    fetchMatchStatus();    // 添加获取匹配状态
+  }, [fetchUserRoomStatus, fetchMatchStatus]);
 
   useEffect(() => {
     const checkUnauditedFiles = async () => {
@@ -646,6 +689,28 @@ const Home: React.FC = () => {
           setIsChatOpenRef.current(true);
         }
         break;
+      case 'match_confirmation':
+        // 处理匹配确认消息
+        console.log('收到匹配确认消息:', message);
+        setMatchSuccessModal({
+          isOpen: true,
+          matchId: message.data?.match_id || '',
+          players: message.data?.matched_users || []
+        });
+        // 停止匹配状态
+        setIsMatching(false);
+        break;
+      case 'match_success':
+        // 处理匹配成功消息
+        console.log('收到匹配成功消息:', message);
+        setMatchSuccessModal({
+          isOpen: true,
+          matchId: message.data?.match_id || '',
+          players: message.data?.matched_users || []
+        });
+        // 停止匹配状态
+        setIsMatching(false);
+        break;
       case 'notification':
         // 处理通知消息
         break;
@@ -741,13 +806,35 @@ const Home: React.FC = () => {
 
   // 处理匹配对战
   const handleMatchGame = async () => {
-    if (allDecks.length > 0 && allDecks[selectedDeckIndex]) {
+    if (isMatching) {
+      // 如果正在匹配，则取消匹配
       try {
-        await setDeckPreset(allDecks[selectedDeckIndex].id, 0);
-        console.log('设置匹配对战卡组成功');
-        // TODO: 这里可以添加匹配对战的逻辑
-      } catch (error) {
-        console.error('设置匹配对战卡组失败:', error);
+        await leaveMatch();
+        setIsMatching(false);
+        success('已取消匹配');
+      } catch (err) {
+        console.error('取消匹配失败:', err);
+        error('取消匹配失败');
+      }
+    } else {
+      // 如果未在匹配，则开始匹配
+      if (allDecks.length > 0 && allDecks[selectedDeckIndex]) {
+        try {
+          await setDeckPreset(allDecks[selectedDeckIndex].id, 0);
+          console.log('设置匹配对战卡组成功');
+          
+          // 调用加入匹配API
+          const matchResult = await joinMatch();
+          console.log('加入匹配成功:', matchResult);
+          
+          setIsMatching(true);
+          success('已开始匹配，请等待...');
+        } catch (err) {
+          console.error('开始匹配失败:', err);
+          error('开始匹配失败');
+        }
+      } else {
+        error('请先选择卡组');
       }
     }
   };
@@ -808,6 +895,7 @@ const Home: React.FC = () => {
           onEnterRoom={handleEnterRoom}
           onJoinRoom={handleJoinRoom}
           onMatchGame={handleMatchGame}
+          isMatching={isMatching}
         />
       );
     }
@@ -834,6 +922,7 @@ const Home: React.FC = () => {
         onEnterRoom={handleEnterRoom}
         onJoinRoom={handleJoinRoom}
         onMatchGame={handleMatchGame}
+        isMatching={isMatching}
       />
     );
   }, [
@@ -855,8 +944,48 @@ const Home: React.FC = () => {
     userRoomStatus,
     handleEnterRoom,
     handleJoinRoom,
-    handleMatchGame
+    handleMatchGame,
+    isMatching
   ]);
+
+  // 处理匹配成功弹窗的接受
+  const handleMatchAccept = async () => {
+    try {
+      // 调用确认匹配API
+      const result = await confirmMatch(matchSuccessModal.matchId, true);
+      console.log('确认匹配成功:', result);
+      
+      setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
+      setIsMatching(false); // 确认匹配后不再处于匹配状态
+      success('已接受匹配，正在进入游戏...');
+      
+      // 跳转到房间页面
+      if (result.room_id) {
+        navigate(`/room/${result.room_id}`);
+      }
+    } catch (err) {
+      console.error('确认匹配失败:', err);
+      error('确认匹配失败');
+    }
+  };
+
+  // 处理匹配成功弹窗的拒绝
+  const handleMatchReject = async () => {
+    try {
+      // 调用拒绝匹配API
+      await confirmMatch(matchSuccessModal.matchId, false);
+      console.log('拒绝匹配成功');
+      
+      setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
+      setIsMatching(false); // 拒绝匹配后不再处于匹配状态
+      success('已拒绝匹配');
+      
+      // TODO: 可以选择是否重新进入匹配队列
+    } catch (err) {
+      console.error('拒绝匹配失败:', err);
+      error('拒绝匹配失败');
+    }
+  };
 
   // 处理创建房间
   const handleCreateRoom = async (roomInfo: {
@@ -896,6 +1025,15 @@ const Home: React.FC = () => {
         isOpen={isCreateRoomModalOpen}
         onClose={() => setIsCreateRoomModalOpen(false)}
         onCreateRoom={handleCreateRoom}
+      />
+
+      {/* 匹配成功弹窗 */}
+      <MatchSuccessModal
+        isOpen={matchSuccessModal.isOpen}
+        matchId={matchSuccessModal.matchId}
+        players={matchSuccessModal.players}
+        onAccept={handleMatchAccept}
+        onReject={handleMatchReject}
       />
     </>
   );
