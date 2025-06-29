@@ -834,8 +834,15 @@ const Home: React.FC = () => {
         // 停止匹配状态
         setIsMatching(false);
         
-        // 直接跳转到房间页面
-        navigate(`/room/${successRoomId}`);
+        // 跳转到loading页面而不是房间页面
+        navigate('/loading');
+        break;
+      case 'game_loading':
+        // 处理游戏加载消息
+        logWebSocketMessage(message);
+        
+        // 直接跳转到loading页面
+        navigate('/loading');
         break;
       case 'notification':
         // 处理通知消息

@@ -56,6 +56,7 @@ const Room: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isHost, setIsHost] = useState(false);
+  const [isStartingGame, setIsStartingGame] = useState(false);
   
   // 卡组相关状态
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -205,6 +206,11 @@ const Room: React.FC = () => {
         alert('房间状态', '您已被踢出房间');
         navigate('/');
         break;
+      case 'game_loading':
+        // 游戏加载消息，跳转到loading页面
+        console.log('收到游戏加载消息', message);
+        navigate('/loading');
+        break;
       default:
         break;
     }
@@ -276,6 +282,8 @@ const Room: React.FC = () => {
     if (!isHost || !roomId) return;
     
     try {
+      setIsStartingGame(true); // 设置开始游戏状态，禁用按钮
+      
       // 设置房主的卡组预设
       if (selectedDeck) {
         try {
@@ -287,11 +295,12 @@ const Room: React.FC = () => {
       }
       
       await startGame(roomId);
-      success('游戏开始');
-      // TODO: 跳转到游戏页面
+      success('游戏开始，等待加载...');
+      // 不立即跳转，等待WebSocket的game_loading消息
     } catch (err) {
       console.error('开始游戏失败:', err);
       error('开始游戏失败');
+      setIsStartingGame(false); // 失败时重置状态
     }
   };
 
@@ -542,14 +551,14 @@ const Room: React.FC = () => {
             // 房主显示开始对局按钮
             <button
               onClick={handleStartGame}
-              disabled={!roomPlayers?.players || roomPlayers.players.length <= 1 || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')}
+              disabled={isStartingGame || !roomPlayers?.players || roomPlayers.players.length <= 1 || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')}
               className={`px-6 py-3 rounded-lg text-white shadow-lg ${
-                !roomPlayers?.players || roomPlayers.players.length <= 1 || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')
+                isStartingGame || !roomPlayers?.players || roomPlayers.players.length <= 1 || roomPlayers.players.filter(p => p.player_order !== 1).some(p => p.status !== 'ready')
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-green-500 hover:bg-green-600'
               }`}
             >
-              开始对局
+              {isStartingGame ? '游戏启动中...' : '开始对局'}
             </button>
           ) : (
             // 普通用户显示准备按钮

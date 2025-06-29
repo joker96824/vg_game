@@ -281,7 +281,7 @@ export const toggleReady = async (roomId: string): Promise<void> => {
 // 开始游戏
 export const startGame = async (roomId: string): Promise<void> => {
   try {
-    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.ROOMS}/${roomId}/start`, {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.ROOMS}/${roomId}/loading`, {
       method: 'POST'
     });
 

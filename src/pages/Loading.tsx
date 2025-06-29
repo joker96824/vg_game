@@ -85,19 +85,14 @@ const Loading: React.FC = () => {
       const response = await getRoomUsers(roomId);
       setRoomPlayers(response);
       
-      // 检查是否所有玩家都准备好了
-      const allReady = response.players.every(player => player.status === 'ready');
-      if (allReady && response.players.length >= 2) {
-        // 如果所有玩家都准备好了，跳转到房间页面
-        navigate(`/room/${roomId}`);
-      }
+      // 移除自动跳转逻辑，因为不再持续检查状态
     } catch (err) {
       console.error('获取房间用户列表失败:', err);
       error('获取房间信息失败');
     } finally {
       setIsLoading(false);
     }
-  }, [roomId, navigate]);
+  }, [roomId]);
 
   // 初始化数据
   useEffect(() => {
@@ -110,12 +105,7 @@ const Loading: React.FC = () => {
   useEffect(() => {
     if (roomId) {
       fetchRoomUsers();
-      // 设置定时器，定期检查房间状态
-      const interval = setInterval(() => {
-        fetchRoomUsers();
-      }, 2000); // 每2秒检查一次
-
-      return () => clearInterval(interval);
+      // 移除定时器，只在刚进入时获取一次
     }
   }, [roomId, fetchRoomUsers]);
 
