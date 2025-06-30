@@ -17,6 +17,7 @@ import AvatarAudit from './pages/admin/AvatarAudit'
 import Room from './pages/Room'
 import RoomList from './pages/RoomList'
 import Loading from './pages/Loading'
+import Game from './pages/Game'
 import { websocketManager } from './services/websocketManager'
 
 // 初始化 WebSocket 管理器
@@ -59,6 +60,11 @@ root.render(
           <Route path="/loading" element={
             <PrivateRoute>
               <Loading />
+            </PrivateRoute>
+          } />
+          <Route path="/game" element={
+            <PrivateRoute>
+              <Game />
             </PrivateRoute>
           } />
           <Route path="/admin/permissions" element={

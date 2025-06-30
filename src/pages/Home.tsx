@@ -574,6 +574,10 @@ const Home: React.FC = () => {
       if (status.in_room && status.room_id && status.status === 'loading') {
         navigate('/loading');
       }
+      // 如果用户在房间中且状态为gaming，跳转到game页面
+      else if (status.in_room && status.room_id && status.status === 'gaming') {
+        navigate('/game');
+      }
     } catch (error) {
       console.error('获取用户房间状态失败:', error);
     }

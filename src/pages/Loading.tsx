@@ -8,6 +8,7 @@ import { resourceLoader } from '../services/resourceLoader';
 import { error } from '../utils/notification';
 import { IMAGE_BASE_URL } from '../constants/api';
 import { imageCache } from '../utils/image/imageCache';
+import { websocketManager } from '../services/websocketManager';
 
 interface RoomUser {
   id: string;
@@ -55,6 +56,9 @@ const Loading: React.FC = () => {
   
   // 添加标记确保只执行一次
   const [hasStartedPreload, setHasStartedPreload] = useState(false);
+  
+  // 添加游戏开始状态
+  const [gameStartReceived, setGameStartReceived] = useState(false);
 
   // 获取当前用户信息
   useEffect(() => {
@@ -222,6 +226,36 @@ const Loading: React.FC = () => {
       startResourcePreload();
     }
   }, [roomPlayers, hasStartedPreload, startResourcePreload]);
+
+  // WebSocket消息处理
+  const handleWebSocketMessage = useCallback((message: any) => {
+    switch (message.type) {
+      case 'game_start':
+        // 游戏开始消息，设置状态但不立即跳转
+        console.log('收到游戏开始消息:', message);
+        setGameStartReceived(true);
+        break;
+      default:
+        break;
+    }
+  }, []);
+
+  // 检查是否可以跳转到游戏页面
+  useEffect(() => {
+    if (preloadComplete && gameStartReceived) {
+      console.log('资源加载完成且收到游戏开始消息，跳转到游戏页面');
+      navigate('/game');
+    }
+  }, [preloadComplete, gameStartReceived, navigate]);
+
+  // 设置WebSocket监听
+  useEffect(() => {
+    websocketManager.addMessageListener(handleWebSocketMessage);
+    
+    return () => {
+      websocketManager.removeMessageListener(handleWebSocketMessage);
+    };
+  }, [handleWebSocketMessage]);
 
   // 获取前两位玩家信息
   const getFirstTwoPlayers = () => {
