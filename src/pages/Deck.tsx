@@ -10,6 +10,7 @@ import { getDecks, saveDeck, createDeck, deleteDeck, setDeckPreset, updateDeckIn
 import type { Deck, DeckCard } from '../types/deck';
 import Toast from '../components/Toast';
 import { getCardImageUrl, handleCardImageError } from '../utils/image/imageUtils';
+import { error, confirm } from '../utils/notification';
 
 const Deck: React.FC = () => {
   const navigate = useNavigate();
@@ -184,7 +185,8 @@ const Deck: React.FC = () => {
   const handleDelete = async () => {
     if (!selectedDeck) return;
     
-    if (window.confirm('确定要删除这个卡组吗？此操作不可恢复。')) {
+    const confirmed = await confirm('删除卡组', '确定要删除这个卡组吗？此操作不可恢复。', { type: 'danger' });
+    if (confirmed) {
       try {
         await deleteDeck(selectedDeck.id);
         // 刷新卡组列表

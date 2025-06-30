@@ -3,7 +3,6 @@ import { searchUsers } from '../services/authService';
 import { sendFriendRequest, getFriendRequests, acceptFriendRequest, rejectFriendRequest, getFriends, deleteFriend } from '../services/friendService';
 import { useNavigate } from 'react-router-dom';
 import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
-import defaultAvatar from '../assets/default-avatar.png';
 
 interface FriendMenuProps {
   isOpen: boolean;
@@ -13,7 +12,7 @@ interface FriendMenuProps {
 }
 
 interface SearchResult {
-  id: number;
+  id: string;
   username: string;
   nickname: string;
   avatar: string;
@@ -33,12 +32,12 @@ interface FriendRequest {
 }
 
 interface Friend {
-  id: number;
+  id: string;
   username: string;
   nickname: string;
   avatar: string;
   is_blocked: boolean;
-  friend_id: number;
+  friend_id: string;
   friend_username: string;
   friend_nickname: string;
   friend_avatar: string;
@@ -183,7 +182,7 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
 
     setIsSending(true);
     try {
-      await sendFriendRequest(selectedUser.id, requestMessage);
+      await sendFriendRequest(selectedUser.id.toString(), requestMessage);
       setToastMessage({ type: 'success', message: '发送好友请求成功' });
     } catch (error) {
       console.error('发送好友请求失败:', error);
@@ -588,10 +587,11 @@ const FriendMenu: React.FC<FriendMenuProps> = ({ isOpen, onClose, position, onSt
                       </div>
                       <div className="flex space-x-2">
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (onStartChat) {
                               onStartChat(friend);
-                              onClose();
                               setIsFriendListOpen(false);
                             }
                           }}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getUnauditedFiles, updateFileStatus } from '../../services/authService';
-import Toast from '../../components/Toast';
+import { success, error } from '../../utils/notification';
 import { IMAGE_BASE_URL } from '../../constants/api';
 
 interface UnauditedFile {
@@ -20,7 +20,6 @@ interface ProcessedFile extends UnauditedFile {
 const AvatarAudit: React.FC = () => {
   const navigate = useNavigate();
   const [unauditedFiles, setUnauditedFiles] = useState<ProcessedFile[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // 检查用户权限
@@ -74,47 +73,47 @@ const AvatarAudit: React.FC = () => {
         if (!existingFile || file.timestamp > existingFile.timestamp) {
           // 如果存在旧文件，将其标记为无效
           if (existingFile) {
-            updateFileStatus(existingFile.filename, 'Unvalid').catch(error => {
-              console.error('自动标记旧头像为无效失败:', error);
+            updateFileStatus(existingFile.filename, 'Unvalid').catch(err => {
+              console.error('自动标记旧头像为无效失败:', err);
             });
           }
           return [...acc.filter((f: ProcessedFile) => f.userId !== file.userId), file];
         }
         // 如果当前文件不是最新的，将其标记为无效
-        updateFileStatus(file.filename, 'Unvalid').catch(error => {
-          console.error('自动标记旧头像为无效失败:', error);
+        updateFileStatus(file.filename, 'Unvalid').catch(err => {
+          console.error('自动标记旧头像为无效失败:', err);
         });
         return acc;
       }, [] as ProcessedFile[]);
 
       setUnauditedFiles(latestFiles);
-    } catch (error) {
-      console.error('获取未审核文件失败:', error);
-      setToastMessage('获取未审核文件失败');
+    } catch (err) {
+      console.error('获取未审核文件失败:', err);
+      error('获取未审核文件失败');
     }
   };
 
   const handleApprove = async (file: ProcessedFile) => {
     try {
       await updateFileStatus(file.filename, 'Valid');
-      setToastMessage('审核通过成功');
+      success('审核通过成功');
       // 刷新文件列表
       fetchUnauditedFiles();
-    } catch (error) {
-      console.error('审核通过失败:', error);
-      setToastMessage('审核通过失败');
+    } catch (err) {
+      console.error('审核通过失败:', err);
+      error('审核通过失败');
     }
   };
 
   const handleReject = async (file: ProcessedFile) => {
     try {
       await updateFileStatus(file.filename, 'Unvalid');
-      setToastMessage('审核拒绝成功');
+      success('审核拒绝成功');
       // 刷新文件列表
       fetchUnauditedFiles();
-    } catch (error) {
-      console.error('审核拒绝失败:', error);
-      setToastMessage('审核拒绝失败');
+    } catch (err) {
+      console.error('审核拒绝失败:', err);
+      error('审核拒绝失败');
     }
   };
 
@@ -203,10 +202,6 @@ const AvatarAudit: React.FC = () => {
           )}
         </div>
       </div>
-
-      {toastMessage && (
-        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
-      )}
     </div>
   );
 };

@@ -7,7 +7,7 @@ import { getAvatarUrl, handleImageError } from '../utils/image/imageUtils';
 interface SettingsMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  position: { left: number; bottom: number } | null;
+  position?: { left: number; bottom: number } | null;
 }
 
 interface User {

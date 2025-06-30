@@ -63,7 +63,7 @@ export const rejectFriendRequest = async (requestId: string) => {
   return data;
 };
 
-export const sendFriendRequest = async (receiverId: number, message: string) => {
+export const sendFriendRequest = async (receiverId: string, message: string) => {
   const response = await createAuthenticatedRequest(`${API_ENDPOINTS.FRIEND}/requests`, {
     method: 'POST',
     headers: {
@@ -85,7 +85,7 @@ export const sendFriendRequest = async (receiverId: number, message: string) => 
   return data;
 };
 
-export const deleteFriend = async (friendId: number) => {
+export const deleteFriend = async (friendId: string) => {
   const response = await createAuthenticatedRequest(`${API_ENDPOINTS.FRIEND}/${friendId}`, {
     method: 'DELETE',
   });

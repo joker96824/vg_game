@@ -22,6 +22,13 @@ const responseInterceptor = async (response: Response): Promise<Response> => {
     removeToken();
     throw new Error('登录已过期，请重新登录');
   }
+  
+  // 处理其他错误状态码
+  if (!response.ok) {
+    // 对于非2xx状态码，返回响应对象，让调用方处理具体的错误信息
+    return response;
+  }
+  
   return response;
 };
 
