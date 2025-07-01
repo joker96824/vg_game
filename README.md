@@ -1,6 +1,7 @@
 # VG Game
 
 一个使用 Electron + React + TypeScript 构建的跨平台游戏应用。
+更新测试
 
 ## 技术栈
 
