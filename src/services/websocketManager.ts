@@ -7,6 +7,7 @@ class WebSocketManager {
     private connectionCallbacks: Set<(connected: boolean) => void> = new Set();
     private authCallbacks: Set<(authenticated: boolean) => void> = new Set();
     private errorCallbacks: Set<(error: string) => void> = new Set();
+    private isConnecting: boolean = false;
 
     constructor() {
         this.wsService = WebSocketService.getInstance(WS_BASE_URL);
@@ -17,6 +18,9 @@ class WebSocketManager {
         // 设置 WebSocket 回调
         this.wsService.setConnectionChangeCallback((connected) => {
             this.connectionCallbacks.forEach(callback => callback(connected));
+            if (connected) {
+                this.isConnecting = false;
+            }
         });
 
         this.wsService.setAuthChangeCallback((authenticated) => {
@@ -29,13 +33,18 @@ class WebSocketManager {
 
         this.wsService.setErrorCallback((error) => {
             this.errorCallbacks.forEach(callback => callback(error));
+            this.isConnecting = false;
         });
-
-        // 自动连接
-        this.connect();
     }
 
     public connect() {
+        if (this.isConnected() || this.isConnecting) {
+            console.log('WebSocket已经连接或正在连接中，跳过重复连接');
+            return;
+        }
+
+        this.isConnecting = true;
+        console.log('开始连接WebSocket...');
         this.wsService.connect();
     }
 

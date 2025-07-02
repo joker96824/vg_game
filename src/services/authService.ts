@@ -97,6 +97,11 @@ export const register = async (mobile: string, smsCode: string) => {
   if (data.success) {
     localStorage.setItem('token', data.data.token);
     localStorage.setItem('user', JSON.stringify(data.data.user));
+    
+    // 注册成功后连接WebSocket
+    const { websocketManager } = await import('./websocketManager');
+    console.log('注册成功，开始连接WebSocket...');
+    websocketManager.connect();
   }
   return data;
 };
@@ -127,6 +132,11 @@ export const registerByEmail = async (email: string, emailCode: string) => {
   if (data.success) {
     localStorage.setItem('token', data.data.token);
     localStorage.setItem('user', JSON.stringify(data.data.user));
+    
+    // 注册成功后连接WebSocket
+    const { websocketManager } = await import('./websocketManager');
+    console.log('注册成功，开始连接WebSocket...');
+    websocketManager.connect();
   }
   return data;
 };
@@ -154,6 +164,11 @@ export const loginByEmail = async (email: string, password: string, captcha?: st
     localStorage.setItem('token', data.data.token);
     localStorage.setItem('user', JSON.stringify(data.data.user));
     logTokenInfo(data.data.token, '登录');
+    
+    // 登录成功后连接WebSocket
+    const { websocketManager } = await import('./websocketManager');
+    console.log('登录成功，开始连接WebSocket...');
+    websocketManager.connect();
   }
   return data;
 };
@@ -258,6 +273,11 @@ export const login = async (mobile: string, password: string, captcha?: string) 
     localStorage.setItem('token', data.data.token);
     localStorage.setItem('user', JSON.stringify(data.data.user));
     logTokenInfo(data.data.token, '登录');
+    
+    // 登录成功后连接WebSocket
+    const { websocketManager } = await import('./websocketManager');
+    console.log('登录成功，开始连接WebSocket...');
+    websocketManager.connect();
   }
   return data;
 };

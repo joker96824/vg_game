@@ -20,9 +20,9 @@ import Loading from './pages/Loading'
 import Game from './pages/Game'
 import { websocketManager } from './services/websocketManager'
 
-// 初始化 WebSocket 管理器
-console.log('初始化 WebSocket 管理器...');
-websocketManager.connect();
+// 移除应用启动时的WebSocket连接
+// console.log('初始化 WebSocket 管理器...');
+// websocketManager.connect();
 
 const container = document.getElementById('root')!;
 const root = createRoot(container);

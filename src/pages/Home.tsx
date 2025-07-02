@@ -711,8 +711,8 @@ const Home: React.FC = () => {
           return [...prev, message];
         });
 
-        // 如果是好友消息，自动打开聊天面板
-        if (!isCurrentUserMessage && message.sender_id) {
+        // 如果是私聊消息（有receiver_id），自动打开聊天面板
+        if (!isCurrentUserMessage && message.sender_id && message.receiver_id) {
           // 检查是否已经存在与该好友的聊天标签页
           const existingTabIndex = chatTabsRef.current.findIndex(
             tab => tab.type === 'friend' && tab.friend?.friend_id === message.sender_id
@@ -748,8 +748,6 @@ const Home: React.FC = () => {
         break;
       case 'match_confirmation':
         // 处理匹配确认消息
-        logWebSocketMessage(message);
-        
         const matchId = message.data?.match_id || '';
         const matchedUsers = message.data?.matched_users || [];
         
@@ -800,8 +798,6 @@ const Home: React.FC = () => {
         break;
       case 'match_success':
         // 处理匹配成功消息
-        logWebSocketMessage(message);
-        
         const successMatchId = message.data?.match_id || '';
         const successRoomId = message.data?.room_id || '';
         const successRoomName = message.data?.room_name || '';
@@ -843,8 +839,6 @@ const Home: React.FC = () => {
         break;
       case 'game_loading':
         // 处理游戏加载消息
-        logWebSocketMessage(message);
-        
         // 直接跳转到loading页面
         navigate('/loading');
         break;
@@ -856,8 +850,6 @@ const Home: React.FC = () => {
         break;
       case 'room_dissolved':
         // 处理房间解散消息
-        logWebSocketMessage(message);
-        
         // 如果用户当前在房间中，更新状态为不在房间
         if (userRoomStatusRef.current?.in_room) {
           setUserRoomStatus({
@@ -872,8 +864,6 @@ const Home: React.FC = () => {
         break;
       case 'room_kicked':
         // 处理被踢出房间消息
-        logWebSocketMessage(message);
-        
         // 如果用户当前在房间中，更新状态为不在房间
         if (userRoomStatusRef.current?.in_room) {
           setUserRoomStatus({
@@ -890,6 +880,13 @@ const Home: React.FC = () => {
   }, []); // 空依赖数组，使用ref访问最新状态
 
   useEffect(() => {
+    // 检查是否有token，如果有则连接WebSocket
+    const token = localStorage.getItem('token');
+    if (token) {
+      console.log('检测到token，连接WebSocket...');
+      websocketManager.connect();
+    }
+
     // 设置WebSocket回调
     const connectionListener = (connected: boolean) => {
       // WebSocket连接状态变化
@@ -905,9 +902,6 @@ const Home: React.FC = () => {
     websocketManager.addAuthListener(authListener);
     websocketManager.addMessageListener(handleWebSocketMessage);
     websocketManager.addErrorListener(errorListener);
-
-    // 连接WebSocket
-    websocketManager.connect();
 
     // 清理函数 - 只移除监听器，不断开连接
     return () => {
@@ -1187,15 +1181,6 @@ const Home: React.FC = () => {
       console.error('创建房间失败:', err);
       error('创建房间失败');
     }
-  };
-
-  // WebSocket消息调试方法
-  const logWebSocketMessage = (message: WebSocketMessage) => {
-    // 不输出ping和pong消息
-    if (message.type === 'ping' || message.type === 'pong') {
-      return;
-    }
-    console.log('[WebSocket] 收到消息:', message);
   };
 
   return (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { login, loginByEmail, getCaptcha, clearLoginErrors, logout, getToken } from '../services/authService';
+import { websocketManager } from '../services/websocketManager';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -35,6 +36,11 @@ const Login: React.FC = () => {
         // 保存 token 和用户信息
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // 登录成功后连接WebSocket
+        console.log('登录成功，开始连接WebSocket...');
+        websocketManager.connect();
+        
         // 清除登录错误
         await handleClearErrors();
         // 获取来源页面，如果没有则跳转到主页

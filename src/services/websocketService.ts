@@ -134,7 +134,9 @@ export class WebSocketService {
         this.ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data) as WebSocketMessage;
-                console.log('[WebSocket] 收到消息:', message);
+                if (message.type != 'ping' && message.type != 'pong') {
+                    console.log('[WebSocket] 收到消息:', message);
+                }
                 
                 switch (message.type) {
                     case 'auth_success':
