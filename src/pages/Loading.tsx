@@ -59,6 +59,8 @@ const Loading: React.FC = () => {
   
   // 添加游戏开始状态
   const [gameStartReceived, setGameStartReceived] = useState(false);
+  // 添加游戏状态消息存储
+  const [gameStateMessage, setGameStateMessage] = useState<any>(null);
 
   // 获取当前用户信息
   useEffect(() => {
@@ -82,8 +84,14 @@ const Loading: React.FC = () => {
       const status = await getUserRoomStatus();
       if (status.in_room && status.room_id) {
         setRoomId(status.room_id);
-        // 如果状态不是loading，跳转到房间页面
+        // 如果状态是gaming，直接跳转到游戏页面
+        if (status.status === 'gaming') {
+          navigate('/game');
+          return;
+        }
+        // 如果状态不是loading，跳转回房间页面
         if (status.status !== 'loading') {
+          console.log('房间状态不是loading，跳转回房间页面');
           navigate(`/room/${status.room_id}`);
           return;
         }
@@ -230,10 +238,11 @@ const Loading: React.FC = () => {
   // WebSocket消息处理
   const handleWebSocketMessage = useCallback((message: any) => {
     switch (message.type) {
-      case 'game_start':
+      case 'game_start_with_state':
         // 游戏开始消息，设置状态但不立即跳转
         console.log('收到游戏开始消息:', message);
         setGameStartReceived(true);
+        setGameStateMessage(message);
         break;
       default:
         break;
@@ -244,9 +253,9 @@ const Loading: React.FC = () => {
   useEffect(() => {
     if (preloadComplete && gameStartReceived) {
       console.log('资源加载完成且收到游戏开始消息，跳转到游戏页面');
-      navigate('/game');
+      navigate('/game', { state: { gameStateMessage } });
     }
-  }, [preloadComplete, gameStartReceived, navigate]);
+  }, [preloadComplete, gameStartReceived, gameStateMessage, navigate]);
 
   // 设置WebSocket监听
   useEffect(() => {
