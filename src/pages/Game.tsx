@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { getBattleState } from '../services/battleService';
+import { error } from '../utils/notification';
 
 const Game: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [gameState, setGameState] = useState<any>(null);
+  const [battleState, setBattleState] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 获取当前用户信息
   useEffect(() => {
@@ -23,32 +25,59 @@ const Game: React.FC = () => {
     }
   }, [navigate]);
 
-  // 获取从Loading页面传递的游戏状态消息
+  // 获取battle状态
   useEffect(() => {
-    const gameStateMessage = location.state?.gameStateMessage;
-    if (gameStateMessage) {
-      console.log('接收到游戏状态消息:', gameStateMessage);
-      setGameState(gameStateMessage);
-    } else {
-      console.warn('未接收到游戏状态消息，可能需要重新进入游戏');
-      // 如果没有接收到游戏状态消息，可以选择跳转回首页或显示错误信息
-      // navigate('/');
+    const fetchBattleState = async () => {
+      try {
+        console.log('获取battle状态');
+        const state = await getBattleState();
+        setBattleState(state);
+        console.log('battle状态:', state);
+        
+      } catch (err) {
+        console.error('获取battle状态失败:', err);
+        error('获取battle状态失败');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (currentUser) {
+      fetchBattleState();
     }
-  }, [location.state]);
+  }, [currentUser]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">加载中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-4">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-800 mb-4">游戏进行中</h1>
-        <p className="text-gray-600 mb-8">游戏页面开发中...</p>
         
-        {/* 显示游戏状态信息 */}
-        {gameState && (
-          <div className="mb-8 p-4 bg-white rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">游戏状态信息</h2>
-            <pre className="text-sm text-gray-600 text-left overflow-auto max-h-40">
-              {JSON.stringify(gameState, null, 2)}
-            </pre>
+        {/* 显示battle状态信息 */}
+        {battleState ? (
+          <>
+            <p className="text-gray-600 mb-8">游戏页面开发中...</p>
+            <div className="mb-8 p-4 bg-white rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">Battle状态</h2>
+              <pre className="text-sm text-gray-600 text-left overflow-auto max-h-40">
+                {JSON.stringify(battleState, null, 2)}
+              </pre>
+            </div>
+          </>
+        ) : (
+          <div className="mb-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">正在获取游戏状态...</p>
           </div>
         )}
         

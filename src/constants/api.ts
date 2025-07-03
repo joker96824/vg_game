@@ -15,4 +15,5 @@ export const API_ENDPOINTS = {
   FRIEND: `${API_BASE_URL}/friends`,
   ROOMS: `${API_BASE_URL}/rooms`,
   MATCH: `${API_BASE_URL}/match`,
+  BATTLES: `${API_BASE_URL}/battles`,
 } as const; 

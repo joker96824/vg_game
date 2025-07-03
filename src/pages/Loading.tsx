@@ -59,8 +59,6 @@ const Loading: React.FC = () => {
   
   // 添加游戏开始状态
   const [gameStartReceived, setGameStartReceived] = useState(false);
-  // 添加游戏状态消息存储
-  const [gameStateMessage, setGameStateMessage] = useState<any>(null);
 
   // 获取当前用户信息
   useEffect(() => {
@@ -238,11 +236,10 @@ const Loading: React.FC = () => {
   // WebSocket消息处理
   const handleWebSocketMessage = useCallback((message: any) => {
     switch (message.type) {
-      case 'game_start_with_state':
+      case 'game_start':
         // 游戏开始消息，设置状态但不立即跳转
         console.log('收到游戏开始消息:', message);
         setGameStartReceived(true);
-        setGameStateMessage(message);
         break;
       default:
         break;
@@ -253,9 +250,9 @@ const Loading: React.FC = () => {
   useEffect(() => {
     if (preloadComplete && gameStartReceived) {
       console.log('资源加载完成且收到游戏开始消息，跳转到游戏页面');
-      navigate('/game', { state: { gameStateMessage } });
+      navigate('/game');
     }
-  }, [preloadComplete, gameStartReceived, gameStateMessage, navigate]);
+  }, [preloadComplete, gameStartReceived, navigate]);
 
   // 设置WebSocket监听
   useEffect(() => {
