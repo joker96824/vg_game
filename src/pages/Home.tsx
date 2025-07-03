@@ -880,13 +880,6 @@ const Home: React.FC = () => {
   }, []); // 空依赖数组，使用ref访问最新状态
 
   useEffect(() => {
-    // 检查是否有token，如果有则连接WebSocket
-    const token = localStorage.getItem('token');
-    if (token) {
-      console.log('检测到token，连接WebSocket...');
-      websocketManager.connect();
-    }
-
     // 设置WebSocket回调
     const connectionListener = (connected: boolean) => {
       // WebSocket连接状态变化
