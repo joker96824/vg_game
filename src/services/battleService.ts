@@ -21,4 +21,26 @@ export const getBattleState = async () => {
     console.error('获取battle状态失败:', error);
     throw error;
   }
+};
+
+// 投降
+export const surrender = async () => {
+  try {
+    const response = await createAuthenticatedRequest(`${API_ENDPOINTS.BATTLES}/surrender`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('投降失败');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('投降失败:', error);
+    throw error;
+  }
 }; 
