@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getBattleState, surrender } from '../services/battleService';
-import { error, success } from '../utils/notification';
+import { error, success, alert } from '../utils/notification';
+import { websocketManager } from '../services/websocketManager';
+import { WebSocketMessage } from '../services/websocketService';
+
 
 const Game: React.FC = () => {
   const navigate = useNavigate();
@@ -59,6 +62,33 @@ const Game: React.FC = () => {
       error('投降失败');
     }
   };
+
+    // WebSocket消息处理
+    const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
+      switch (message.type) {
+        case 'room_dissolved':
+          // 房间被解散，跳转到首页
+          alert('房间状态', '房间已被解散');
+          navigate('/');
+          break;
+        case 'room_kicked':
+          // 被踢出房间，跳转到首页
+          alert('房间状态', '您已被踢出房间');
+          navigate('/');
+          break;
+        default:
+          break;
+      }
+    }, [navigate]);
+  
+    // 设置WebSocket监听
+    useEffect(() => {
+      websocketManager.addMessageListener(handleWebSocketMessage);
+      
+      return () => {
+        websocketManager.removeMessageListener(handleWebSocketMessage);
+      };
+    }, [handleWebSocketMessage]);
 
   if (isLoading) {
     return (

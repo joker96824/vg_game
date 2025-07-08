@@ -811,7 +811,7 @@ const Home: React.FC = () => {
         // 如果match_success消息的match_id为空，使用当前处理的匹配ID
         const effectiveMatchId = successMatchId || matchConfirmationStateRef.current.currentMatchId || '';
         
-        // 如果已经确认过这个匹配，忽略消息
+        // 如果已经确认过这个匹配，忽略消息（避免重复跳转）
         if (matchConfirmationStateRef.current.confirmedAt && matchConfirmationStateRef.current.currentMatchId === effectiveMatchId) {
           return;
         }
@@ -1092,21 +1092,19 @@ const Home: React.FC = () => {
       // 调用确认匹配API
       const result = await confirmMatch(matchSuccessModal.matchId, true);
       
-      // 立即清理匹配确认状态，防止后续消息干扰
+      // 设置确认时间，防止WebSocket消息重复跳转
       setMatchConfirmationState(prev => ({
         isProcessing: false,
-        currentMatchId: null,
-        confirmedAt: null
+        currentMatchId: prev.currentMatchId,
+        confirmedAt: new Date().toISOString()
       }));
       
       setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
       setIsMatching(false); // 确认匹配后不再处于匹配状态
       success('已接受匹配，正在进入游戏...');
       
-      // 跳转到房间页面
-      if (result.room_id) {
-        navigate(`/room/${result.room_id}`);
-      }
+      // 跳转到loading页面而不是房间页面
+      navigate('/loading');
     } catch (err) {
       console.error('确认匹配失败:', err);
       error('确认匹配失败');
@@ -1131,11 +1129,11 @@ const Home: React.FC = () => {
       // 调用拒绝匹配API
       await confirmMatch(matchSuccessModal.matchId, false);
       
-      // 立即清理匹配确认状态，防止后续消息干扰
+      // 设置确认时间，防止WebSocket消息重复跳转
       setMatchConfirmationState(prev => ({
         isProcessing: false,
-        currentMatchId: null,
-        confirmedAt: null
+        currentMatchId: prev.currentMatchId,
+        confirmedAt: new Date().toISOString()
       }));
       
       setMatchSuccessModal(prev => ({ ...prev, isOpen: false }));
