@@ -1,4 +1,4 @@
-export type MessageType = 'auth' | 'auth_success' | 'auth_error' | 'test' | 'ping' | 'pong' | 'chat' | 'notification' | 'system_notification' | 'error' | 'room_user_update' | 'room_info_update' | 'room_dissolved' | 'room_kicked' | 'match_success' | 'match_cancel' | 'match_accept' | 'match_reject' | 'match_confirmation' | 'game_loading' | 'game_start';
+export type MessageType = 'auth' | 'auth_success' | 'auth_error' | 'test' | 'ping' | 'pong' | 'chat' | 'notification' | 'system_notification' | 'error' | 'room_user_update' | 'room_info_update' | 'room_dissolved' | 'room_kicked' | 'match_success' | 'match_cancel' | 'match_accept' | 'match_reject' | 'match_confirmation' | 'game_loading' | 'game_start' | 'state_update' | 'coin_result';
 
 export interface WebSocketMessage {
     type: MessageType;
