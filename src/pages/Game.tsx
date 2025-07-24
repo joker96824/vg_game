@@ -18,6 +18,71 @@ interface CardPosition {
   isOwner?: boolean;
 }
 
+// 先导者游戏区域定义
+interface GameZone {
+  id: string;
+  name: string;
+  translate?: string; // 用于CSS translate
+  rotation?: number; // 卡片旋转角度
+  isHorizontal?: boolean; // 是否横置
+  maxCards?: number; // 最大卡片数量
+  isHand?: boolean; // 是否为手牌扇形排列
+}
+
+// 游戏状态接口
+interface GameState {
+  currentTurn: number;
+  phase: string;
+  player1_field: {
+    g: any[]; // 防守区
+    v: any[]; // 先导者
+    coa: any[]; // 纹章
+    deck: any[]; // 卡组
+    drop: any[]; // 弃牌区
+    hand: any[]; // 手牌
+    leftfront: any[]; // 左前
+    leftback: any[]; // 左后
+    rightfront: any[]; // 右前
+    rightback: any[]; // 右后
+    vback: any[]; // v后
+    damage: any[]; // 伤害区
+    instruction: any[]; // 指令区
+    trigger: any[]; // 判定区
+    gdeck: any[]; // g卡组
+    spacetime: any[]; // 时空区
+    seal: any[]; // 封存
+    ride: any[]; // 骑升轴
+  };
+  player2_field: {
+    // 与player1_field相同的结构
+    g: any[];
+    v: any[];
+    coa: any[];
+    deck: any[];
+    drop: any[];
+    hand: any[];
+    leftfront: any[];
+    leftback: any[];
+    rightfront: any[];
+    rightback: any[];
+    vback: any[];
+    damage: any[];
+    instruction: any[];
+    trigger: any[];
+    gdeck: any[];
+    spacetime: any[];
+    seal: any[];
+    ride: any[];
+  };
+  player1_id: string;
+  player2_id: string;
+  current_player: string;
+  first_player: string;
+  turn_number: number;
+  created_at: string;
+  updated_at: string;
+}
+
 const Game: React.FC = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -42,6 +107,89 @@ const Game: React.FC = () => {
   const [cardAnimations, setCardAnimations] = useState<{[key: string]: any}>({});
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // WebSocket连接状态监控
+  const [wsConnected, setWsConnected] = useState(false);
+  const [wsAuthenticated, setWsAuthenticated] = useState(false);
+
+  // 先导者游戏状态
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [isPlayer1, setIsPlayer1] = useState<boolean | null>(null);
+
+  // 页面高度状态
+  const [pageHeight, setPageHeight] = useState<number>(window.innerHeight);
+  const [pageWidth, setPageWidth] = useState<number>(window.innerWidth);
+
+  // 卡牌图片尺寸状态
+  const [cardImageRatio, setCardImageRatio] = useState<number>(0.75); // 默认3:4比例
+
+  // 3D视角状态
+  const [is3DView, setIs3DView] = useState<boolean>(false);
+
+  // 计算标准高度（页面高度的1/8）
+  const standardHeight = pageHeight / 7.1;
+  const standardWidth = pageWidth / 8;
+
+  // 检测卡牌图片的实际长宽比
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      const ratio = img.width / img.height;
+      console.log('卡牌图片实际长宽比:', ratio, '尺寸:', img.width, 'x', img.height);
+      setCardImageRatio(ratio);
+    };
+    img.onerror = () => {
+      console.warn('无法加载卡牌图片，使用默认比例0.75');
+      setCardImageRatio(0.75);
+    };
+    img.src = defaultCard;
+  }, []);
+
+  // 计算卡牌尺寸
+  const cardHeight = standardHeight * 0.875;
+  const cardWidth = cardHeight * cardImageRatio;
+
+  // 游戏区域配置 - 使用translate直接定位，调整位置以适应更大的屏幕空间
+  const gameZones: GameZone[] = [
+    // 己方区域 - 使用translate直接定位，调整位置以适应更大的屏幕空间
+    // 所有translate值都以区域中心为基准（区域大小为cardWidth x cardHeight）
+    // 使用卡牌尺寸来调整位置，区域尺寸与卡牌尺寸完全一致
+    { id: 'ride', name: '骑升轴', translate: `translate(${cardWidth * 4}px, ${cardHeight * 1.5}px)` },
+    { id: 'deck', name: '卡组', translate: `translate(${cardWidth * 3}px, ${cardHeight * 1.5}px)` },
+    { id: 'hand', name: '手牌', translate: `translate(0px, ${cardHeight * 3.5}px)`, isHand: true }, // 手牌特殊处理，调整到更底部
+    { id: 'drop', name: '弃牌区', translate: `translate(${cardWidth * 3}px, ${cardHeight * 2.5}px)` },
+    { id: 'v', name: 'V', translate: `translate(0px, ${cardHeight * 1.5}px)` },
+    { id: 'leftfront', name: 'R', translate: `translate(${-cardWidth * 1.5}px, ${cardHeight * 1.5}px)` },
+    { id: 'leftback', name: 'R', translate: `translate(${-cardWidth * 1.5}px, ${cardHeight * 2.5}px)` },
+    { id: 'rightfront', name: 'R', translate: `translate(${cardWidth * 1.5}px, ${cardHeight * 1.5}px)` },
+    { id: 'rightback', name: 'R', translate: `translate(${cardWidth * 1.5}px, ${cardHeight * 2.5}px)` },
+    { id: 'vback', name: 'R', translate: `translate(0px, ${cardHeight * 2.5}px)` },
+    { id: 'g', name: 'G', translate: `translate(0px, ${cardHeight * 0.5}px)`, rotation: 90 },
+    { id: 'damage', name: '伤害区', translate: `translate(${-cardWidth * 3}px, ${cardHeight * 2.5}px)`, rotation: 90 },
+    { id: 'instruction', name: '指令区', translate: `translate(${-cardWidth * 3}px, ${cardHeight * 1.5}px)` },
+    { id: 'trigger', name: '判定区', translate: `translate(${cardWidth * 3}px, ${cardHeight * 0.5}px)` },
+    { id: 'coa', name: '纹章', translate: `translate(${-cardWidth * 2.5}px, ${cardHeight * 0.5}px)`, rotation: 90 },
+    { id: 'gdeck', name: 'g卡组', translate: `translate(${-cardWidth * 4}px, ${cardHeight * 1.5}px)` },
+    { id: 'spacetime', name: '时空区', translate: `translate(${-cardWidth * 4}px, ${cardHeight * 0.5}px)` },
+    { id: 'seal', name: '封存', translate: `translate(${cardWidth * 4}px, ${cardHeight * 0.5}px)` }
+  ];
+
+  // 对方区域配置 - 相对于己方区域对称
+  const opponentZones: GameZone[] = gameZones.map(zone => ({
+    ...zone,
+    id: `opponent_${zone.id}`,
+    name: `对方${zone.name}`,
+    // 对方区域在X轴和Y轴都对称（翻转X和Y坐标），并添加180度旋转
+    translate: zone.translate?.replace(/translate\(([^,]+),\s*([^)]+)\)/, (match, x, y) => {
+      const xValue = x.replace('px', '');
+      const yValue = y.replace('px', '');
+      const newX = -parseInt(xValue);
+      const newY = -parseInt(yValue);
+      return `translate(${newX}px, ${newY}px)`;
+    }),
+    // 添加180度旋转
+    rotation: (zone.rotation || 0) + 180
+  }));
+
   // 获取当前用户信息
   useEffect(() => {
     const userStr = localStorage.getItem('user');
@@ -57,6 +205,20 @@ const Game: React.FC = () => {
       navigate('/login');
     }
   }, [navigate]);
+
+  // 监听窗口大小变化
+  useEffect(() => {
+    const handleResize = () => {
+      setPageHeight(window.innerHeight);
+      setPageWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // 处理先攻选择
   const handleFirstAttack = async () => {
@@ -227,9 +389,16 @@ const Game: React.FC = () => {
               const result = determineGameResult(newOwnerChoice, newGuestChoice, newMapping, isUserHost);
               setGameResult(result);
               
-              // 显示结果弹窗
-              setResultModalResult(result);
-              setShowResultModal(true);
+              // 使用已有的提示系统显示结果
+              if (result === 'win') {
+                success('恭喜！你赢了！');
+                setResultModalResult(result);
+                setShowResultModal(true);
+              } else if (result === 'lose') {
+                error('很遗憾，你输了！');
+              } else {
+                success('平局！');
+              }
             }, 1000); // 等待1秒后显示结果
           }
         });
@@ -258,9 +427,16 @@ const Game: React.FC = () => {
           const result = determineGameResult(newOwnerChoice, newGuestChoice, newMapping, isUserHost);
           setGameResult(result);
           
-          // 显示结果弹窗
-          setResultModalResult(result);
-          setShowResultModal(true);
+          // 使用已有的提示系统显示结果
+          if (result === 'win') {
+            success('恭喜！你赢了！');
+            setResultModalResult(result);
+            setShowResultModal(true);
+          } else if (result === 'lose') {
+            error('很遗憾，你输了！');
+          } else {
+            success('平局！');
+          }
         }, 1000); // 等待1秒后显示结果
       }
     }
@@ -270,14 +446,23 @@ const Game: React.FC = () => {
   useEffect(() => {
     const fetchBattleState = async () => {
       try {
-        console.log('获取battle状态');
         const state = await getBattleState();
         setBattleState(state);
-        console.log('battle状态:', state);
         
         // 处理coin状态
         if (state.status === 'coin') {
           handleCoinState(state);
+        } else if (state.status === 'prepare' || state.status === 'active') {
+          // 处理游戏状态
+          setGameState(state.game_state || null);
+          // 判断当前用户是player1还是player2
+          const currentUserId = currentUser?.id;
+          const isUserPlayer1 = currentUserId === state.game_state?.player1_id;
+          setIsPlayer1(isUserPlayer1);
+          
+          // 当状态变为prepare或active时，关闭选择先攻/后攻的弹窗
+          setShowResultModal(false);
+          setResultModalResult(null);
         }
         
       } catch (err) {
@@ -322,11 +507,8 @@ const Game: React.FC = () => {
   // 处理状态更新
   const handleUpdateState = useCallback(async (data: any) => {
     try {
-      console.log('处理状态更新:', data);
-      
       // 重新获取新的game_state
       const state = await getBattleState();
-      console.log('更新后的battle状态:', state);
       
       // 更新battle状态
       setBattleState(state);
@@ -334,15 +516,26 @@ const Game: React.FC = () => {
       // 根据状态类型进行相应处理
       if (state.status === 'coin') {
         handleCoinState(state);
+      } else if (state.status === 'prepare' || state.status === 'active') {
+        // 处理游戏状态
+        setGameState(state.game_state || null);
+        // 判断当前用户是player1还是player2
+        const currentUserId = currentUser?.id;
+        const isUserPlayer1 = currentUserId === state.game_state?.player1_id;
+        setIsPlayer1(isUserPlayer1);
+        
+        // 当状态变为prepare或active时，关闭选择先攻/后攻的弹窗
+        setShowResultModal(false);
+        setResultModalResult(null);
       } else {
         // 如果不是coin状态，重置游戏相关状态
-        console.log('游戏状态已改变，重置游戏状态');
         resetGameState();
+        setGameState(null);
       }
     } catch (err) {
       console.error('处理状态更新失败:', err);
     }
-  }, [handleCoinState, resetGameState]);
+  }, [handleCoinState, resetGameState, currentUser]);
 
   // WebSocket消息处理
   const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
@@ -359,13 +552,12 @@ const Game: React.FC = () => {
         break;
       case 'state_update':
         // 处理状态更新
-        console.log('收到状态更新消息:', message);
         handleUpdateState(message.data);
         break;
       default:
         break;
     }
-  }, [navigate, handleUpdateState]);
+  }, [navigate, handleUpdateState, currentUser]);
 
   // 设置WebSocket监听
   useEffect(() => {
@@ -530,6 +722,337 @@ const Game: React.FC = () => {
     );
   };
 
+  // 渲染游戏场地
+  const renderGameField = () => {
+    if (!gameState || isPlayer1 === null) {
+      return null;
+    }
+
+    // 根据当前用户身份决定己方和对方的数据
+    const myField = isPlayer1 ? gameState.player1_field : gameState.player2_field;
+    const opponentField = isPlayer1 ? gameState.player2_field : gameState.player1_field;
+
+    return (
+      <div className="relative w-full h-full">
+        {/* 己方区域 */}
+        {gameZones.map(zone => {
+          const cards = myField[zone.id as keyof typeof myField];
+          
+          // 如果是特殊区域，使用特殊渲染
+          if (zone.isHand) {
+            return renderSpecialZone(zone, Array.isArray(cards) ? cards : [], false);
+          }
+          
+          return (
+            <div
+              key={zone.id}
+              className="absolute"
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: `translate(-50%, -50%) ${zone.translate || 'translate(0, 0)'} ${zone.rotation ? `rotate(${zone.rotation}deg)` : ''}`,
+                zIndex: 10
+              }}
+            >
+              {/* 区域背景 */}
+              <div 
+                className="border-2 border-gray-400 border-dashed rounded-lg bg-gray-100 bg-opacity-80 flex items-center justify-center"
+                style={{
+                  width: `${cardWidth}px`, // 与卡牌宽度完全一致
+                  height: `${cardHeight}px`, // 与卡牌高度完全一致
+                  transform: is3DView ? 'translateZ(10px)' : 'none',
+                  boxShadow: is3DView ? '0 4px 8px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <span className="text-gray-700 text-xs text-center font-medium">{zone.name}</span>
+              </div>
+              
+              {/* 区域内的卡片 */}
+              {Array.isArray(cards) && cards.length > 0 && (
+                <div className="absolute inset-0">
+                  {/* 只有特定区域显示错开的卡牌 */}
+                  {(zone.id === 'instruction' || zone.id === 'spacetime' || zone.id === 'trigger' || zone.id === 'g') ? (
+                    // 错开显示多张卡牌
+                    cards.map((card, index) => (
+                      <div
+                        key={`${zone.id}-card-${index}-${card.id || card.name || index}`}
+                        className="absolute border-2 border-blue-700 rounded-lg shadow-md overflow-hidden"
+                        style={{
+                          width: `${cardWidth}px`, // 使用动态计算的卡牌宽度
+                          height: `${cardHeight}px`,
+                          left: `${index * cardWidth * 0.2}px`,
+                          top: `${index * cardHeight * 0.15}px`,
+                          zIndex: index + 1,
+                          transform: is3DView ? `translateZ(${index * 5}px)` : 'none',
+                          boxShadow: is3DView ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        {/* 卡片内容 */}
+                        <img 
+                          src={defaultCard} 
+                          alt="卡牌背面" 
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    // 其他区域只显示顶部1张卡牌
+                    <div 
+                      className="absolute border-2 border-blue-700 rounded-lg shadow-md overflow-hidden"
+                      style={{
+                        width: `${cardWidth}px`, // 使用动态计算的卡牌宽度
+                        height: `${cardHeight}px`,
+                        left: '50%',
+                        top: '50%',
+                        transform: is3DView 
+                          ? 'translate(-50%, -50%) translateZ(5px)' 
+                          : 'translate(-50%, -50%)',
+                        boxShadow: is3DView ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <img 
+                        src={defaultCard} 
+                        alt="卡牌背面" 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* 显示数量（对于卡组等） */}
+              {Array.isArray(cards) && cards.length > 0 && (zone.id === 'instruction' || zone.id === 'spacetime' || zone.id === 'trigger' || zone.id === 'g') && (
+                <div 
+                  className="absolute bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md"
+                  style={{
+                    width: `${cardWidth * 0.4}px`,
+                    height: `${cardWidth * 0.4}px`,
+                    top: `-${cardWidth * 0.2}px`,
+                    right: `-${cardWidth * 0.2}px`
+                  }}
+                >
+                  {cards.length}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* 对方区域 */}
+        {opponentZones.map(zone => {
+          const cards = opponentField[zone.id.replace('opponent_', '') as keyof typeof opponentField];
+          
+          // 如果是特殊区域，使用特殊渲染
+          if (zone.isHand) {
+            return renderSpecialZone(zone, Array.isArray(cards) ? cards : [], true);
+          }
+          
+          return (
+            <div
+              key={zone.id}
+              className="absolute"
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: `translate(-50%, -50%) ${zone.translate || 'translate(0, 0)'} ${zone.rotation ? `rotate(${zone.rotation}deg)` : ''}`,
+                zIndex: 10
+              }}
+            >
+              {/* 区域背景 */}
+              <div 
+                className="border-2 border-gray-400 border-dashed rounded-lg bg-gray-100 bg-opacity-80 flex items-center justify-center"
+                style={{
+                  width: `${cardWidth}px`, // 与卡牌宽度完全一致
+                  height: `${cardHeight}px`, // 与卡牌高度完全一致
+                  transform: is3DView ? 'translateZ(10px)' : 'none',
+                  boxShadow: is3DView ? '0 4px 8px rgba(0,0,0,0.2)' : 'none',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <span className="text-gray-700 text-xs text-center font-medium">{zone.name}</span>
+              </div>
+              
+              {/* 区域内的卡片（背面朝上） */}
+              {Array.isArray(cards) && cards.length > 0 && (
+                <div className="absolute inset-0">
+                  {/* 只有特定区域显示错开的卡牌 */}
+                  {(zone.id === 'opponent_instruction' || zone.id === 'opponent_spacetime' || zone.id === 'opponent_trigger' || zone.id === 'opponent_g') ? (
+                    // 错开显示多张卡牌
+                    cards.map((card, index) => (
+                      <div
+                        key={`${zone.id}-card-${index}-${card.id || card.name || index}`}
+                        className="absolute border-2 border-red-700 rounded-lg shadow-md overflow-hidden"
+                        style={{
+                          width: `${cardWidth}px`, // 使用动态计算的卡牌宽度
+                          height: `${cardHeight}px`,
+                          left: `${index * cardWidth * 0.2}px`,
+                          top: `${index * cardHeight * 0.15}px`,
+                          zIndex: index + 1,
+                          transform: is3DView ? `translateZ(${index * 5}px)` : 'none',
+                          boxShadow: is3DView ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        {/* 卡片背面 */}
+                        <img 
+                          src={defaultCard} 
+                          alt="卡牌背面" 
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    // 其他区域只显示顶部1张卡牌
+                    <div 
+                      className="absolute border-2 border-red-700 rounded-lg shadow-md overflow-hidden"
+                      style={{
+                        width: `${cardWidth}px`, // 使用动态计算的卡牌宽度
+                        height: `${cardHeight}px`,
+                        left: '50%',
+                        top: '50%',
+                        transform: is3DView 
+                          ? 'translate(-50%, -50%) translateZ(5px)' 
+                          : 'translate(-50%, -50%)',
+                        boxShadow: is3DView ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      <img 
+                        src={defaultCard} 
+                        alt="卡牌背面" 
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* 显示数量（对于卡组等） */}
+              {Array.isArray(cards) && cards.length > 0 && (zone.id === 'opponent_instruction' || zone.id === 'opponent_spacetime' || zone.id === 'opponent_trigger' || zone.id === 'opponent_g') && (
+                <div 
+                  className="absolute bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold shadow-md"
+                  style={{
+                    width: `${cardWidth * 0.4}px`,
+                    height: `${cardWidth * 0.4}px`,
+                    top: `-${cardWidth * 0.2}px`,
+                    right: `-${cardWidth * 0.2}px`
+                  }}
+                >
+                  {cards.length}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 渲染特殊区域（如手牌扇形排列）
+  const renderSpecialZone = (zone: GameZone, cards: any[], isOpponent: boolean = false) => {
+    if (zone.isHand) {
+      return (
+        <div key={zone.id}>
+          {renderHandCards(zone, cards, isOpponent)}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // 渲染手牌（扇形排列）
+  const renderHandCards = (zone: GameZone, cards: any[], isOpponent: boolean = false) => {
+    console.log('渲染手牌区域:', { zone, cards, isOpponent, standardHeight, standardWidth, cardWidth, cardHeight });
+
+    const maxSpread = cardWidth * 2; // 基于卡牌宽度计算最大扇形宽度
+    const angleStep = Math.min(15, maxSpread / Math.max(cards.length, 1)); // 每张卡的角度
+
+    return (
+      <div
+        className="absolute"
+        style={{
+          left: '50%',
+          top: '50%',
+          transform: `translate(-50%, -50%) ${zone.translate || 'translate(0, 0)'}`,
+          zIndex: 30
+        }}
+      >
+        {/* 手牌区域背景 */}
+        <div 
+          className={`border-2 border-dashed rounded-lg bg-gray-100 bg-opacity-80 flex items-center justify-center ${isOpponent ? 'border-red-400' : 'border-blue-400'}`}
+          style={{
+            width: `${cardWidth}px`, // 与卡牌宽度完全一致
+            height: `${cardHeight}px`, // 与卡牌高度完全一致
+            transform: is3DView ? 'translateZ(10px)' : 'none',
+            boxShadow: is3DView ? '0 4px 8px rgba(0,0,0,0.2)' : 'none',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          <span className={`text-xs text-center font-medium ${isOpponent ? 'text-red-700' : 'text-blue-700'}`}>
+            {zone.name}
+          </span>
+        </div>
+        
+        {/* 手牌卡片 */}
+        {cards && cards.length > 0 ? (
+          cards.map((card, index) => {
+            const angle = (index - (cards.length - 1) / 2) * angleStep;
+            const radius = cardHeight * 1.4; // 基于卡牌高度计算扇形半径
+            const x = Math.sin((angle * Math.PI) / 180) * radius;
+            const y = Math.cos((angle * Math.PI) / 180) * radius;
+
+            return (
+              <div
+                key={`${zone.id}-card-${index}-${card.id || card.name || index}`}
+                className="absolute"
+                style={{
+                  left: x,
+                  top: y,
+                  transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+                  zIndex: index + 1
+                }}
+              >
+                <div 
+                  className={`border-2 rounded-lg shadow-md overflow-hidden ${isOpponent ? 'border-red-700' : 'border-blue-700'}`}
+                  style={{
+                    width: `${cardWidth}px`, // 使用动态计算的卡牌宽度
+                    height: `${cardHeight}px`,
+                    transform: is3DView ? 'translateZ(5px)' : 'none',
+                    boxShadow: is3DView ? '0 2px 4px rgba(0,0,0,0.3)' : 'none',
+                    transition: 'all 0.3s ease'
+                  }}
+                >
+                  <img 
+                    src={defaultCard} 
+                    alt="卡牌背面" 
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          // 显示空手牌提示
+          <div 
+            className="absolute flex items-center justify-center"
+            style={{
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: `${cardWidth}px`, // 与卡牌宽度完全一致
+              height: `${cardHeight}px` // 与卡牌高度完全一致
+            }}
+          >
+            <span className="text-xs text-gray-500">无手牌</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-4">
@@ -542,9 +1065,15 @@ const Game: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-4 relative">
+    <div className="h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* 投降按钮 */}
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex space-x-2">
+        <button
+          onClick={() => setIs3DView(!is3DView)}
+          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          {is3DView ? '2D视角' : '3D视角'}
+        </button>
         <button
           onClick={() => setShowSurrenderConfirm(true)}
           className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
@@ -565,15 +1094,6 @@ const Game: React.FC = () => {
             }
           </h2>
         </div>
-      )}
-
-      {/* 结果阶段提示 - 页面正中间，纯文字 */}
-      {gameResult && (
-        <h2 className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-gray-700 z-20">
-          {gameResult === 'win' ? '恭喜！你赢了！' :
-           gameResult === 'lose' ? '很遗憾，你输了！' :
-           '平局！'}
-        </h2>
       )}
 
       {/* 胜负选择弹窗 - 只有胜者显示 */}
@@ -626,7 +1146,7 @@ const Game: React.FC = () => {
         </div>
       )}
 
-      <div className="text-center w-full max-w-6xl mx-auto">
+      <div className="text-center w-full h-full max-w-6xl mx-auto">
         {/* 显示battle状态信息 */}
         {battleState ? (
           <>
@@ -634,6 +1154,20 @@ const Game: React.FC = () => {
             {battleState.status === 'coin' ? (
               <div className="mb-8 w-full">
                 {renderCoinGame()}
+              </div>
+            ) : battleState.status === 'prepare' || battleState.status === 'active' ? (
+              <div 
+                className="w-full h-full"
+                style={{
+                  transform: is3DView 
+                    ? 'perspective(1500px) rotateX(50deg) scale(1.8) translateY(-135px)' 
+                    : 'none',
+                  transformOrigin: 'center center',
+                  transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                  filter: is3DView ? 'drop-shadow(0 20px 40px rgba(0,0,0,0.3))' : 'none'
+                }}
+              >
+                {renderGameField()}
               </div>
             ) : (
               <p className="text-gray-600 mb-8">游戏页面开发中...</p>
