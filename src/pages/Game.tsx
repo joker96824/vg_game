@@ -138,7 +138,7 @@ const Game: React.FC = () => {
       setCardImageRatio(ratio);
     };
     img.onerror = () => {
-      console.warn('无法加载卡牌图片，使用默认比例0.75');
+      console.warn('无法加载卡牌图片，因此使用默认比例0.75');
       setCardImageRatio(0.75);
     };
     img.src = defaultCard;
